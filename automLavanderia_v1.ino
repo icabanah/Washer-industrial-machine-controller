@@ -273,18 +273,7 @@ void loop()
       numeroVariable = 1;
       nivelEdicion = 1;
       obtenerValorVariable();
-
-      Serial.println(" ");
-      Serial.print("Nivel de edicion: ");
-      Serial.println(nivelEdicion);
-      Serial.print("Programa: ");
-      Serial.println(programa);
-      Serial.print("Fase: ");
-      Serial.println(fase);
-      Serial.print("Numero variable: ");
-      Serial.println(numeroVariable);
-      Serial.print("Valor obtenido: ");
-      Serial.println(valorVariable);
+      pintarConsolaSerial();
       pintarVentanaEdicionMenu();
       lcd.setCursor(0, 1);
       lcd.blink();
@@ -295,25 +284,18 @@ void loop()
           if (flagBtnAumentar1 == 0)
           {
             flagBtnAumentar1 = 1;
-            numeroVariable++;
-            if (numeroVariable > 4)
+            fase++;
+            if (fase > 4)
             {
-              numeroVariable = 1;
+              fase = 1;
             }
-            obtenerValorVariable();
-            Serial.println(" ");
-            Serial.print("Nivel de edicion: ");
-            Serial.println(nivelEdicion);
-            Serial.print("Programa: ");
-            Serial.println(programa);
-            Serial.print("Fase: ");
-            Serial.println(fase);
-            Serial.print("Numero variable: ");
-            Serial.println(numeroVariable);
-            Serial.print("Valor obtenido: ");
-            Serial.println(valorVariable);
+
             pintarVentanaEdicionMenu();
-            lcd.setCursor(0, 1);
+            pintarConsolaSerial();
+            editarValorVariable();
+
+            // eeprom_write();
+            // delay(100);
           }
         }
         else
@@ -326,25 +308,14 @@ void loop()
           if (flagBtnDisminuir1 == 0)
           {
             flagBtnDisminuir1 = 1;
-            numeroVariable--;
-            if (numeroVariable < 1)
+            fase--;
+            if (fase < 1)
             {
-              numeroVariable = 4;
+              fase = 4;
             }
-            obtenerValorVariable();
-            Serial.println(" ");
-            Serial.print("Nivel de edicion: ");
-            Serial.println(nivelEdicion);
-            Serial.print("Programa: ");
-            Serial.println(programa);
-            Serial.print("Fase: ");
-            Serial.println(fase);
-            Serial.print("Numero variable: ");
-            Serial.println(numeroVariable);
-            Serial.print("Valor obtenido: ");
-            Serial.println(valorVariable);
+            pintarConsolaSerial();
             pintarVentanaEdicionMenu();
-            lcd.setCursor(0, 1);
+            editarValorVariable();
             // eeprom_write();
             // delay(100);
           }
@@ -360,64 +331,27 @@ void loop()
           {
             flagBtnEditar1 = 1;
             nivelEdicion = 2;
-            // lcd.setCursor(0, 0);
-            // lcd.write(nivelEdicion);
-            boolean cambioValorVariable = false;
 
             obtenerValorVariable();
-            Serial.println(" ");
-            Serial.print("Nivel de edicion: ");
-            Serial.println(nivelEdicion);
-            Serial.print("Programa: ");
-            Serial.println(programa);
-            Serial.print("Fase: ");
-            Serial.println(fase);
-            Serial.print("Numero variable: ");
-            Serial.println(numeroVariable);
-            Serial.print("Valor obtenido: ");
-            Serial.println(valorVariable);
-            Serial.print("¿Cambio valor de variable? ");
-            Serial.println(cambioValorVariable);
-            lcd.setCursor(6, 1);
-            // lcd.blink();
+            pintarConsolaSerial();
 
             // Edicion de valor de numeroVariable
             while (nivelEdicion == 2)
             {
+
               if (digitalRead(btnAumentar) == nivelActivo)
               {
                 if (flagBtnAumentar1 == 0)
                 {
                   flagBtnAumentar1 = 1;
-                  valorVariable++;
-                  cambioValorVariable = editarValorVariable();
-                  // obtenerValorVariable();
-
-                  // lcd.setCursor(0, 0);
-                  // lcd.write(valorVariable);
-                  // if (valorVariable > 4)
-                  // {
-                  //   valorVariable = 1;
-                  // }
-
-                  Serial.println(" ");
-                  Serial.print("Nivel de edicion: ");
-                  Serial.println(nivelEdicion);
-                  Serial.print("Programa: ");
-                  Serial.println(programa);
-                  Serial.print("Fase: ");
-                  Serial.println(fase);
-                  Serial.print("Numero variable: ");
-                  Serial.println(numeroVariable);
-                  Serial.print("Valor obtenido: ");
-                  Serial.println(valorVariable);
-                  Serial.print("¿Cambio valor de variable? ");
-                  Serial.println(cambioValorVariable);
-
+                  numeroVariable++;
+                  if (numeroVariable > 4)
+                  {
+                    numeroVariable = 1;
+                  }
+                  obtenerValorVariable();
+                  pintarConsolaSerial();
                   pintarVentanaEdicionMenu();
-                  lcd.setCursor(6, 1);
-                  // eeprom_write();
-                  // delay(100);
                 }
               }
               else
@@ -430,30 +364,14 @@ void loop()
                 if (flagBtnDisminuir1 == 0)
                 {
                   flagBtnDisminuir1 = 1;
-                  valorVariable--;
-                  if (valorVariable < 0)
+                  numeroVariable--;
+                  if (numeroVariable < 1)
                   {
-                    valorVariable = 0;
+                    numeroVariable = 4;
                   }
-                  cambioValorVariable = editarValorVariable();
-                  // obtenerValorVariable();
-
-                  Serial.println(" ");
-                  Serial.print("Nivel de edicion: ");
-                  Serial.println(nivelEdicion);
-                  Serial.print("Programa: ");
-                  Serial.println(programa);
-                  Serial.print("Fase: ");
-                  Serial.println(fase);
-                  Serial.print("Numero variable: ");
-                  Serial.println(numeroVariable);
-                  Serial.print("Valor obtenido: ");
-                  Serial.println(valorVariable);
-                  Serial.print("¿Cambio valor de variable? ");
-                  Serial.println(cambioValorVariable);
-
+                  obtenerValorVariable();
+                  pintarConsolaSerial();
                   pintarVentanaEdicionMenu();
-                  lcd.setCursor(6, 1);
                   // eeprom_write();
                   // delay(100);
                 }
@@ -470,51 +388,39 @@ void loop()
                   flagBtnEditar1 = 1;
                   nivelEdicion = 3;
 
-                  Serial.println(" ");
-                  Serial.print("Nivel de edicion: ");
-                  Serial.println(nivelEdicion);
-                  Serial.print("Programa: ");
-                  Serial.println(programa);
-                  Serial.print("Fase: ");
-                  Serial.println(fase);
-                  Serial.print("Numero variable: ");
-                  Serial.println(numeroVariable);
-                  Serial.print("Valor obtenido: ");
-                  Serial.println(valorVariable);
-                  lcd.setCursor(14, 1);
+                  pintarConsolaSerial();
                   // Editar valor de fase
-
                   while (nivelEdicion == 3)
                   {
+
                     if (digitalRead(btnAumentar) == nivelActivo)
                     {
                       if (flagBtnAumentar1 == 0)
                       {
                         flagBtnAumentar1 = 1;
-                        fase++;
-                        if (fase > 4)
+
+                        if (numeroVariable == 4)
                         {
-                          fase = 1;
+                          // valorVariable = 1;
+                          if (valorVariable > 0 && valorVariable < 4)
+                          {
+                            valorVariable++;
+                          }
                         }
-
-                        Serial.println(" ");
-                        Serial.print("Nivel de edicion: ");
-                        Serial.println(nivelEdicion);
-                        Serial.print("Programa: ");
-                        Serial.println(programa);
-                        Serial.print("Fase: ");
-                        Serial.println(fase);
-                        Serial.print("Numero variable: ");
-                        Serial.println(numeroVariable);
-                        Serial.print("Valor obtenido: ");
-                        Serial.println(valorVariable);
-                        Serial.print("¿Cambio valor de variable? ");
-                        Serial.println(cambioValorVariable);
-
-                        pintarVentanaEdicionMenu();
-                        lcd.setCursor(14, 1);
+                        else if (numeroVariable == 1)
+                        {
+                          if (valorVariable > 0 && valorVariable < 10)
+                          {
+                            valorVariable++;
+                          }
+                        }
+                        else
+                        {
+                          valorVariable++;
+                        }
                         editarValorVariable();
-
+                        pintarVentanaEdicionMenu();
+                        pintarConsolaSerial();
                         // eeprom_write();
                         // delay(100);
                       }
@@ -529,27 +435,40 @@ void loop()
                       if (flagBtnDisminuir1 == 0)
                       {
                         flagBtnDisminuir1 = 1;
-                        fase--;
-                        if (fase < 1)
+
+                        if (numeroVariable == 4)
                         {
-                          fase = 4;
+                          if (valorVariable > 0 && valorVariable < 4)
+                          {
+                            valorVariable--;
+                            if (valorVariable < 0)
+                            {
+                              valorVariable = 0;
+                            }
+                          }
                         }
-                        Serial.println(" ");
-                        Serial.print("Nivel de edicion: ");
-                        Serial.println(nivelEdicion);
-                        Serial.print("Programa: ");
-                        Serial.println(programa);
-                        Serial.print("Fase: ");
-                        Serial.println(fase);
-                        Serial.print("Numero variable: ");
-                        Serial.println(numeroVariable);
-                        Serial.print("Valor obtenido: ");
-                        Serial.println(valorVariable);
-                        Serial.print("¿Cambio valor de variable? ");
-                        Serial.println(cambioValorVariable);
-                        pintarVentanaEdicionMenu();
-                        lcd.setCursor(14, 1);
+                        else if (numeroVariable == 1)
+                        {
+                          if (valorVariable > 0 && valorVariable < 10)
+                          {
+                            valorVariable--;
+                            if (valorVariable < 0)
+                            {
+                              valorVariable = 0;
+                            }
+                          }
+                        }
+                        else
+                        {
+                          valorVariable--;
+                          if (valorVariable < 0)
+                          {
+                            valorVariable = 0;
+                          }
+                        }
                         editarValorVariable();
+                        pintarVentanaEdicionMenu();
+                        pintarConsolaSerial();
                         // eeprom_write();
                         // delay(100);
                       }
@@ -565,7 +484,7 @@ void loop()
                       {
                         flagBtnParar1 = 1;
                         nivelEdicion = 2;
-                        lcd.setCursor(6, 1);
+                        lcd.setCursor(0, 1);
                         // fase = 0;
                         // eeprom_write();
                         // delay(100);
@@ -591,8 +510,8 @@ void loop()
                 if (flagBtnParar1 == 0)
                 {
                   flagBtnParar1 = 1;
-                  nivelEdicion = 1;
-                  lcd.setCursor(0, 1);
+                  nivelEdicion = 2;
+                  lcd.setCursor(6, 1);
                   // fase = 0;
                   // eeprom_write();
                   // delay(100);
@@ -602,6 +521,8 @@ void loop()
               {
                 flagBtnParar1 = 0;
               }
+
+              // ----------------
             }
 
             // eeprom_write();
@@ -708,46 +629,46 @@ void pintarVentanaEdicionMenu()
   {
   case 1:
     lcd.setCursor(0, 1);
-    lcd.print("Nivel:");
-    lcd.setCursor(6, 1);
-    lcd.print(NivelAgua[programa - 1][fase - 1]);
-    lcd.setCursor(9, 1);
     lcd.print("Fase:");
-    lcd.setCursor(14, 1);
+    lcd.setCursor(5, 1);
     lcd.print(fase);
+    lcd.setCursor(8, 1);
+    lcd.print("Nivel:");
+    lcd.setCursor(14, 1);
+    lcd.print(NivelAgua[programa - 1][fase - 1]);
     break;
 
   case 2:
     lcd.setCursor(0, 1);
-    lcd.print("Tiemp:");
-    lcd.setCursor(6, 1);
-    lcd.print(TemporizadorLim[programa - 1][fase - 1]);
-    lcd.setCursor(9, 1);
     lcd.print("Fase:");
-    lcd.setCursor(14, 1);
+    lcd.setCursor(5, 1);
     lcd.print(fase);
+    lcd.setCursor(8, 1);
+    lcd.print("Tiemp:");
+    lcd.setCursor(14, 1);
+    lcd.print(TemporizadorLim[programa - 1][fase - 1]);
     break;
 
   case 3:
     lcd.setCursor(0, 1);
-    lcd.print("Tempe:");
-    lcd.setCursor(6, 1);
-    lcd.print(TemperaturaLim[programa - 1][fase - 1]);
-    lcd.setCursor(9, 1);
     lcd.print("Fase:");
-    lcd.setCursor(14, 1);
+    lcd.setCursor(5, 1);
     lcd.print(fase);
+    lcd.setCursor(8, 1);
+    lcd.print("Tempe:");
+    lcd.setCursor(14, 1);
+    lcd.print(TemperaturaLim[programa - 1][fase - 1]);
     break;
 
   case 4:
     lcd.setCursor(0, 1);
-    lcd.print("VRota:");
-    lcd.setCursor(6, 1);
-    lcd.print(RotacionTam[programa - 1][fase - 1]);
-    lcd.setCursor(9, 1);
     lcd.print("Fase:");
-    lcd.setCursor(14, 1);
+    lcd.setCursor(5, 1);
     lcd.print(fase);
+    lcd.setCursor(8, 1);
+    lcd.print("VRota:");
+    lcd.setCursor(14, 1);
+    lcd.print(RotacionTam[programa - 1][fase - 1]);
     break;
 
   default:
@@ -796,36 +717,29 @@ void pintarVentanaEjecucion()
 }
 
 // Subprocesos de obtencion/edicin de variables
-boolean editarValorVariable()
+void editarValorVariable()
 {
-  boolean cambioExitoso = false;
   switch (numeroVariable)
   {
   case 1:
     NivelAgua[programa - 1][fase - 1] = valorVariable;
-    cambioExitoso = true;
     break;
 
   case 2:
     TemporizadorLim[programa - 1][fase - 1] = valorVariable;
-    cambioExitoso = true;
     break;
 
   case 3:
     TemperaturaLim[programa - 1][fase - 1] = valorVariable;
-    cambioExitoso = true;
     break;
 
   case 4:
     RotacionTam[programa - 1][fase - 1] = valorVariable;
-    cambioExitoso = true;
     break;
 
   default:
-    cambioExitoso = false;
     break;
   }
-  return cambioExitoso;
 }
 
 void obtenerValorVariable()
@@ -1071,4 +985,38 @@ void guardarValoresEEPROM()
       EEPROM.write(4 + (12 * 5) + (i + j), TiempoRotacion[i][j]);
     }
   }
+}
+
+void pintarConsolaSerial()
+{
+  Serial.println(" ");
+  Serial.print("Nivel de edicion: ");
+  switch (nivelEdicion)
+  {
+  case 1:
+    Serial.println("Edicion de fase");
+    lcd.setCursor(5, 1);
+    break;
+
+  case 2:
+    Serial.println("Edicion de numero de variable");
+    lcd.setCursor(8, 1);
+    break;
+
+  case 3:
+    Serial.println("Edicion de valor de variable");
+    lcd.setCursor(14, 1);
+    break;
+
+  default:
+    break;
+  }
+  Serial.print("Programa: ");
+  Serial.println(programa);
+  Serial.print("Fase: ");
+  Serial.println(fase);
+  Serial.print("Numero variable: ");
+  Serial.println(numeroVariable);
+  Serial.print("Valor obtenido: ");
+  Serial.println(valorVariable);
 }
