@@ -1,5 +1,5 @@
+#include <AsyncTaskLib.h>
 #include <LiquidCrystal.h>
-#include "AsyncTaskLib.h"
 #include <EEPROM.h>
 
 // Iniciamos el lcd
@@ -15,7 +15,7 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 #define btnAumentar 41
 #define btnParar 43
 #define sensorTemp A6
-#define sensorPresion A7
+#define sensorPresion A0
 
 // Salidas
 #define MotorDirA 7
@@ -51,6 +51,7 @@ uint8_t TiempoRotacion[3][2] = {{3, 2}, {3, 3}, {4, 3}};
 // Variables bandera
 boolean tiempoCumplido = false;
 boolean programaTerminado = false;
+boolean editandoProgramaEjecucion = false;
 // boolean terminarEdicion = false;
 boolean nivelActivo = LOW;
 
@@ -84,42 +85,32 @@ AsyncTask segundosMotor(1000, true, []()
 
 void pintarVariables()
 {
-  // lcd.clear();
-  // primera fila
-  // lcd.setCursor(0, 0);
-  // lcd.print("P");
-  // lcd.setCursor(1, 0);
-  // lcd.print(programa + 22);
-
-  // lcd.setCursor(4, 0);
-  // lcd.print("F:");
-  lcd.setCursor(6, 0);
-  lcd.print(fase);
-
-  // lcd.setCursor(8, 0);
-  // lcd.print("N:");
   lcd.setCursor(10, 0);
   lcd.print(valorPresion);
 
-  // lcd.setCursor(12, 0);
-  // lcd.print("T:");
   lcd.setCursor(14, 0);
   lcd.print(valorTemperatura);
 
-  // Segunda fila
-  // lcd.setCursor(0, 1);
-  // lcd.print("Ti:");
   lcd.setCursor(3, 1);
-  lcd.print(minutos[1]);
-  // lcd.setCursor(5, 1);
-  // lcd.print(":");
+  if (minutos[1] < 10)
+  {
+    lcd.print(0);
+    lcd.print(minutos[1]);
+  }
+  else
+  {
+    lcd.print(minutos[1]);
+  }
   lcd.setCursor(6, 1);
-  lcd.print(segundos[1]);
-
-  // lcd.setCursor(12, 1);
-  // lcd.print("R:");
-  // lcd.setCursor(14, 1);
-  // lcd.print(RotacionTam[nroPrograma][nroFase - 1]);
+  if (segundos[1] < 10)
+  {
+    lcd.print(0);
+    lcd.print(segundos[1]);
+  }
+  else
+  {
+    lcd.print(segundos[1]);
+  }
 }
 
 AsyncTask segundosTemporizador(1000, true, []()
@@ -127,10 +118,10 @@ AsyncTask segundosTemporizador(1000, true, []()
   segunderoTemporizador--;
   minutos[1] = (segunderoTemporizador / 60);
   segundos[1] = segunderoTemporizador - (minutos[1] * 60); 
-  pintarVariables(); });
+  if (!editandoProgramaEjecucion){ pintarVariables(); } });
 
-AsyncTask delayTemporizador(100, true, []()
-                            { flagLCD = !flagLCD; });
+// AsyncTask delayTemporizador(100, true, []()
+//                             { flagLCD = !flagLCD; });
 
 void setup()
 {
@@ -170,10 +161,10 @@ void setup()
   // Recuperamos valores del EEPROM
   // guardarValoresEEPROM();
   // delay(100);
-  // recuperarValoresEEPROM();
+  recuperarValoresEEPROM();
   // delay(20);
-  Serial.print("TemperaturaLim[2][1]: ");
-  Serial.println(TemperaturaLim[2][1]);
+  // Serial.print("TemperaturaLim[2][1]: ");
+  // Serial.println(TemperaturaLim[2][1]);
   // recuperarValoresEEPROM();
   // eeprom_read();
 
@@ -227,25 +218,20 @@ void loop()
     if (flagBtnComenzar1 == 0)
     {
       flagBtnComenzar1 = 1;
-      Serial.println("btnComenzar - Iniciar programa");
+      // Serial.println("btnComenzar - Iniciar programa");
       iniciarPrograma();
       // iniciarTemporizador();
       while (!tiempoCumplido)
       {
-        // Serial.println("bucleEdicion");
-        delayTemporizador.Update();
-        // if (!flagLCD)
-        // {
-        //   pintarVentanaEjecucion(programa - 1, fase);
-        // }
-        revisarTemporizador();
-        controladorDireccionMotor(RotacionTam[programa - 1][fase]);
+        // revisarTemporizador();
+        controladorTemporizador();
+        controladorDireccionMotor();
         if (digitalRead(btnParar) == nivelActivo)
         {
           if (flagBtnParar1 == 0)
           {
             flagBtnParar1 = 1;
-            Serial.println("btnParar - Para programa");
+            // Serial.println("btnParar - Para programa");
             terminarPrograma();
             // eeprom_write();
             // delay(100);
@@ -255,103 +241,43 @@ void loop()
         {
           flagBtnParar1 = 0;
         }
-      }
-    }
-  }
-  else
-  {
-    flagBtnComenzar1 = 0;
-  }
-
-  // Edicion de programa
-  if (digitalRead(btnEditar) == nivelActivo)
-  {
-    if (flagBtnEditar1 == 0)
-    {
-      // Edicion de numero de variable
-      flagBtnEditar1 = 1;
-      numeroVariable = 1;
-      nivelEdicion = 1;
-      obtenerValorVariable();
-      pintarConsolaSerial();
-      pintarVentanaEdicionMenu();
-      lcd.setCursor(0, 1);
-      lcd.blink();
-      while (nivelEdicion == 1)
-      {
-        if (digitalRead(btnAumentar) == nivelActivo)
-        {
-          if (flagBtnAumentar1 == 0)
-          {
-            flagBtnAumentar1 = 1;
-            fase++;
-            if (fase > 4)
-            {
-              fase = 1;
-            }
-
-            pintarVentanaEdicionMenu();
-            pintarConsolaSerial();
-            editarValorVariable();
-
-            // eeprom_write();
-            // delay(100);
-          }
-        }
-        else
-        {
-          flagBtnAumentar1 = 0;
-        }
-
-        if (digitalRead(btnDisminuir) == nivelActivo)
-        {
-          if (flagBtnDisminuir1 == 0)
-          {
-            flagBtnDisminuir1 = 1;
-            fase--;
-            if (fase < 1)
-            {
-              fase = 4;
-            }
-            pintarConsolaSerial();
-            pintarVentanaEdicionMenu();
-            editarValorVariable();
-            // eeprom_write();
-            // delay(100);
-          }
-        }
-        else
-        {
-          flagBtnDisminuir1 = 0;
-        }
 
         if (digitalRead(btnEditar) == nivelActivo)
         {
           if (flagBtnEditar1 == 0)
           {
             flagBtnEditar1 = 1;
-            nivelEdicion = 2;
-
+            // Edicion de numero de variable
+            flagBtnEditar1 = 1;
+            numeroVariable = 1;
+            nivelEdicion = 1;
+            editandoProgramaEjecucion = true;
             obtenerValorVariable();
-            pintarConsolaSerial();
-
-            // Edicion de valor de numeroVariable
-            while (nivelEdicion == 2)
+            pintarVentanaEdicionMenu();
+            lcd.blink();
+            // pintarConsolaSerial();
+            asignarBlinkLCD();
+            while (nivelEdicion == 1)
             {
-
+              controladorTemporizador();
+              controladorDireccionMotor();
               if (digitalRead(btnAumentar) == nivelActivo)
               {
                 if (flagBtnAumentar1 == 0)
                 {
                   flagBtnAumentar1 = 1;
-                  numeroVariable++;
-                  if (numeroVariable > 4)
+                  fase++;
+                  if (fase > 4)
                   {
-                    numeroVariable = 1;
+                    fase = 1;
                   }
-                  obtenerValorVariable();
-                  pintarConsolaSerial();
+
                   pintarVentanaEdicionMenu();
+                  pintarConsolaSerial();
+                  // editarValorVariable();
+
+                  // eeprom_write();
+                  // delay(100);
                 }
               }
               else
@@ -364,14 +290,14 @@ void loop()
                 if (flagBtnDisminuir1 == 0)
                 {
                   flagBtnDisminuir1 = 1;
-                  numeroVariable--;
-                  if (numeroVariable < 1)
+                  fase--;
+                  if (fase < 1)
                   {
-                    numeroVariable = 4;
+                    fase = 4;
                   }
-                  obtenerValorVariable();
-                  pintarConsolaSerial();
                   pintarVentanaEdicionMenu();
+                  pintarConsolaSerial();
+                  // editarValorVariable();
                   // eeprom_write();
                   // delay(100);
                 }
@@ -386,43 +312,31 @@ void loop()
                 if (flagBtnEditar1 == 0)
                 {
                   flagBtnEditar1 = 1;
-                  nivelEdicion = 3;
+                  nivelEdicion = 2;
 
-                  pintarConsolaSerial();
-                  // Editar valor de fase
-                  while (nivelEdicion == 3)
+                  obtenerValorVariable();
+                  // pintarConsolaSerial();
+                  asignarBlinkLCD();
+
+                  // Edicion de valor de numeroVariable
+                  while (nivelEdicion == 2)
                   {
-
+                    controladorTemporizador();
+                    controladorDireccionMotor();
                     if (digitalRead(btnAumentar) == nivelActivo)
                     {
                       if (flagBtnAumentar1 == 0)
                       {
                         flagBtnAumentar1 = 1;
-
-                        if (numeroVariable == 4)
+                        numeroVariable++;
+                        if (numeroVariable > 4)
                         {
-                          // valorVariable = 1;
-                          if (valorVariable > 0 && valorVariable < 4)
-                          {
-                            valorVariable++;
-                          }
+                          numeroVariable = 1;
                         }
-                        else if (numeroVariable == 1)
-                        {
-                          if (valorVariable > 0 && valorVariable < 10)
-                          {
-                            valorVariable++;
-                          }
-                        }
-                        else
-                        {
-                          valorVariable++;
-                        }
-                        editarValorVariable();
+                        obtenerValorVariable();
                         pintarVentanaEdicionMenu();
-                        pintarConsolaSerial();
-                        // eeprom_write();
-                        // delay(100);
+                        // pintarConsolaSerial();
+                        asignarBlinkLCD();
                       }
                     }
                     else
@@ -435,40 +349,15 @@ void loop()
                       if (flagBtnDisminuir1 == 0)
                       {
                         flagBtnDisminuir1 = 1;
-
-                        if (numeroVariable == 4)
+                        numeroVariable--;
+                        if (numeroVariable < 1)
                         {
-                          if (valorVariable > 0 && valorVariable < 4)
-                          {
-                            valorVariable--;
-                            if (valorVariable < 0)
-                            {
-                              valorVariable = 0;
-                            }
-                          }
+                          numeroVariable = 4;
                         }
-                        else if (numeroVariable == 1)
-                        {
-                          if (valorVariable > 0 && valorVariable < 10)
-                          {
-                            valorVariable--;
-                            if (valorVariable < 0)
-                            {
-                              valorVariable = 0;
-                            }
-                          }
-                        }
-                        else
-                        {
-                          valorVariable--;
-                          if (valorVariable < 0)
-                          {
-                            valorVariable = 0;
-                          }
-                        }
-                        editarValorVariable();
+                        obtenerValorVariable();
                         pintarVentanaEdicionMenu();
-                        pintarConsolaSerial();
+                        // pintarConsolaSerial();
+                        asignarBlinkLCD();
                         // eeprom_write();
                         // delay(100);
                       }
@@ -478,13 +367,132 @@ void loop()
                       flagBtnDisminuir1 = 0;
                     }
 
+                    if (digitalRead(btnEditar) == nivelActivo)
+                    {
+                      if (flagBtnEditar1 == 0)
+                      {
+                        flagBtnEditar1 = 1;
+                        nivelEdicion = 3;
+
+                        // pintarConsolaSerial();
+                        asignarBlinkLCD();
+                        // Editar valor de fase
+                        while (nivelEdicion == 3)
+                        {
+                          controladorTemporizador();
+                          controladorDireccionMotor();
+                          if (digitalRead(btnAumentar) == nivelActivo)
+                          {
+                            if (flagBtnAumentar1 == 0)
+                            {
+                              flagBtnAumentar1 = 1;
+                              valorVariable++;
+
+                              if (numeroVariable == 4)
+                              {
+                                // valorVariable = 1;
+                                if (valorVariable > 3)
+                                {
+                                  valorVariable = 1;
+                                }
+                              }
+                              else if (numeroVariable == 1)
+                              {
+                                if (valorVariable > 10)
+                                {
+                                  valorVariable = 1;
+                                }
+                              }
+                              editarValorVariable();
+                              pintarVentanaEdicionMenu();
+                              // pintarConsolaSerial();
+                              asignarBlinkLCD();
+                              // eeprom_write();
+                              // delay(100);
+                            }
+                          }
+                          else
+                          {
+                            flagBtnAumentar1 = 0;
+                          }
+
+                          if (digitalRead(btnDisminuir) == nivelActivo)
+                          {
+                            if (flagBtnDisminuir1 == 0)
+                            {
+                              flagBtnDisminuir1 = 1;
+                              valorVariable--;
+                              if (numeroVariable == 4)
+                              {
+                                // valorVariable = 1;
+                                if (valorVariable < 1)
+                                {
+                                  valorVariable = 3;
+                                }
+                              }
+                              else if (numeroVariable == 1)
+                              {
+                                if (valorVariable < 1)
+                                {
+                                  valorVariable = 10;
+                                }
+                              }
+                              else
+                              {
+                                if (valorVariable < 0)
+                                {
+                                  valorVariable = 0;
+                                }
+                              }
+                              editarValorVariable();
+                              pintarVentanaEdicionMenu();
+                              // pintarConsolaSerial();
+                              asignarBlinkLCD();
+                              // eeprom_write();
+                              // delay(100);
+                            }
+                          }
+                          else
+                          {
+                            flagBtnDisminuir1 = 0;
+                          }
+
+                          if (digitalRead(btnParar) == nivelActivo)
+                          {
+                            if (flagBtnParar1 == 0)
+                            {
+                              flagBtnParar1 = 1;
+                              nivelEdicion = 2;
+                              pintarConsolaSerial();
+                              asignarBlinkLCD();
+                              // fase = 0;
+                              // eeprom_write();
+                              // delay(100);
+                            }
+                          }
+                          else
+                          {
+                            flagBtnParar1 = 0;
+                          }
+                        }
+
+                        // eeprom_write();
+                        // delay(100);
+                      }
+                    }
+                    else
+                    {
+                      flagBtnEditar1 = 0;
+                    }
+
                     if (digitalRead(btnParar) == nivelActivo)
                     {
                       if (flagBtnParar1 == 0)
                       {
                         flagBtnParar1 = 1;
-                        nivelEdicion = 2;
-                        lcd.setCursor(0, 1);
+                        nivelEdicion = 1;
+                        // pintarConsolaSerial();
+                        asignarBlinkLCD();
                         // fase = 0;
                         // eeprom_write();
                         // delay(100);
@@ -510,8 +518,283 @@ void loop()
                 if (flagBtnParar1 == 0)
                 {
                   flagBtnParar1 = 1;
-                  nivelEdicion = 2;
-                  lcd.setCursor(6, 1);
+                  nivelEdicion = 0;
+                  numeroVariable = 1;
+                  editandoProgramaEjecucion = false;
+                  lcd.noBlink();
+                  pintarVentanaEjecucion();
+                  // escribirVariableEEPROM(0, programa - 1);
+                  // fase = 1;
+                  // eeprom_write();
+                  // delay(100);
+                }
+              }
+              else
+              {
+                flagBtnParar1 = 0;
+              }
+            }
+          }
+        }
+        else
+        {
+          flagBtnEditar1 = 0;
+        }
+      }
+    }
+  }
+  else
+  {
+    flagBtnComenzar1 = 0;
+  }
+
+  // Edicion de programa
+  if (digitalRead(btnEditar) == nivelActivo)
+  {
+    if (flagBtnEditar1 == 0)
+    {
+      // Edicion de numero de variable
+      flagBtnEditar1 = 1;
+      numeroVariable = 1;
+      nivelEdicion = 1;
+      editandoProgramaEjecucion = false;
+      obtenerValorVariable();
+      pintarVentanaEdicionMenu();
+      lcd.blink();
+      // pintarConsolaSerial();
+      asignarBlinkLCD();
+      while (nivelEdicion == 1)
+      {
+        if (digitalRead(btnAumentar) == nivelActivo)
+        {
+          if (flagBtnAumentar1 == 0)
+          {
+            flagBtnAumentar1 = 1;
+            fase++;
+            if (fase > 4)
+            {
+              fase = 1;
+            }
+
+            pintarVentanaEdicionMenu();
+            pintarConsolaSerial();
+            // editarValorVariable();
+
+            // eeprom_write();
+            // delay(100);
+          }
+        }
+        else
+        {
+          flagBtnAumentar1 = 0;
+        }
+
+        if (digitalRead(btnDisminuir) == nivelActivo)
+        {
+          if (flagBtnDisminuir1 == 0)
+          {
+            flagBtnDisminuir1 = 1;
+            fase--;
+            if (fase < 1)
+            {
+              fase = 4;
+            }
+            pintarVentanaEdicionMenu();
+            pintarConsolaSerial();
+            // editarValorVariable();
+            // eeprom_write();
+            // delay(100);
+          }
+        }
+        else
+        {
+          flagBtnDisminuir1 = 0;
+        }
+
+        if (digitalRead(btnEditar) == nivelActivo)
+        {
+          if (flagBtnEditar1 == 0)
+          {
+            flagBtnEditar1 = 1;
+            nivelEdicion = 2;
+
+            obtenerValorVariable();
+            // pintarConsolaSerial();
+            asignarBlinkLCD();
+
+            // Edicion de valor de numeroVariable
+            while (nivelEdicion == 2)
+            {
+
+              if (digitalRead(btnAumentar) == nivelActivo)
+              {
+                if (flagBtnAumentar1 == 0)
+                {
+                  flagBtnAumentar1 = 1;
+                  numeroVariable++;
+                  if (numeroVariable > 4)
+                  {
+                    numeroVariable = 1;
+                  }
+                  obtenerValorVariable();
+                  pintarVentanaEdicionMenu();
+                  // pintarConsolaSerial();
+                  asignarBlinkLCD();
+                }
+              }
+              else
+              {
+                flagBtnAumentar1 = 0;
+              }
+
+              if (digitalRead(btnDisminuir) == nivelActivo)
+              {
+                if (flagBtnDisminuir1 == 0)
+                {
+                  flagBtnDisminuir1 = 1;
+                  numeroVariable--;
+                  if (numeroVariable < 1)
+                  {
+                    numeroVariable = 4;
+                  }
+                  obtenerValorVariable();
+                  pintarVentanaEdicionMenu();
+                  // pintarConsolaSerial();
+                  asignarBlinkLCD();
+                  // eeprom_write();
+                  // delay(100);
+                }
+              }
+              else
+              {
+                flagBtnDisminuir1 = 0;
+              }
+
+              if (digitalRead(btnEditar) == nivelActivo)
+              {
+                if (flagBtnEditar1 == 0)
+                {
+                  flagBtnEditar1 = 1;
+                  nivelEdicion = 3;
+
+                  // pintarConsolaSerial();
+                  asignarBlinkLCD();
+                  // Editar valor de fase
+                  while (nivelEdicion == 3)
+                  {
+
+                    if (digitalRead(btnAumentar) == nivelActivo)
+                    {
+                      if (flagBtnAumentar1 == 0)
+                      {
+                        flagBtnAumentar1 = 1;
+                        valorVariable++;
+
+                        if (numeroVariable == 4)
+                        {
+                          // valorVariable = 1;
+                          if (valorVariable > 3)
+                          {
+                            valorVariable = 1;
+                          }
+                        }
+                        else if (numeroVariable == 1)
+                        {
+                          if (valorVariable > 10)
+                          {
+                            valorVariable = 1;
+                          }
+                        }
+                        editarValorVariable();
+                        pintarVentanaEdicionMenu();
+                        // pintarConsolaSerial();
+                        asignarBlinkLCD();
+                        // eeprom_write();
+                        // delay(100);
+                      }
+                    }
+                    else
+                    {
+                      flagBtnAumentar1 = 0;
+                    }
+
+                    if (digitalRead(btnDisminuir) == nivelActivo)
+                    {
+                      if (flagBtnDisminuir1 == 0)
+                      {
+                        flagBtnDisminuir1 = 1;
+                        valorVariable--;
+                        if (numeroVariable == 4)
+                        {
+                          // valorVariable = 1;
+                          if (valorVariable < 1)
+                          {
+                            valorVariable = 3;
+                          }
+                        }
+                        else if (numeroVariable == 1)
+                        {
+                          if (valorVariable < 1)
+                          {
+                            valorVariable = 10;
+                          }
+                        }
+                        else
+                        {
+                          if (valorVariable < 0)
+                          {
+                            valorVariable = 0;
+                          }
+                        }
+                        editarValorVariable();
+                        pintarVentanaEdicionMenu();
+                        // pintarConsolaSerial();
+                        asignarBlinkLCD();
+                        // eeprom_write();
+                        // delay(100);
+                      }
+                    }
+                    else
+                    {
+                      flagBtnDisminuir1 = 0;
+                    }
+
+                    if (digitalRead(btnParar) == nivelActivo)
+                    {
+                      if (flagBtnParar1 == 0)
+                      {
+                        flagBtnParar1 = 1;
+                        nivelEdicion = 2;
+                        pintarConsolaSerial();
+                        asignarBlinkLCD();
+                        // fase = 0;
+                        // eeprom_write();
+                        // delay(100);
+                      }
+                    }
+                    else
+                    {
+                      flagBtnParar1 = 0;
+                    }
+                  }
+
+                  // eeprom_write();
+                  // delay(100);
+                }
+              }
+              else
+              {
+                flagBtnEditar1 = 0;
+              }
+
+              if (digitalRead(btnParar) == nivelActivo)
+              {
+                if (flagBtnParar1 == 0)
+                {
+                  flagBtnParar1 = 1;
+                  nivelEdicion = 1;
+                  // pintarConsolaSerial();
+                  asignarBlinkLCD();
                   // fase = 0;
                   // eeprom_write();
                   // delay(100);
@@ -521,8 +804,6 @@ void loop()
               {
                 flagBtnParar1 = 0;
               }
-
-              // ----------------
             }
 
             // eeprom_write();
@@ -540,7 +821,7 @@ void loop()
           {
             flagBtnParar1 = 1;
             pintarVentanaSeleccion();
-            escribirVariableEEPROM(0, programa - 1);
+            // escribirVariableEEPROM(0, programa - 1);
             nivelEdicion = 0;
             numeroVariable = 1;
             lcd.noBlink();
@@ -559,6 +840,18 @@ void loop()
   else
   {
     flagBtnEditar1 = 0;
+  }
+
+  if (digitalRead(btnParar) == nivelActivo)
+  {
+    if (flagBtnParar1 == 0)
+    {
+      guardarValoresEEPROM();
+    }
+  }
+  else
+  {
+    flagBtnParar1 = 0;
   }
 }
 
@@ -704,12 +997,27 @@ void pintarVentanaEjecucion()
   lcd.setCursor(0, 1);
   lcd.print("Ti:");
   lcd.setCursor(3, 1);
-  lcd.print(minutos[1]);
+  if (minutos[1] < 10)
+  {
+    lcd.print(0);
+    lcd.print(minutos[1]);
+  }
+  else
+  {
+    lcd.print(minutos[1]);
+  }
   lcd.setCursor(5, 1);
   lcd.print(":");
   lcd.setCursor(6, 1);
-  lcd.print(segundos[1]);
-
+  if (segundos[1] < 10)
+  {
+    lcd.print(0);
+    lcd.print(segundos[1]);
+  }
+  else
+  {
+    lcd.print(segundos[1]);
+  }
   lcd.setCursor(12, 1);
   lcd.print("R:");
   lcd.setCursor(14, 1);
@@ -771,27 +1079,20 @@ void obtenerValorVariable()
 void iniciarTemporizador()
 {
   // minutos[1] = min;
-  segunderoTemporizador = TemporizadorLim[programa][fase] * 60;
+  segunderoTemporizador = TemporizadorLim[programa - 1][fase - 1] * 60;
   Serial.println(segunderoTemporizador);
   segundosTemporizador.Start();
 }
 
-void revisarTemporizador()
+void controladorTemporizador()
 {
   segundosTemporizador.Update();
-  // horas[1] = (segundos[1] / 3600);
-  // minutos[1] = ((segundos[1] - horas[1] * 3600) / 60);
-  // segundos[1] = segundos[1] - (horas[1] * 3600 + minutos[1] * 60);
-  // if (segundos[1] < 0)
-  // {
-  //   minutos[1]--;
-  //   segundos[1] = 59;
-  // }
 
   if (segunderoTemporizador == 0)
   {
     segundosTemporizador.Stop();
     fase++;
+    pintarVentanaEjecucion();
     iniciarTemporizador();
 
     if (fase >= 4)
@@ -802,13 +1103,13 @@ void revisarTemporizador()
 }
 
 // Subprocesos del motor
-void controladorDireccionMotor(uint8_t velRotacion)
+void controladorDireccionMotor()
 {
   segundosMotor.Update();
   switch (direccion)
   {
   case 1:
-    if (segundos[0] == TiempoRotacion[velRotacion - 1][0])
+    if (segundos[0] == TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][0])
     {
       direccion = 2;
       PreDireccion = 1;
@@ -821,7 +1122,7 @@ void controladorDireccionMotor(uint8_t velRotacion)
     break;
 
   case 2:
-    if (segundos[0] == TiempoRotacion[velRotacion - 1][1])
+    if (segundos[0] == TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][1])
     {
       if (PreDireccion == 1)
       {
@@ -840,7 +1141,7 @@ void controladorDireccionMotor(uint8_t velRotacion)
     break;
 
   case 3:
-    if (segundos[0] == TiempoRotacion[velRotacion - 1][0])
+    if (segundos[0] == TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][0])
     {
       direccion = 2;
       PreDireccion = 2;
@@ -862,10 +1163,7 @@ void iniciarPrograma()
 {
   tiempoCumplido = false;
   numeroVariable = 1;
-
-  // apagamos motor
-  // digitalWrite(MotorDirA, LOW);
-  // digitalWrite(MotorDirB, LOW);
+  fase = 1;
 
   digitalWrite(MagnetPuerta, HIGH);
   digitalWrite(ValvulAgua, HIGH);
@@ -912,10 +1210,10 @@ void terminarPrograma()
   segunderoTemporizador = 0;
 
   // mostramos valores de prueba
-  Serial.println("Tiempo motor");
-  Serial.println(segundos[0]);
-  Serial.println("Tiempo temporizador");
-  Serial.println(segundos[1]);
+  // Serial.println("Tiempo motor");
+  // Serial.println(segundos[0]);
+  // Serial.println("Tiempo temporizador");
+  // Serial.println(segundos[1]);
 
   // reiniciamos temporizadores
   segundos[0] = 0;
@@ -938,74 +1236,75 @@ void escribirVariableEEPROM(uint8_t indice, uint8_t valor)
 void recuperarValoresEEPROM()
 {
   programa = EEPROM.read(0);
-  fase = EEPROM.read(1);
-  minutos[1] = EEPROM.read(2);
-  segundos[1] = EEPROM.read(3);
-  for (uint8_t i = 0; i < 3; i++)
-  {
-    for (uint8_t j = 0; i < 4; j++)
-    {
-      NivelAgua[i][j] = EEPROM.read(4 + (12 * 0) + (i + j));
-      TemperaturaLim[i][j] = EEPROM.read(4 + (12 * 1) + (i + j));
-      TemporizadorLim[i][j] = EEPROM.read(4 + (12 * 2) + (i + j));
-      RotacionTam[i][j] = EEPROM.read(4 + (12 * 3) + (i + j));
-      TiempoEntFase[i][j] = EEPROM.read(4 + (12 * 4) + (i + j));
-    }
-  }
-  for (uint8_t i = 0; i < 3; i++)
-  {
-    for (uint8_t j = 0; i < 2; j++)
-    {
-      TiempoRotacion[i][j] = EEPROM.read(4 + (12 * 5) + (i + j));
-    }
-  }
+  // fase = EEPROM.read(1);
+  // minutos[1] = EEPROM.read(2);
+  // segundos[1] = EEPROM.read(3);
+  TemperaturaLim[programa-1][0] = EEPROM.read(4);
+  // for (uint8_t i = 0; i < 3; i++)
+  // {
+  //   for (uint8_t j = 0; i < 4; j++)
+  //   {
+  //     NivelAgua[i][j] = EEPROM.read(4 + (12 * 0) + (i + j));
+  //     TemperaturaLim[i][j] = EEPROM.read(4 + (12 * 1) + (i + j));
+  //     TemporizadorLim[i][j] = EEPROM.read(4 + (12 * 2) + (i + j));
+  //     RotacionTam[i][j] = EEPROM.read(4 + (12 * 3) + (i + j));
+  //     TiempoEntFase[i][j] = EEPROM.read(4 + (12 * 4) + (i + j));
+  //   }
+  // }
+  // for (uint8_t i = 0; i < 3; i++)
+  // {
+  //   for (uint8_t j = 0; i < 2; j++)
+  //   {
+  //     TiempoRotacion[i][j] = EEPROM.read(4 + (12 * 5) + (i + j));
+  //   }
+  // }
 }
 
 void guardarValoresEEPROM()
 {
-  EEPROM.write(0, programa);
-  EEPROM.write(1, fase);
-  EEPROM.write(2, minutos[1]);
-  EEPROM.write(3, segundos[1]);
+  EEPROM.put(0, programa);
+  EEPROM.put(1, fase);
+  EEPROM.put(2, minutos[1]);
+  EEPROM.put(3, segundos[1]);
+  // EEPROM.put(4, TemperaturaLim[programa-1][0]);
+
   for (uint8_t i = 0; i < 3; i++)
   {
     for (uint8_t j = 0; i < 4; j++)
     {
-      EEPROM.write(4 + (12 * 0) + (i + j), NivelAgua[i][j]);
-      EEPROM.write(4 + (12 * 1) + (i + j), TemperaturaLim[i][j]);
-      EEPROM.write(4 + (12 * 2) + (i + j), TemporizadorLim[i][j]);
-      EEPROM.write(4 + (12 * 3) + (i + j), RotacionTam[i][j]);
-      EEPROM.write(4 + (12 * 4) + (i + j), TiempoEntFase[i][j]);
+      EEPROM.put(4 + (12 * 0) + (i + j), NivelAgua[i][j]);
+      EEPROM.put(4 + (12 * 1) + (i + j), TemperaturaLim[i][j]);
+      EEPROM.put(4 + (12 * 2) + (i + j), TemporizadorLim[i][j]);
+      EEPROM.put(4 + (12 * 3) + (i + j), RotacionTam[i][j]);
+      EEPROM.put(4 + (12 * 4) + (i + j), TiempoEntFase[i][j]);
     }
   }
   for (uint8_t i = 0; i < 3; i++)
   {
     for (uint8_t j = 0; i < 2; j++)
     {
-      EEPROM.write(4 + (12 * 5) + (i + j), TiempoRotacion[i][j]);
+      EEPROM.put(4 + (12 * 5) + (i + j), TiempoRotacion[i][j]);
     }
   }
+  Serial.println("Guardado exitosamente");
 }
 
 void pintarConsolaSerial()
 {
-  Serial.println(" ");
+  Serial.println("-------------------");
   Serial.print("Nivel de edicion: ");
   switch (nivelEdicion)
   {
   case 1:
     Serial.println("Edicion de fase");
-    lcd.setCursor(5, 1);
     break;
 
   case 2:
     Serial.println("Edicion de numero de variable");
-    lcd.setCursor(8, 1);
     break;
 
   case 3:
     Serial.println("Edicion de valor de variable");
-    lcd.setCursor(14, 1);
     break;
 
   default:
@@ -1019,4 +1318,25 @@ void pintarConsolaSerial()
   Serial.println(numeroVariable);
   Serial.print("Valor obtenido: ");
   Serial.println(valorVariable);
+}
+
+void asignarBlinkLCD()
+{
+  switch (nivelEdicion)
+  {
+  case 1:
+    lcd.setCursor(5, 1);
+    break;
+
+  case 2:
+    lcd.setCursor(8, 1);
+    break;
+
+  case 3:
+    lcd.setCursor(14, 1);
+    break;
+
+  default:
+    break;
+  }
 }
