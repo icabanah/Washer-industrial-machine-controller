@@ -349,15 +349,24 @@ void pintarVentanaSeleccion()
   lcd.print("/");
   for (uint8_t i = 0; i < 4; i++)
   {
-    lcd.setCursor(3 * i, 1);
-    lcd.print(TemperaturaLim[programa - 1][i]);
+    if (TemperaturaLim[programa - 1][i] < 10)
+    {
+      lcd.setCursor(3 * i, 1);
+      lcd.print(0);
+      lcd.print(TemperaturaLim[programa - 1][i]);
+    }
+    else
+    {
+      lcd.setCursor(3 * i, 1);
+      lcd.print(TemperaturaLim[programa - 1][i]);
+    }
   }
 
-  lcd.setCursor(12, 1);
+  lcd.setCursor(11, 1);
   lcd.print("R");
-  for (uint8_t i = 0; i < 3; i++)
+  for (uint8_t i = 0; i < 4; i++)
   {
-    lcd.setCursor(i + 13, 1);
+    lcd.setCursor(i + 12, 1);
     lcd.print(RotacionTam[programa - 1][i]);
   }
 }
