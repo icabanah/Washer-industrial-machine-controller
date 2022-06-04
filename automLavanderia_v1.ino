@@ -70,7 +70,6 @@ boolean tiempoCumplido = false;
 boolean programaTerminado = true;
 boolean programaEnPausa = false;
 boolean editandoProgramaEjecucion = false;
-// boolean terminarEdicion = false;
 boolean nivelActivo = LOW;
 
 // Antirebote
@@ -93,6 +92,8 @@ uint8_t direccion = 1;
 int8_t minutos[2] = {0, 0};
 int8_t segundos[2] = {0, 0};
 int16_t segunderoTemporizador = 0;
+uint8_t tiempoRotacion = 0;
+uint8_t tiempoPausa = 0;
 uint8_t segunderoEntreFase = 0;
 uint8_t valorTemperatura = 40;
 uint8_t valorPresion = 4;
@@ -192,6 +193,7 @@ void setup()
 
   // inicializamos subprocesos
   pintarVentanaSeleccion();
+  pintarConsolaSerial();
 }
 
 void loop()
@@ -206,6 +208,7 @@ void loop()
       if (programa > 3)
         programa = 1;
       pintarVentanaSeleccion();
+      pintarConsolaSerial();
     }
   }
   else
@@ -218,15 +221,13 @@ void loop()
     if (flagBtnDisminuir1 == 0)
     {
       flagBtnDisminuir1 = 1;
-      Serial.println("btnDisminuir");
       programa--;
       if (programa < 1)
       {
         programa = 3;
       }
       pintarVentanaSeleccion();
-      // eeprom_write();
-      // delay(100);
+      pintarConsolaSerial();
     }
   }
   else
@@ -252,7 +253,6 @@ void loop()
           {
             Serial.println("Programa terminado con boton");
             flagBtnParar1 = 1;
-            programaTerminado = true;
             terminarPrograma();
             // eeprom_write();
             // delay(100);
@@ -545,21 +545,30 @@ void obtenerValorVariable()
 void iniciarTemporizador()
 {
   // minutos[1] = min;
+  uint16_t segunderoTemp = 0;
   if (!programaEnPausa)
   {
     // segunderoTemporizador = TemporizadorLim[programa - 1][fase - 1] * 60;
-    segunderoTemporizador = TemporizadorLim[programa - 1][fase - 1] * 10;
-    // Serial.print("SegunderoTemporizador en ejecucion: ");
-    // Serial.println(segunderoTemporizador);
+    segunderoTemp = TemporizadorLim[programa - 1][fase - 1];
+    segunderoTemporizador = segunderoTemp*10;
+    Serial.print("SegunderoTemporizador en ejecucion: ");
+    Serial.println(segunderoTemporizador);
   }
   else
   {
-    segunderoTemporizador = TiempoEntFase[programa - 1][fase - 1];
-    // Serial.print("SegunderoTemporizador en pausa: ");
-    // Serial.println(segunderoTemporizador);
+    segunderoTemp = TiempoEntFase[programa - 1][fase - 1];
+    segunderoTemporizador = segunderoTemp;
+    Serial.print("SegunderoTemporizador en pausa: ");
+    Serial.println(segunderoTemporizador);
   }
   // Serial.println(segunderoTemporizador);
   segundosTemporizador.Start();
+}
+
+void iniciarTemporizadorMotor()
+{
+  tiempoRotacion = TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][0];
+  tiempoPausa = TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][1];
 }
 
 void controladorTemporizador()
@@ -571,10 +580,9 @@ void controladorTemporizador()
     {
       if (segunderoTemporizador == 0)
       {
-        programaEnPausa = true;
-        programaTerminado = false;
-        terminarPrograma();
+        pausarPrograma();
         iniciarTemporizador();
+        pintarConsolaSerial();
         // Serial.println("Programa en pausa");
       }
     }
@@ -583,46 +591,17 @@ void controladorTemporizador()
       if (segunderoTemporizador == 0)
       {
         segundosTemporizador.Stop();
-        programaEnPausa = false;
-        iniciarPrograma();
+        reiniciarPrograma();
         fase++;
-        if (fase > 4)
-        {
-          programaEnPausa = false;
-          programaTerminado = true;
-          terminarPrograma();
-          fase = 1;
-        }
-        iniciarTemporizador();
-        // Serial.println("Programa reanudado");
-      }
-    }
-
-    if (!programaEnPausa)
-    {
-      if (segunderoTemporizador == 0)
-      {
-        segundosTemporizador.Stop();
-        programaEnPausa = true;
-        terminarPrograma();
-        segunderoTemporizador = TiempoEntFase[programa - 1][fase - 1];
-        segunderoTemporizador = segunderoTemporizador / 60;
-        iniciarTemporizador();
-      }
-    }
-    else
-    {
-      if (segunderoTemporizador == 0)
-      {
-        segundosTemporizador.Stop();
-        programaEnPausa = false;
-        fase++;
-        iniciarTemporizador();
-        iniciarPrograma();
         if (fase > 4)
         {
           terminarPrograma();
         }
+        else
+        {
+          iniciarTemporizador();
+        }
+        pintarConsolaSerial();
       }
     }
   }
@@ -634,35 +613,35 @@ void controladorDireccionMotor()
   if (!programaTerminado || !programaEnPausa)
   {
     segundosMotor.Update();
-    uint8_t tiempoRotacionTemp = TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][0];
-    uint8_t tiempoPausaTemp = TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][1];
     switch (direccion)
     {
     case 1:
-      digitalWrite(MotorDirA, HIGH);
-      digitalWrite(MotorDirB, LOW);
-      if (segundos[0] == tiempoRotacionTemp)
+      if (segundos[0] == tiempoRotacion)
       {
         direccion = 2;
         pausa = true;
         segundos[0] = 0;
+        digitalWrite(MotorDirA, LOW);
+        digitalWrite(MotorDirB, LOW);
         // Serial.print("Controlador motor - direccion");
         // Serial.println(direccion);
       }
       break;
 
     case 2:
-      digitalWrite(MotorDirA, LOW);
-      digitalWrite(MotorDirB, LOW);
-      if (segundos[0] == tiempoPausaTemp)
+      if (segundos[0] == tiempoPausa)
       {
         if (pausa == true)
         {
           direccion = 3;
+          digitalWrite(MotorDirA, LOW);
+          digitalWrite(MotorDirB, HIGH);
         }
         else
         {
           direccion = 1;
+          digitalWrite(MotorDirA, HIGH);
+          digitalWrite(MotorDirB, LOW);
         }
         segundos[0] = 0;
       }
@@ -671,13 +650,13 @@ void controladorDireccionMotor()
       break;
 
     case 3:
-      digitalWrite(MotorDirA, LOW);
-      digitalWrite(MotorDirB, HIGH);
-      if (segundos[0] == tiempoRotacionTemp)
+      if (segundos[0] == tiempoRotacion)
       {
         direccion = 2;
         pausa = false;
         segundos[0] = 0;
+        digitalWrite(MotorDirA, LOW);
+        digitalWrite(MotorDirB, LOW);
       }
       break;
 
@@ -741,69 +720,58 @@ void controladorSensorTemperatura()
 // Subprocesos de manejo de programas
 void iniciarPrograma()
 {
-  if (!programaEnPausa && programaTerminado)
-  {
-    tiempoCumplido = false;
-    programaTerminado = false;
-    numeroVariable = 1;
-    direccion = 1;
-    fase = 1;
+  tiempoCumplido = false;
+  programaTerminado = false;
+  programaEnPausa = false;
+  numeroVariable = 1;
+  direccion = 1;
+  fase = 1;
 
-    digitalWrite(MagnetPuerta, HIGH);
-    digitalWrite(ValvulAgua, HIGH);
-    digitalWrite(ElectrovVapor, HIGH);
-    digitalWrite(ValvulOnOff, HIGH);
+  digitalWrite(MagnetPuerta, HIGH);
+  digitalWrite(ValvulAgua, HIGH);
+  digitalWrite(ElectrovVapor, HIGH);
+  digitalWrite(ValvulOnOff, HIGH);
 
-    // reiniciamos temporizadores
-    segundos[0] = 0;
-    segundos[1] = 0;
+  // reiniciamos temporizadores
+  segundos[0] = 0;
+  segundos[1] = 0;
+  minutos[0] = 0;
+  minutos[1] = 0;
 
-    // desactivamos funciones asincronicas
-    segundosMotor.Start();
-    iniciarTemporizador();
-    pintarVentanaEjecucion();
-  }
-  else if (!programaEnPausa && !programaTerminado)
-  {
-    digitalWrite(ValvulAgua, HIGH);
-    digitalWrite(ElectrovVapor, HIGH);
-    digitalWrite(ValvulOnOff, HIGH);
-    segundosMotor.Start();
-    segundosTemporizador.Start();
-  }
+  segundosMotor.Start();
+  iniciarTemporizador();
+  iniciarTemporizadorMotor();
+  pintarVentanaEjecucion();
+}
+
+void reiniciarPrograma()
+{
+  programaEnPausa = false;
+  digitalWrite(ValvulAgua, HIGH);
+  digitalWrite(ElectrovVapor, HIGH);
+  digitalWrite(ValvulOnOff, HIGH);
+  segundosMotor.Start();
+  segundosTemporizador.Start();
 }
 
 void terminarPrograma()
 {
-  if (programaEnPausa && !programaTerminado)
-  {
-    segundosMotor.Stop();
-    direccion = 2;
-    digitalWrite(MotorDirA, LOW);
-    digitalWrite(MotorDirB, LOW);
-    digitalWrite(ValvulAgua, LOW);
-    digitalWrite(ElectrovVapor, LOW);
-    digitalWrite(ValvulOnOff, LOW);
-  }
-  else if (!programaEnPausa && programaTerminado)
+  if (!programaTerminado)
   {
     tiempoCumplido = true;
     programaTerminado = true;
+    programaEnPausa = false;
     numeroVariable = 1;
     fase = 1;
 
     // reiniciamos los temporizadores
-    minutos[1] = 0;
+    segundos[0] = 0;
     segundos[1] = 0;
     minutos[0] = 0;
-    segundos[0] = 0;
+    minutos[1] = 0;
     segunderoTemporizador = 0;
     segundosMotor.Stop();
     segundosTemporizador.Stop();
-
-    // reiniciamos temporizadores
-    segundos[0] = 0;
-    segundos[1] = 0;
 
     digitalWrite(MotorDirA, LOW);
     digitalWrite(MotorDirB, LOW);
@@ -816,6 +784,17 @@ void terminarPrograma()
     Serial.println("Programa concluido exitosamente");
   }
   // mostramos nueva pantalla en el LCD
+}
+
+void pausarPrograma()
+{
+  programaEnPausa = true;
+  segundosMotor.Stop();
+  digitalWrite(MotorDirA, LOW);
+  digitalWrite(MotorDirB, LOW);
+  digitalWrite(ValvulAgua, LOW);
+  digitalWrite(ElectrovVapor, LOW);
+  digitalWrite(ValvulOnOff, LOW);
 }
 
 // Subprocesos de manejo del EEPROM
@@ -894,32 +873,16 @@ void guardarValoresEEPROM()
 void pintarConsolaSerial()
 {
   Serial.println("-------------------");
-  Serial.print("Nivel de edicion: ");
-  switch (nivelEdicion)
-  {
-  case 1:
-    Serial.println("Edicion de fase");
-    break;
-
-  case 2:
-    Serial.println("Edicion de numero de variable");
-    break;
-
-  case 3:
-    Serial.println("Edicion de valor de variable");
-    break;
-
-  default:
-    break;
-  }
   Serial.print("Programa: ");
   Serial.println(programa);
   Serial.print("Fase: ");
   Serial.println(fase);
-  Serial.print("Numero variable: ");
-  Serial.println(numeroVariable);
-  Serial.print("Valor obtenido: ");
-  Serial.println(valorVariable);
+  Serial.print("ProgramaTerminado: ");
+  Serial.println(programaTerminado);
+  Serial.print("Programa en pausa: ");
+  Serial.println(programaEnPausa);
+  // Serial.print("Valor obtenido: ");
+  // Serial.println(valorVariable);
 }
 
 void asignarBlinkLCD()
@@ -1196,6 +1159,7 @@ void editarPrograma()
         fase = faseTemp;
         if (editandoProgramaEjecucion)
         {
+          iniciarTemporizador();
           pintarVentanaEjecucion();
         }
         else
