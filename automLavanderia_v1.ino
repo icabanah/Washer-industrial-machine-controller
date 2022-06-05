@@ -95,8 +95,28 @@ int16_t segunderoTemporizador = 0;
 uint8_t tiempoRotacion = 0;
 uint8_t tiempoPausa = 0;
 uint8_t segunderoEntreFase = 0;
-uint8_t valorTemperatura = 40;
 uint8_t valorPresion = 4;
+
+// Variables para manejo de sensor temperatura
+const int entradaAnalogica = A0;
+// float VoltajeRef = 0.00488758553274682;
+float VoltajeRef = 0.0048875;
+float VoltajeTP100 = 0.0;
+float ResistenciaRef = 120.0;
+float lecturaPin = 0.0;
+float VoltajeIni = 5.0;
+float resistenciaTP100 = 0.0;
+float temperaturaMin = -50.0;
+float temperaturaMax = 650.0;
+float resistenciaMin = 80.31;
+float resistenciaMax = 329.64;
+float ValorCalibracion = -26.2;
+uint8_t valorTemperatura = 0;
+uint8_t valorTemperaturaLim = 0;
+boolean sensarTemperatura = true;
+// int valorTemperatura = 0;
+// float sensorValue0 = 0;
+// float temp0 = 0;
 
 AsyncTask segundosMotor(1000, true, []()
                         { segundos[0]++; });
@@ -137,18 +157,11 @@ void pintarVariables()
 AsyncTask segundosTemporizador(1000, true, []()
                                { 
   segunderoTemporizador--;
-  // Serial.print("")
-  // if (!programaEnPausa)
-  // {
-    minutos[1] = (segunderoTemporizador / 60);
-    segundos[1] = segunderoTemporizador - (minutos[1] * 60); 
-  // }
-  // else{
-  //   minutos[1] = 0;
-  //   segundos[1] = segunderoTemporizador;
-  // }
-  // controladorSensorTemperatura();
-  if (!editandoProgramaEjecucion){ pintarVariables(); } });
+  minutos[1] = (segunderoTemporizador / 60);
+  segundos[1] = segunderoTemporizador - (minutos[1] * 60); 
+  controladorSensorTemperatura();
+  if (!editandoProgramaEjecucion){ pintarVariables(); 
+  } });
 
 // AsyncTask delayTemporizador(100, true, []()
 //                             { flagLCD = !flagLCD; });
@@ -183,6 +196,7 @@ void setup()
 
   // Iniciamos el modulo MAX31865
   thermo.begin(MAX31865_2WIRE); // set to 2WIRE or 4WIRE as necessary
+  valorTemperatura = analogRead(A0);
 
   // Inicializamos el puerto serial para depurar
   Serial.begin(115200);
@@ -550,7 +564,7 @@ void iniciarTemporizador()
   {
     // segunderoTemporizador = TemporizadorLim[programa - 1][fase - 1] * 60;
     segunderoTemp = TemporizadorLim[programa - 1][fase - 1];
-    segunderoTemporizador = segunderoTemp*10;
+    segunderoTemporizador = segunderoTemp * 10;
     Serial.print("SegunderoTemporizador en ejecucion: ");
     Serial.println(segunderoTemporizador);
   }
@@ -571,6 +585,12 @@ void iniciarTemporizadorMotor()
   tiempoPausa = TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][1];
 }
 
+void iniciarSensorTemperatura()
+{
+  sensarTemperatura = true;
+  valorTemperaturaLim = TemperaturaLim[programa - 1][fase - 1];
+}
+
 void controladorTemporizador()
 {
   if (!programaTerminado)
@@ -583,7 +603,6 @@ void controladorTemporizador()
         pausarPrograma();
         iniciarTemporizador();
         pintarConsolaSerial();
-        // Serial.println("Programa en pausa");
       }
     }
     else
@@ -591,8 +610,8 @@ void controladorTemporizador()
       if (segunderoTemporizador == 0)
       {
         segundosTemporizador.Stop();
-        reiniciarPrograma();
         fase++;
+        reiniciarPrograma();
         if (fase > 4)
         {
           terminarPrograma();
@@ -671,16 +690,32 @@ void controladorSensorTemperatura()
 {
   if (!programaTerminado)
   {
-    uint16_t rtd = thermo.readRTD();
-    float ratio = rtd;
-    ratio /= 32768;
-    Serial.print("Temperature = ");
-    Serial.println(thermo.temperature(RNOMINAL, RREF));
-    Serial.print("Ratio = ");
-    Serial.println(ratio, 8);
-    Serial.print("Resistance = ");
-    Serial.println(RREF * ratio, 8);
-    Serial.println();
+    lecturaPin = analogRead(entradaAnalogica);
+    VoltajeTP100 = lecturaPin * VoltajeRef;
+    resistenciaTP100 = VoltajeTP100 * ResistenciaRef / (VoltajeIni - VoltajeTP100);
+    valorTemperatura = round((resistenciaTP100 - resistenciaMin) * (temperaturaMax - temperaturaMin) / (resistenciaMax - resistenciaMin) + temperaturaMin + ValorCalibracion);
+    Serial.print("Pin read: ");
+    Serial.print(lecturaPin);
+    Serial.print(", ");
+    Serial.print("Temperatura value: ");
+    Serial.println(valorTemperatura);
+    if (valorTemperatura >= valorTemperaturaLim && sensarTemperatura)
+    {
+      sensarTemperatura = false;
+      digitalWrite(ElectrovVapor, LOW);
+    }
+
+    // valorTemperatura = ((lecturaPin * 1.304) - 685.75);
+    // uint16_t rtd = thermo.readRTD();
+    // float ratio = rtd;
+    // ratio /= 32768;
+    // Serial.print("Temperature = ");
+    // Serial.println(thermo.temperature(RNOMINAL, RREF));
+    // Serial.print("Ratio = ");
+    // Serial.println(ratio, 8);
+    // Serial.print("Resistance = ");
+    // Serial.println(RREF * ratio, 8);
+    // Serial.println();
     // Check and print any faults
     // uint8_t fault = thermo.readFault();
     // if (fault)
@@ -740,6 +775,7 @@ void iniciarPrograma()
 
   segundosMotor.Start();
   iniciarTemporizador();
+  iniciarSensorTemperatura();
   iniciarTemporizadorMotor();
   pintarVentanaEjecucion();
 }
@@ -747,8 +783,14 @@ void iniciarPrograma()
 void reiniciarPrograma()
 {
   programaEnPausa = false;
+  iniciarTemporizador();
   digitalWrite(ValvulAgua, HIGH);
-  digitalWrite(ElectrovVapor, HIGH);
+  valorTemperaturaLim = TemperaturaLim[programa - 1][fase - 1];
+  if (valorTemperaturaLim > 0)
+  {
+    iniciarSensorTemperatura();
+    digitalWrite(ElectrovVapor, HIGH);
+  }
   digitalWrite(ValvulOnOff, HIGH);
   segundosMotor.Start();
   segundosTemporizador.Start();
@@ -863,8 +905,8 @@ void guardarValoresEEPROM()
   // }
   Serial.println("Guardado exitosamente");
 
-  // sensorValue = ReadSensor(); //Lectura simulada del sensor
-  // EEPROM.update( eeAddress, sensorValue );  //Grabamos el valor
+  // valorTemperatura = ReadSensor(); //Lectura simulada del sensor
+  // EEPROM.update( eeAddress, valorTemperatura );  //Grabamos el valor
   // eeAddress += sizeof(float);  //Obtener la siguiente posicion para escribir
   // if(eeAddress >= EEPROM.length()) eeAddress = 0;  //Comprobar que no hay desbordamiento
   // delay(30000); //espera 30 segunos
@@ -1160,6 +1202,7 @@ void editarPrograma()
         if (editandoProgramaEjecucion)
         {
           iniciarTemporizador();
+          iniciarSensorTemperatura();
           pintarVentanaEjecucion();
         }
         else
