@@ -1,4 +1,5 @@
-#include <Adafruit_MAX31865.h>
+// #include <Adafruit_MAX31865.h>
+#include <HX710B.h>
 #include <AsyncTaskLib.h>
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
@@ -7,13 +8,19 @@
 const int rs = 19, en = 18, d4 = 17, d5 = 16, d6 = 15, d7 = 14;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
+// Configuramos sensor de temperatura
 // Use software SPI: CS, DI, DO, CLK
-Adafruit_MAX31865 thermo = Adafruit_MAX31865(37, 35, 33, 31);
+// Adafruit_MAX31865 thermo = Adafruit_MAX31865(37, 35, 33, 31);
 // rdi = pin 39
-#define RREF 430.0
-// The 'nominal' 0-degrees-C resistance of the sensor
-// 100.0 for PT100, 1000.0 for PT1000
-#define RNOMINAL 100.0
+// #define RREF 430.0
+// #define RNOMINAL 100.0
+
+// Configuramos sensor de presion
+// SCK, SDI
+// HX710B air_press(27, 29);
+const int DOUT = 27; // sensor data pin
+const int SCLK = 29; // sensor clock pin
+HX710B pressure_sensor;
 
 // Entradas
 #define btnParar 2
@@ -40,30 +47,13 @@ Adafruit_MAX31865 thermo = Adafruit_MAX31865(37, 35, 33, 31);
 #define buzzer 41
 // #define LedConfirmacion 0
 
-// Variables de sensores
-uint16_t valorSensorTemperatura = 0;
-
 // Definimos variables de los programas
-// uint8_t NivelAgua[3][4] = {{6, 6, 7, 4}, {5, 4, 4, 5}, {1, 3, 3, 2}};
-// uint8_t RotacionTam[3][4] = {{1, 1, 2, 2}, {2, 3, 3, 2}, {3, 2, 3, 2}};
-// uint8_t TemperaturaLim[3][4] = {{30, 0, 35, 45}, {45, 0, 40, 45}, {55, 0, 34, 30}};
-// uint8_t TemporizadorLim[3][4] = {{1, 2, 1, 1}, {1, 2, 3, 1}, {1, 2, 2, 2}};
-// uint8_t TiempoEntFase[3][4] = {{5, 4, 4, 5}, {3, 4, 4, 3}, {3, 4, 4, 3}};
-
-// uint8_t NivelAgua[3][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
-// uint8_t RotacionTam[3][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
-// uint8_t TemperaturaLim[3][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
-// uint8_t TemporizadorLim[3][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
-// uint8_t TiempoRotacion[3][2] = {{0, 0}, {0, 0}, {0, 0}};
-
 uint8_t NivelAgua[3][4];
 uint8_t RotacionTam[3][4];
 uint8_t TemperaturaLim[3][4];
 uint8_t TemporizadorLim[3][4];
 uint8_t TiempoRotacion[3][2] = {{3, 2}, {3, 3}, {4, 3}};
 uint8_t TiempoEntFase[3][4] = {{3, 3, 3, 5}, {4, 3, 2, 3}, {4, 3, 4, 5}};
-// uint8_t TiempoRotacion[3][2];
-// uint8_t TiempoEntFase[3][4];
 
 // Variables bandera
 boolean tiempoCumplido = false;
@@ -87,7 +77,6 @@ uint8_t valorVariable = 0;
 uint8_t fase = 1;
 uint8_t nivelEdicion = 0;
 uint8_t direccion = 1;
-// uint8_t PreDireccion = 0;
 
 int8_t minutos[2] = {0, 0};
 int8_t segundos[2] = {0, 0};
@@ -117,6 +106,9 @@ boolean sensarTemperatura = true;
 // int valorTemperatura = 0;
 // float sensorValue0 = 0;
 // float temp0 = 0;
+
+// Sensor de presion
+uint32_t time_update = 0;
 
 AsyncTask segundosMotor(1000, true, []()
                         { segundos[0]++; });
@@ -160,11 +152,9 @@ AsyncTask segundosTemporizador(1000, true, []()
   minutos[1] = (segunderoTemporizador / 60);
   segundos[1] = segunderoTemporizador - (minutos[1] * 60); 
   controladorSensorTemperatura();
+  controladorSensorPresion();
   if (!editandoProgramaEjecucion){ pintarVariables(); 
   } });
-
-// AsyncTask delayTemporizador(100, true, []()
-//                             { flagLCD = !flagLCD; });
 
 void setup()
 {
@@ -195,12 +185,21 @@ void setup()
   lcd.begin(16, 2);
 
   // Iniciamos el modulo MAX31865
-  thermo.begin(MAX31865_2WIRE); // set to 2WIRE or 4WIRE as necessary
+  // thermo.begin(MAX31865_2WIRE); // set to 2WIRE or 4WIRE as necessary
   valorTemperatura = analogRead(A0);
 
   // Inicializamos el puerto serial para depurar
   Serial.begin(115200);
   Serial.println("Puerto serial iniciado");
+
+  // Iniciamos sensor de presion
+  // air_press.setMode(HX710B_DIFF1);
+  // if (!air_press.init())
+  // {
+  //   Serial.println(F("HX710B not Found !"));
+  //   Serial.println(air_press.init());
+  // }
+  pressure_sensor.begin(DOUT, SCLK);
 
   // Recuperamos valores del EEPROM
   recuperarValoresEEPROM();
@@ -694,11 +693,11 @@ void controladorSensorTemperatura()
     VoltajeTP100 = lecturaPin * VoltajeRef;
     resistenciaTP100 = VoltajeTP100 * ResistenciaRef / (VoltajeIni - VoltajeTP100);
     valorTemperatura = round((resistenciaTP100 - resistenciaMin) * (temperaturaMax - temperaturaMin) / (resistenciaMax - resistenciaMin) + temperaturaMin + ValorCalibracion);
-    Serial.print("Pin read: ");
-    Serial.print(lecturaPin);
-    Serial.print(", ");
-    Serial.print("Temperatura value: ");
-    Serial.println(valorTemperatura);
+    // Serial.print("Pin read: ");
+    // Serial.print(lecturaPin);
+    // Serial.print(", ");
+    // Serial.print("Temperatura value: ");
+    // Serial.println(valorTemperatura);
     if (valorTemperatura >= valorTemperaturaLim && sensarTemperatura)
     {
       sensarTemperatura = false;
@@ -749,6 +748,48 @@ void controladorSensorTemperatura()
     //   thermo.clearFault();
     // }
     // Serial.println();
+  }
+}
+
+// Controlador sensor de presion
+void controladorSensorPresion()
+{
+  // uint32_t rollOver = millis();
+  // if (rollOver < time_update)
+  //   time_update = rollOver;
+  // if (millis() - time_update >= 2000UL)
+  // {
+  //   uint32_t data_raw = 0;
+  //   if (air_press.read(&data_raw, 1000UL) != HX710B_OK)
+  //   // if (air_press.read(&data_raw, 1000UL) != HX710B_OK)
+  //   {
+  //     Serial.println(F("something error !"));
+  //     Serial.println((unsigned long)data_raw);
+  //   }
+  //   else
+  //   {
+  //     Serial.print(F("Data raw of ADC is : "));
+  //     Serial.println((unsigned long)data_raw);
+  //   }
+  // -------------------------
+  // uint32_t data_raw = 0;
+  // air_press.read(&data_raw);
+  // Serial.println((unsigned long)data_raw);
+  // ---------------------------
+  if (pressure_sensor.is_ready())
+  {
+    Serial.print("Pascal: ");
+    Serial.println(pressure_sensor.pascal());
+    Serial.print("ATM: ");
+    Serial.println(pressure_sensor.atm());
+    Serial.print("mmHg: ");
+    Serial.println(pressure_sensor.mmHg());
+    Serial.print("PSI: ");
+    Serial.println(pressure_sensor.psi());
+  }
+  else
+  {
+    Serial.println("Pressure sensor not found.");
   }
 }
 
