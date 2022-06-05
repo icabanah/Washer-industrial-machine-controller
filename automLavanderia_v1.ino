@@ -780,12 +780,12 @@ void controladorSensorPresion()
   {
     Serial.print("Pascal: ");
     Serial.println(pressure_sensor.pascal());
-    Serial.print("ATM: ");
-    Serial.println(pressure_sensor.atm());
-    Serial.print("mmHg: ");
-    Serial.println(pressure_sensor.mmHg());
-    Serial.print("PSI: ");
-    Serial.println(pressure_sensor.psi());
+    // Serial.print("ATM: ");
+    // Serial.println(pressure_sensor.atm());
+    // Serial.print("mmHg: ");
+    // Serial.println(pressure_sensor.mmHg());
+    // Serial.print("PSI: ");
+    // Serial.println(pressure_sensor.psi());
   }
   else
   {
