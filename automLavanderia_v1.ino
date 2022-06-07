@@ -1,6 +1,5 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <Adafruit_MAX31865.h>
 #include <HX710B.h>
 #include <AsyncTaskLib.h>
 #include <LiquidCrystal.h>
