@@ -596,13 +596,13 @@ void iniciarTemporizadorMotor()
 void iniciarSensorTemperatura()
 {
   sensarTemperatura = true;
-  valorTemperaturaLim = TemperaturaLim[programa - 1][fase - 1];
+  valorTemperaturaLim = TemperaturaLim[programa-1][fase-1];
 }
 
 void iniciarSensorPresion()
 {
   sensarPresion = true;
-  valorPresionLim = NivelAgua[programa - 1][fase - 1] * 100;
+  valorPresionLim = NivelAgua[programa-1][fase-1];
 }
 
 void controladorTemporizador()
@@ -706,8 +706,8 @@ void controladorSensorTemperatura()
   {
     thermo.requestTemperatures();
     valorTemperatura = round(thermo.getTempCByIndex(0));
-    Serial.print("Valor temperatura (Celcius): ");
-    Serial.println(valorTemperatura);
+    // Serial.print("Valor temperatura (Celcius): ");
+    // Serial.println(valorTemperatura);
     if (valorTemperatura >= valorTemperaturaLim && sensarTemperatura)
     {
       sensarTemperatura = false;
@@ -722,7 +722,7 @@ void controladorSensorPresion()
   if (pressure_sensor.is_ready())
   {
     valorPresion = pressure_sensor.pascal();
-    Serial.print("Valor presion (Pascal): ");
+    // Serial.print("Valor presion (Pascal): ");
     Serial.println(valorPresion);
     if (valorPresion <= nivelPresion1)
     {
@@ -739,6 +739,12 @@ void controladorSensorPresion()
     else if (valorPresion > nivelPresion3)
     {
       valorNivel = 4;
+    }
+
+    if (valorNivel >= valorPresionLim && sensarPresion)
+    {
+      sensarPresion = false;
+      digitalWrite(ValvulAgua, LOW);
     }
   }
   else
@@ -780,11 +786,17 @@ void reiniciarPrograma()
   programaEnPausa = false;
   iniciarTemporizador();
   digitalWrite(ValvulAgua, HIGH);
-  valorTemperaturaLim = TemperaturaLim[programa - 1][fase - 1];
+  valorTemperaturaLim = TemperaturaLim[programa-1][fase-1];
+  valorPresionLim = NivelAgua[programa-1][fase-1];
   if (valorTemperaturaLim > 0)
   {
     iniciarSensorTemperatura();
     digitalWrite(ElectrovVapor, HIGH);
+  }
+  if (valorPresionLim > 0)
+  {
+    iniciarSensorPresion();
+    digitalWrite(ValvulAgua, HIGH);
   }
   digitalWrite(ValvulOnOff, HIGH);
   segundosMotor.Start();
@@ -820,7 +832,6 @@ void terminarPrograma()
     pintarVentanaSeleccion();
     Serial.println("Programa concluido exitosamente");
   }
-  // mostramos nueva pantalla en el LCD
 }
 
 void pausarPrograma()
@@ -832,16 +843,6 @@ void pausarPrograma()
   digitalWrite(ValvulAgua, LOW);
   digitalWrite(ElectrovVapor, LOW);
   digitalWrite(ValvulOnOff, LOW);
-}
-
-// Subprocesos de manejo del EEPROM
-void escribirVariableEEPROM(uint8_t indice, uint8_t valor)
-{
-  EEPROM.write(indice, valor);
-  // EEPROM.write(2, fase);
-  // EEPROM.write(3, );
-  // EEPROM.write(4, (Counter / 1000) % 10);
-  // EEPROM.write(4, 7);
 }
 
 void recuperarValoresEEPROM()
@@ -862,14 +863,6 @@ void recuperarValoresEEPROM()
       // TiempoEntFase[i][j] = EEPROM.read(4 * (i + 13) + j);
     }
   }
-
-  // for (uint8_t i = 0; i < 3; i++)
-  // {
-  //   for (uint8_t j = 0; j < 2; j++)
-  //   {
-  //     TiempoRotacion[i][j] = EEPROM.read(2 + (i + 32) + j);
-  //   }
-  // }
   Serial.println("Recuperado exitosamente");
 }
 
