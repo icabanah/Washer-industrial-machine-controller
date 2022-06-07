@@ -112,7 +112,11 @@ boolean sensarTemperatura = true;
 // float temp0 = 0;
 
 // Sensor de presion
-// uint32_t time_update = 0;
+uint16_t nivelPresion1 = 650;
+uint16_t nivelPresion2 = 750;
+uint16_t nivelPresion3 = 850;
+uint16_t nivelPresion4 = 950;
+
 uint16_t valorPresion = 0;
 uint16_t valorPresionLim = 0;
 uint8_t valorNivel = 1;
@@ -127,7 +131,7 @@ void pintarVariables()
   lcd.print(fase);
 
   lcd.setCursor(10, 0);
-  lcd.print(valorPresion);
+  lcd.print(valorNivel);
 
   lcd.setCursor(14, 0);
   lcd.print(valorTemperatura);
@@ -470,7 +474,7 @@ void pintarVentanaEjecucion()
   lcd.setCursor(8, 0);
   lcd.print("N:");
   lcd.setCursor(10, 0);
-  lcd.print(valorPresion);
+  lcd.print(valorNivel);
 
   lcd.setCursor(12, 0);
   lcd.print("T:");
@@ -720,6 +724,22 @@ void controladorSensorPresion()
     valorPresion = pressure_sensor.pascal();
     Serial.print("Valor presion (Pascal): ");
     Serial.println(valorPresion);
+    if (valorPresion <= nivelPresion1)
+    {
+      valorNivel = 1;
+    }
+    else if (valorPresion > nivelPresion1 && valorPresion <= nivelPresion2)
+    {
+      valorNivel = 2;
+    }
+    else if (valorPresion > nivelPresion2 && valorPresion <= nivelPresion3)
+    {
+      valorNivel = 3;
+    }
+    else if (valorPresion > nivelPresion3)
+    {
+      valorNivel = 4;
+    }
   }
   else
   {
