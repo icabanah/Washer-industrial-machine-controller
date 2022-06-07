@@ -1,1 +1,4 @@
 No cambia el valor de salida de electrovalvula de vapor cuando se edita, luego de que se haya desactivado por haber llegado al limite de temperatura.
+Corregir: 
+- Escalas sensor presion.
+- Temperatura controlador.

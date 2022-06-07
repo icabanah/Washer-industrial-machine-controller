@@ -1,19 +1,28 @@
-// #include <Adafruit_MAX31865.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <Adafruit_MAX31865.h>
 #include <HX710B.h>
 #include <AsyncTaskLib.h>
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
 
 // Iniciamos el lcd
-const int rs = 19, en = 18, d4 = 17, d5 = 16, d6 = 15, d7 = 14;
+const int rs = 19, en = 18, d4 = 17, d5 = 16, d6 = 15, d7 = 14; //
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // Configuramos sensor de temperatura
 // Use software SPI: CS, DI, DO, CLK
-// Adafruit_MAX31865 thermo = Adafruit_MAX31865(37, 35, 33, 31);
+// Adafruit_MAX31865 thermo = Adafruit_MAX31865(53, 50, 51, 52);
+// Adafruit_MAX31865 thermo = Adafruit_MAX31865(41);
 // rdi = pin 39
 // #define RREF 430.0
 // #define RNOMINAL 100.0
+// #include <OneWire.h>
+// #include <DallasTemperature.h>
+OneWire bus(47);
+DallasTemperature thermo(&bus);
+DeviceAddress sensorTemperatura = {0x28, 0xFF, 0x7, 0x3, 0x93, 0x16, 0x4, 0x7A};
+uint8_t resolucion = 9;
 
 // Configuramos sensor de presion
 // SCK, SDI
@@ -23,29 +32,26 @@ const int SCLK = 29; // sensor clock pin
 HX710B pressure_sensor;
 
 // Entradas
-#define btnParar 2
-#define btnDisminuir 3
-#define btnAumentar 4
-#define btnEditar 24
-#define btnProgramarNivelAgua 43
-#define btnComenzar 26
-#define sensorPuerta 23
+#define btnParar 2               //
+#define btnDisminuir 3           //
+#define btnAumentar 4            //
+#define btnEditar 24             //
+#define btnProgramarNivelAgua 43 //
+#define btnComenzar 26           //
+#define sensorPuerta 23          //
+// #define reservaAnalogica A0
 // #define reserva 25
-// #define reservaSensorPresionAlt A0
-
-// Sensor de presion
-// #define salidaSensor 27
-// #define salidaCLK 29
 
 // Salidas
-#define MotorDirA 12
-#define MotorDirB 11
-#define ValvulAgua 10
-#define ElectrovVapor 9
-#define ValvulOnOff 8
-#define MagnetPuerta 7
-#define buzzer 41
-// #define LedConfirmacion 0
+#define MotorDirA 12    //
+#define MotorDirB 11    //
+#define ValvulAgua 10   //
+#define ElectrovVapor 9 //
+#define ValvulOnOff 8   //
+#define MagnetPuerta 7  //
+#define buzzer 41       //
+// #define reserva 6
+// #define reserva 5
 
 // Definimos variables de los programas
 uint8_t NivelAgua[3][4];
@@ -63,8 +69,8 @@ boolean editandoProgramaEjecucion = false;
 boolean nivelActivo = LOW;
 
 // Antirebote
-uint8_t flagBtnAumentar1 = 0;
-uint8_t flagBtnDisminuir1 = 0;
+uint8_t flagBtnAumentar = 0;
+uint8_t flagBtnDisminuir = 0;
 uint8_t flagBtnComenzar1 = 0;
 uint8_t flagBtnEditar1 = 0;
 uint8_t flagBtnParar1 = 0;
@@ -84,11 +90,9 @@ int16_t segunderoTemporizador = 0;
 uint8_t tiempoRotacion = 0;
 uint8_t tiempoPausa = 0;
 uint8_t segunderoEntreFase = 0;
-uint8_t valorPresion = 4;
 
 // Variables para manejo de sensor temperatura
 const int entradaAnalogica = A0;
-// float VoltajeRef = 0.00488758553274682;
 float VoltajeRef = 0.0048875;
 float VoltajeTP100 = 0.0;
 float ResistenciaRef = 120.0;
@@ -99,7 +103,7 @@ float temperaturaMin = -50.0;
 float temperaturaMax = 650.0;
 float resistenciaMin = 80.31;
 float resistenciaMax = 329.64;
-float ValorCalibracion = -26.2;
+float ValorCalibracion = -28.2;
 uint8_t valorTemperatura = 0;
 uint8_t valorTemperaturaLim = 0;
 boolean sensarTemperatura = true;
@@ -108,7 +112,11 @@ boolean sensarTemperatura = true;
 // float temp0 = 0;
 
 // Sensor de presion
-uint32_t time_update = 0;
+// uint32_t time_update = 0;
+uint16_t valorPresion = 0;
+uint16_t valorPresionLim = 0;
+uint8_t valorNivel = 1;
+boolean sensarPresion = false;
 
 AsyncTask segundosMotor(1000, true, []()
                         { segundos[0]++; });
@@ -186,19 +194,16 @@ void setup()
 
   // Iniciamos el modulo MAX31865
   // thermo.begin(MAX31865_2WIRE); // set to 2WIRE or 4WIRE as necessary
-  valorTemperatura = analogRead(A0);
+  // valorTemperatura = analogRead(A0);
+  thermo.begin();
+  thermo.setResolution(resolucion);
+  // thermo.setResolution(thermo, resolucion);
 
   // Inicializamos el puerto serial para depurar
   Serial.begin(115200);
   Serial.println("Puerto serial iniciado");
 
   // Iniciamos sensor de presion
-  // air_press.setMode(HX710B_DIFF1);
-  // if (!air_press.init())
-  // {
-  //   Serial.println(F("HX710B not Found !"));
-  //   Serial.println(air_press.init());
-  // }
   pressure_sensor.begin(DOUT, SCLK);
 
   // Recuperamos valores del EEPROM
@@ -214,9 +219,9 @@ void loop()
   // Eligiendo programa
   if (digitalRead(btnAumentar) == nivelActivo)
   {
-    if (flagBtnAumentar1 == 0)
+    if (flagBtnAumentar == 0)
     {
-      flagBtnAumentar1 = 1;
+      flagBtnAumentar = 1;
       programa++;
       if (programa > 3)
         programa = 1;
@@ -226,14 +231,14 @@ void loop()
   }
   else
   {
-    flagBtnAumentar1 = 0;
+    flagBtnAumentar = 0;
   }
 
   if (digitalRead(btnDisminuir) == nivelActivo)
   {
-    if (flagBtnDisminuir1 == 0)
+    if (flagBtnDisminuir == 0)
     {
-      flagBtnDisminuir1 = 1;
+      flagBtnDisminuir = 1;
       programa--;
       if (programa < 1)
       {
@@ -245,7 +250,7 @@ void loop()
   }
   else
   {
-    flagBtnDisminuir1 = 0;
+    flagBtnDisminuir = 0;
   }
 
   // Comenzando programa seleccionado
@@ -590,6 +595,12 @@ void iniciarSensorTemperatura()
   valorTemperaturaLim = TemperaturaLim[programa - 1][fase - 1];
 }
 
+void iniciarSensorPresion()
+{
+  sensarPresion = true;
+  valorPresionLim = NivelAgua[programa - 1][fase - 1] * 100;
+}
+
 void controladorTemporizador()
 {
   if (!programaTerminado)
@@ -689,103 +700,26 @@ void controladorSensorTemperatura()
 {
   if (!programaTerminado)
   {
-    lecturaPin = analogRead(entradaAnalogica);
-    VoltajeTP100 = lecturaPin * VoltajeRef;
-    resistenciaTP100 = VoltajeTP100 * ResistenciaRef / (VoltajeIni - VoltajeTP100);
-    valorTemperatura = round((resistenciaTP100 - resistenciaMin) * (temperaturaMax - temperaturaMin) / (resistenciaMax - resistenciaMin) + temperaturaMin + ValorCalibracion);
-    // Serial.print("Pin read: ");
-    // Serial.print(lecturaPin);
-    // Serial.print(", ");
-    // Serial.print("Temperatura value: ");
-    // Serial.println(valorTemperatura);
+    thermo.requestTemperatures();
+    valorTemperatura = round(thermo.getTempCByIndex(0));
+    Serial.print("Valor temperatura (Celcius): ");
+    Serial.println(valorTemperatura);
     if (valorTemperatura >= valorTemperaturaLim && sensarTemperatura)
     {
       sensarTemperatura = false;
       digitalWrite(ElectrovVapor, LOW);
     }
-
-    // valorTemperatura = ((lecturaPin * 1.304) - 685.75);
-    // uint16_t rtd = thermo.readRTD();
-    // float ratio = rtd;
-    // ratio /= 32768;
-    // Serial.print("Temperature = ");
-    // Serial.println(thermo.temperature(RNOMINAL, RREF));
-    // Serial.print("Ratio = ");
-    // Serial.println(ratio, 8);
-    // Serial.print("Resistance = ");
-    // Serial.println(RREF * ratio, 8);
-    // Serial.println();
-    // Check and print any faults
-    // uint8_t fault = thermo.readFault();
-    // if (fault)
-    // {
-    //   Serial.print("Fault 0x");
-    //   Serial.println(fault, HEX);
-    //   if (fault & MAX31865_FAULT_HIGHTHRESH)
-    //   {
-    //     Serial.println("RTD High Threshold");
-    //   }
-    //   if (fault & MAX31865_FAULT_LOWTHRESH)
-    //   {
-    //     Serial.println("RTD Low Threshold");
-    //   }
-    //   if (fault & MAX31865_FAULT_REFINLOW)
-    //   {
-    //     Serial.println("REFIN- > 0.85 x Bias");
-    //   }
-    //   if (fault & MAX31865_FAULT_REFINHIGH)
-    //   {
-    //     Serial.println("REFIN- < 0.85 x Bias - FORCE- open");
-    //   }
-    //   if (fault & MAX31865_FAULT_RTDINLOW)
-    //   {
-    //     Serial.println("RTDIN- < 0.85 x Bias - FORCE- open");
-    //   }
-    //   if (fault & MAX31865_FAULT_OVUV)
-    //   {
-    //     Serial.println("Under/Over voltage");
-    //   }
-    //   thermo.clearFault();
-    // }
-    // Serial.println();
   }
 }
 
 // Controlador sensor de presion
 void controladorSensorPresion()
 {
-  // uint32_t rollOver = millis();
-  // if (rollOver < time_update)
-  //   time_update = rollOver;
-  // if (millis() - time_update >= 2000UL)
-  // {
-  //   uint32_t data_raw = 0;
-  //   if (air_press.read(&data_raw, 1000UL) != HX710B_OK)
-  //   // if (air_press.read(&data_raw, 1000UL) != HX710B_OK)
-  //   {
-  //     Serial.println(F("something error !"));
-  //     Serial.println((unsigned long)data_raw);
-  //   }
-  //   else
-  //   {
-  //     Serial.print(F("Data raw of ADC is : "));
-  //     Serial.println((unsigned long)data_raw);
-  //   }
-  // -------------------------
-  // uint32_t data_raw = 0;
-  // air_press.read(&data_raw);
-  // Serial.println((unsigned long)data_raw);
-  // ---------------------------
   if (pressure_sensor.is_ready())
   {
-    Serial.print("Pascal: ");
-    Serial.println(pressure_sensor.pascal());
-    // Serial.print("ATM: ");
-    // Serial.println(pressure_sensor.atm());
-    // Serial.print("mmHg: ");
-    // Serial.println(pressure_sensor.mmHg());
-    // Serial.print("PSI: ");
-    // Serial.println(pressure_sensor.psi());
+    valorPresion = pressure_sensor.pascal();
+    Serial.print("Valor presion (Pascal): ");
+    Serial.println(valorPresion);
   }
   else
   {
@@ -1003,9 +937,9 @@ void editarPrograma()
   {
     if (digitalRead(btnAumentar) == nivelActivo)
     {
-      if (flagBtnAumentar1 == 0)
+      if (flagBtnAumentar == 0)
       {
-        flagBtnAumentar1 = 1;
+        flagBtnAumentar = 1;
         fase++;
         if (fase > 4)
         {
@@ -1018,14 +952,14 @@ void editarPrograma()
     }
     else
     {
-      flagBtnAumentar1 = 0;
+      flagBtnAumentar = 0;
     }
 
     if (digitalRead(btnDisminuir) == nivelActivo)
     {
-      if (flagBtnDisminuir1 == 0)
+      if (flagBtnDisminuir == 0)
       {
-        flagBtnDisminuir1 = 1;
+        flagBtnDisminuir = 1;
         fase--;
         if (fase < 1)
         {
@@ -1038,7 +972,7 @@ void editarPrograma()
     }
     else
     {
-      flagBtnDisminuir1 = 0;
+      flagBtnDisminuir = 0;
     }
 
     if (digitalRead(btnEditar) == nivelActivo)
@@ -1062,9 +996,9 @@ void editarPrograma()
           }
           if (digitalRead(btnAumentar) == nivelActivo)
           {
-            if (flagBtnAumentar1 == 0)
+            if (flagBtnAumentar == 0)
             {
-              flagBtnAumentar1 = 1;
+              flagBtnAumentar = 1;
               numeroVariable++;
               if (numeroVariable > 4)
               {
@@ -1078,14 +1012,14 @@ void editarPrograma()
           }
           else
           {
-            flagBtnAumentar1 = 0;
+            flagBtnAumentar = 0;
           }
 
           if (digitalRead(btnDisminuir) == nivelActivo)
           {
-            if (flagBtnDisminuir1 == 0)
+            if (flagBtnDisminuir == 0)
             {
-              flagBtnDisminuir1 = 1;
+              flagBtnDisminuir = 1;
               numeroVariable--;
               if (numeroVariable < 1)
               {
@@ -1099,7 +1033,7 @@ void editarPrograma()
           }
           else
           {
-            flagBtnDisminuir1 = 0;
+            flagBtnDisminuir = 0;
           }
 
           if (digitalRead(btnEditar) == nivelActivo)
@@ -1121,9 +1055,9 @@ void editarPrograma()
                 }
                 if (digitalRead(btnAumentar) == nivelActivo)
                 {
-                  if (flagBtnAumentar1 == 0)
+                  if (flagBtnAumentar == 0)
                   {
-                    flagBtnAumentar1 = 1;
+                    flagBtnAumentar = 1;
                     valorVariable++;
 
                     if (numeroVariable == 4)
@@ -1148,14 +1082,14 @@ void editarPrograma()
                 }
                 else
                 {
-                  flagBtnAumentar1 = 0;
+                  flagBtnAumentar = 0;
                 }
 
                 if (digitalRead(btnDisminuir) == nivelActivo)
                 {
-                  if (flagBtnDisminuir1 == 0)
+                  if (flagBtnDisminuir == 0)
                   {
-                    flagBtnDisminuir1 = 1;
+                    flagBtnDisminuir = 1;
                     valorVariable--;
                     if (numeroVariable == 4)
                     {
@@ -1187,7 +1121,7 @@ void editarPrograma()
                 }
                 else
                 {
-                  flagBtnDisminuir1 = 0;
+                  flagBtnDisminuir = 0;
                 }
 
                 if (digitalRead(btnParar) == nivelActivo)
