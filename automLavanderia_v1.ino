@@ -9,48 +9,37 @@
 const int rs = 19, en = 18, d4 = 17, d5 = 16, d6 = 15, d7 = 14; //
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
-// Configuramos sensor de temperatura
-// Use software SPI: CS, DI, DO, CLK
-// Adafruit_MAX31865 thermo = Adafruit_MAX31865(53, 50, 51, 52);
-// Adafruit_MAX31865 thermo = Adafruit_MAX31865(41);
-// rdi = pin 39
-// #define RREF 430.0
-// #define RNOMINAL 100.0
-// #include <OneWire.h>
-// #include <DallasTemperature.h>
-OneWire bus(47);
+// Temperatura
+OneWire bus(25);
 DallasTemperature thermo(&bus);
 DeviceAddress sensorTemperatura = {0x28, 0xFF, 0x7, 0x3, 0x93, 0x16, 0x4, 0x7A};
 uint8_t resolucion = 9;
 
 // Configuramos sensor de presion
-// SCK, SDI
-// HX710B air_press(27, 29);
-const int DOUT = 27; // sensor data pin
-const int SCLK = 29; // sensor clock pin
+const int DOUT = 42; // sensor data pin
+const int SCLK = 40; // sensor clock pin
 HX710B pressure_sensor;
 
 // Entradas
-#define btnParar 2               //
-#define btnDisminuir 3           //
-#define btnAumentar 4            //
-#define btnEditar 24             //
-#define btnProgramarNivelAgua 43 //
-#define btnComenzar 26           //
-#define sensorPuerta 23          //
+#define btnParar 2 //
+#define btnDisminuir 3 //
+#define btnAumentar 4 //
+#define btnEditar 26 //
+#define btnProgramarNivelAgua 30 //
+#define btnComenzar 28 //
+// #define sensorPuerta 23 //
 // #define reservaAnalogica A0
-// #define reserva 25
 
 // Salidas
 #define MotorDirA 12    //
 #define MotorDirB 11    //
 #define ValvulAgua 10   //
 #define ElectrovVapor 9 //
-#define ValvulOnOff 8   //
+#define ValvulDesfogue 8   //
 #define MagnetPuerta 7  //
-#define buzzer 41       //
-// #define reserva 6
-// #define reserva 5
+#define Buzzer 41       //
+// #define buzzer 34
+// #define sensorMPX2010 A0
 
 // Definimos variables de los programas
 uint8_t NivelAgua[3][4];
@@ -106,9 +95,6 @@ float ValorCalibracion = -28.2;
 uint8_t valorTemperatura = 0;
 uint8_t valorTemperaturaLim = 0;
 boolean sensarTemperatura = true;
-// int valorTemperatura = 0;
-// float sensorValue0 = 0;
-// float temp0 = 0;
 
 // Sensor de presion
 uint16_t nivelPresion1 = 650;
@@ -182,25 +168,22 @@ void setup()
   pinMode(MotorDirA, OUTPUT);
   pinMode(MotorDirB, OUTPUT);
   pinMode(ElectrovVapor, OUTPUT);
-  pinMode(ValvulOnOff, OUTPUT);
+  pinMode(ValvulDesfogue, OUTPUT);
 
   // Inicializamos salidas
   digitalWrite(MagnetPuerta, LOW);
   digitalWrite(ValvulAgua, LOW);
   digitalWrite(ElectrovVapor, LOW);
-  digitalWrite(ValvulOnOff, LOW);
+  digitalWrite(ValvulDesfogue, LOW);
   digitalWrite(MotorDirA, LOW);
   digitalWrite(MotorDirB, LOW);
 
   // Inicializamos el lcd
   lcd.begin(16, 2);
 
-  // Iniciamos el modulo MAX31865
-  // thermo.begin(MAX31865_2WIRE); // set to 2WIRE or 4WIRE as necessary
-  // valorTemperatura = analogRead(A0);
+  // Iniciamos el sensor de temperatura
   thermo.begin();
   thermo.setResolution(resolucion);
-  // thermo.setResolution(thermo, resolucion);
 
   // Inicializamos el puerto serial para depurar
   Serial.begin(115200);
@@ -765,7 +748,7 @@ void iniciarPrograma()
   digitalWrite(MagnetPuerta, HIGH);
   digitalWrite(ValvulAgua, HIGH);
   digitalWrite(ElectrovVapor, HIGH);
-  digitalWrite(ValvulOnOff, HIGH);
+  digitalWrite(ValvulDesfogue, HIGH);
 
   // reiniciamos temporizadores
   segundos[0] = 0;
@@ -797,7 +780,7 @@ void reiniciarPrograma()
     iniciarSensorPresion();
     digitalWrite(ValvulAgua, HIGH);
   }
-  digitalWrite(ValvulOnOff, HIGH);
+  digitalWrite(ValvulDesfogue, HIGH);
   segundosMotor.Start();
   segundosTemporizador.Start();
 }
@@ -826,7 +809,7 @@ void terminarPrograma()
     digitalWrite(MagnetPuerta, LOW);
     digitalWrite(ValvulAgua, LOW);
     digitalWrite(ElectrovVapor, LOW);
-    digitalWrite(ValvulOnOff, LOW);
+    digitalWrite(ValvulDesfogue, LOW);
 
     pintarVentanaSeleccion();
     Serial.println("Programa concluido exitosamente");
@@ -841,7 +824,7 @@ void pausarPrograma()
   digitalWrite(MotorDirB, LOW);
   digitalWrite(ValvulAgua, LOW);
   digitalWrite(ElectrovVapor, LOW);
-  digitalWrite(ValvulOnOff, LOW);
+  digitalWrite(ValvulDesfogue, LOW);
 }
 
 void recuperarValoresEEPROM()
