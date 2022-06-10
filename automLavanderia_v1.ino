@@ -21,24 +21,23 @@ const int SCLK = 40; // sensor clock pin
 HX710B pressure_sensor;
 
 // Entradas
-#define btnParar 2 //
-#define btnDisminuir 3 //
-#define btnAumentar 4 //
-#define btnEditar 26 //
+#define btnParar 2               //
+#define btnDisminuir 3           //
+#define btnAumentar 4            //
+#define btnEditar 26             //
 #define btnProgramarNivelAgua 30 //
-#define btnComenzar 28 //
+#define btnComenzar 28           //
+// #define btnOptoacoplador 32 //
 // #define sensorPuerta 23 //
-// #define reservaAnalogica A0
 
 // Salidas
-#define MotorDirA 12    //
-#define MotorDirB 11    //
-#define ValvulAgua 10   //
-#define ElectrovVapor 9 //
-#define ValvulDesfogue 8   //
-#define MagnetPuerta 7  //
-#define Buzzer 41       //
-// #define buzzer 34
+#define MotorDirA 12     //
+#define MotorDirB 11     //
+#define ValvulAgua 10    //
+#define ElectrovVapor 9  //
+#define ValvulDesfogue 8 //
+#define MagnetPuerta 7   //
+#define buzzer 34
 // #define sensorMPX2010 A0
 
 // Definimos variables de los programas
@@ -46,8 +45,8 @@ uint8_t NivelAgua[3][4];
 uint8_t RotacionTam[3][4];
 uint8_t TemperaturaLim[3][4];
 uint8_t TemporizadorLim[3][4];
-uint8_t TiempoRotacion[3][2] = {{3, 2}, {3, 3}, {4, 3}};
-uint8_t TiempoEntFase[3][4] = {{3, 3, 3, 5}, {4, 3, 2, 3}, {4, 3, 4, 5}};
+uint8_t TiempoRotacion[3][2] = {{4, 2}, {10, 4}, {20, 6}};
+uint8_t TiempoEntFase[3][4] = {{60, 60, 60, 60}, {60, 60, 60, 60}, {60, 60, 60, 60}};
 
 // Variables bandera
 boolean tiempoCumplido = false;
@@ -66,6 +65,8 @@ uint8_t flagBtnParar1 = 0;
 // Variables de proceso
 boolean pausa = false;
 uint8_t programa = 1;
+uint16_t contadorBloqueo = 1498;
+uint16_t limiteBloqueo = 1500;
 uint8_t numeroVariable = 1;
 uint8_t valorVariable = 0;
 uint8_t fase = 1;
@@ -75,26 +76,17 @@ uint8_t direccion = 1;
 int8_t minutos[2] = {0, 0};
 int8_t segundos[2] = {0, 0};
 int16_t segunderoTemporizador = 0;
+int16_t segunderoMotor = 0;
 uint8_t tiempoRotacion = 0;
 uint8_t tiempoPausa = 0;
+uint8_t nivelRotacionTambor = 0;
 uint8_t segunderoEntreFase = 0;
 
 // Variables para manejo de sensor temperatura
-const int entradaAnalogica = A0;
-float VoltajeRef = 0.0048875;
-float VoltajeTP100 = 0.0;
-float ResistenciaRef = 120.0;
-float lecturaPin = 0.0;
-float VoltajeIni = 5.0;
-float resistenciaTP100 = 0.0;
-float temperaturaMin = -50.0;
-float temperaturaMax = 650.0;
-float resistenciaMin = 80.31;
-float resistenciaMax = 329.64;
-float ValorCalibracion = -28.2;
 uint8_t valorTemperatura = 0;
 uint8_t valorTemperaturaLim = 0;
-boolean sensarTemperatura = true;
+uint8_t rangoTemperatura = 2;
+boolean sensarTemperatura = false;
 
 // Sensor de presion
 uint16_t nivelPresion1 = 650;
@@ -103,20 +95,23 @@ uint16_t nivelPresion3 = 850;
 uint16_t nivelPresion4 = 950;
 
 uint16_t valorPresion = 0;
-uint16_t valorPresionLim = 0;
+uint16_t valorNivelLim = 0;
 uint8_t valorNivel = 1;
 boolean sensarPresion = false;
 
-AsyncTask segundosMotor(1000, true, []()
-                        { segundos[0]++; });
+// AsyncTask segundosMotor(1000, true, []()
+//                         {
+//   segunderoMotor++;
+//   segundos[0] = segunderoMotor;
+//   });
 
 void pintarVariables()
 {
   lcd.setCursor(6, 0);
   lcd.print(fase);
 
-  lcd.setCursor(10, 0);
-  lcd.print(valorNivel);
+  // lcd.setCursor(10, 0);
+  // lcd.print(valorNivelLim);
 
   lcd.setCursor(14, 0);
   lcd.print(valorTemperatura);
@@ -143,13 +138,18 @@ void pintarVariables()
   }
 }
 
-AsyncTask segundosTemporizador(1000, true, []()
+AsyncTask segundosTemporizador(200, true, []()
                                { 
   segunderoTemporizador--;
+  if (!programaEnPausa)
+  {
+    segunderoMotor++;
+  }
   minutos[1] = (segunderoTemporizador / 60);
   segundos[1] = segunderoTemporizador - (minutos[1] * 60); 
   controladorSensorTemperatura();
   controladorSensorPresion();
+  // pintarConsolaSerial();
   if (!editandoProgramaEjecucion){ pintarVariables(); 
   } });
 
@@ -177,9 +177,12 @@ void setup()
   digitalWrite(ValvulDesfogue, LOW);
   digitalWrite(MotorDirA, LOW);
   digitalWrite(MotorDirB, LOW);
+  digitalWrite(buzzer, LOW);
 
   // Inicializamos el lcd
   lcd.begin(16, 2);
+  pintarPantallaInicio();
+  delay(3000);
 
   // Iniciamos el sensor de temperatura
   thermo.begin();
@@ -212,7 +215,7 @@ void loop()
       if (programa > 3)
         programa = 1;
       pintarVentanaSeleccion();
-      pintarConsolaSerial();
+      // pintarConsolaSerial();
     }
   }
   else
@@ -231,7 +234,7 @@ void loop()
         programa = 3;
       }
       pintarVentanaSeleccion();
-      pintarConsolaSerial();
+      // pintarConsolaSerial();
     }
   }
   else
@@ -249,15 +252,23 @@ void loop()
       while (!tiempoCumplido)
       {
         controladorTemporizador();
-        controladorDireccionMotor();
-        // controladorSensorTemperatura();
+        if (!programaEnPausa)
+        {
+          controladorDireccionMotor();
+        }
+        if (programaTerminado)
+        {
+          digitalWrite(buzzer, HIGH);
+          delay(2000);
+          digitalWrite(buzzer, LOW);
+        }
         if (digitalRead(btnParar) == nivelActivo)
         {
           if (flagBtnParar1 == 0)
           {
-            Serial.println("Programa terminado con boton");
             flagBtnParar1 = 1;
             terminarPrograma();
+            Serial.println("Programa terminado con boton");
             // eeprom_write();
             // delay(100);
           }
@@ -267,18 +278,44 @@ void loop()
           flagBtnParar1 = 0;
         }
 
-        if (digitalRead(btnEditar) == nivelActivo)
+        // if (digitalRead(btnEditar) == nivelActivo)
+        // {
+        //   if (flagBtnEditar1 == 0)
+        //   {
+        //     flagBtnEditar1 = 1;
+        //     editandoProgramaEjecucion = true;
+        //     editarPrograma();
+        //   }
+        // }
+        // else
+        // {
+        //   flagBtnEditar1 = 0;
+        // }
+
+        if (digitalRead(btnAumentar) == nivelActivo)
         {
-          if (flagBtnEditar1 == 0)
+          if (flagBtnAumentar == 0)
           {
-            flagBtnEditar1 = 1;
-            editandoProgramaEjecucion = true;
-            editarPrograma();
+            flagBtnAumentar = 1;
+            aumentarAgua();
           }
         }
         else
         {
-          flagBtnEditar1 = 0;
+          flagBtnAumentar = 0;
+        }
+
+        if (digitalRead(btnDisminuir) == nivelActivo)
+        {
+          if (flagBtnDisminuir == 0)
+          {
+            flagBtnDisminuir = 1;
+            disminuirAgua();
+          }
+        }
+        else
+        {
+          flagBtnDisminuir = 0;
         }
       }
     }
@@ -317,6 +354,15 @@ void loop()
 }
 
 // Subprocesos de pintar el LCD
+void pintarPantallaInicio()
+{
+  lcd.clear();
+  lcd.setCursor(1, 0);
+  lcd.print("RH Electronics");
+  lcd.setCursor(3, 1);
+  lcd.print("958970967");
+}
+
 void pintarVentanaSeleccion()
 {
   lcd.clear();
@@ -456,7 +502,7 @@ void pintarVentanaEjecucion()
   lcd.setCursor(8, 0);
   lcd.print("N:");
   lcd.setCursor(10, 0);
-  lcd.print(valorNivel);
+  lcd.print(valorNivelLim);
 
   lcd.setCursor(12, 0);
   lcd.print("T:");
@@ -552,39 +598,60 @@ void iniciarTemporizador()
   uint16_t segunderoTemp = 0;
   if (!programaEnPausa)
   {
-    // segunderoTemporizador = TemporizadorLim[programa - 1][fase - 1] * 60;
-    segunderoTemp = TemporizadorLim[programa - 1][fase - 1];
-    segunderoTemporizador = segunderoTemp * 10;
-    Serial.print("SegunderoTemporizador en ejecucion: ");
-    Serial.println(segunderoTemporizador);
+    if (editandoProgramaEjecucion)
+    {
+      segunderoTemp = TemporizadorLim[programa - 1][fase - 1];
+      if (segunderoTemporizador < segunderoTemp)
+      {
+        segunderoTemporizador = segunderoTemp * 60;
+      }
+    }
+    else
+    {
+      segunderoTemporizador = TemporizadorLim[programa - 1][fase - 1] * 60;
+    }
+    // Serial.print("SegunderoTemporizador en ejecucion: ");
+    // Serial.println(segunderoTemporizador);
   }
   else
   {
     segunderoTemp = TiempoEntFase[programa - 1][fase - 1];
     segunderoTemporizador = segunderoTemp;
-    Serial.print("SegunderoTemporizador en pausa: ");
-    Serial.println(segunderoTemporizador);
+    // Serial.print("SegunderoTemporizador en pausa: ");
+    // Serial.println(segunderoTemporizador);
   }
   // Serial.println(segunderoTemporizador);
   segundosTemporizador.Start();
 }
 
-void iniciarTemporizadorMotor()
+void iniciarTiempoRotacion()
 {
-  tiempoRotacion = TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][0];
-  tiempoPausa = TiempoRotacion[RotacionTam[programa - 1][fase - 1] - 1][1];
+  if (editandoProgramaEjecucion)
+  {
+    nivelRotacionTambor = RotacionTam[programa - 1][fase - 1];
+    tiempoRotacion = TiempoRotacion[nivelRotacionTambor - 1][0];
+    tiempoPausa = TiempoRotacion[nivelRotacionTambor - 1][1];
+  }
+  else
+  {
+    nivelRotacionTambor = RotacionTam[programa - 1][fase - 1];
+    tiempoRotacion = TiempoRotacion[nivelRotacionTambor - 1][0];
+    tiempoPausa = TiempoRotacion[nivelRotacionTambor - 1][1];
+    digitalWrite(MotorDirA, HIGH);
+    digitalWrite(MotorDirB, LOW);
+  }
 }
 
 void iniciarSensorTemperatura()
 {
   sensarTemperatura = true;
-  valorTemperaturaLim = TemperaturaLim[programa-1][fase-1];
+  valorTemperaturaLim = TemperaturaLim[programa - 1][fase - 1];
 }
 
 void iniciarSensorPresion()
 {
   sensarPresion = true;
-  valorPresionLim = NivelAgua[programa-1][fase-1];
+  valorNivelLim = NivelAgua[programa - 1][fase - 1];
 }
 
 void controladorTemporizador()
@@ -627,24 +694,26 @@ void controladorDireccionMotor()
 {
   if (!programaTerminado || !programaEnPausa)
   {
-    segundosMotor.Update();
+    // segundosMotor.Update();
+    // pintarConsolaSerial();
     switch (direccion)
     {
     case 1:
-      if (segundos[0] == tiempoRotacion)
+      if (segunderoMotor == tiempoRotacion)
       {
         direccion = 2;
         pausa = true;
-        segundos[0] = 0;
+        segunderoMotor = 0;
         digitalWrite(MotorDirA, LOW);
         digitalWrite(MotorDirB, LOW);
+        // pintarConsolaSerial();
         // Serial.print("Controlador motor - direccion");
         // Serial.println(direccion);
       }
       break;
 
     case 2:
-      if (segundos[0] == tiempoPausa)
+      if (segunderoMotor == tiempoPausa)
       {
         if (pausa == true)
         {
@@ -658,20 +727,22 @@ void controladorDireccionMotor()
           digitalWrite(MotorDirA, HIGH);
           digitalWrite(MotorDirB, LOW);
         }
-        segundos[0] = 0;
+        segunderoMotor = 0;
+        // pintarConsolaSerial();
       }
       // Serial.print("Controlador motor - direccion");
       // Serial.println(direccion);
       break;
 
     case 3:
-      if (segundos[0] == tiempoRotacion)
+      if (segunderoMotor == tiempoRotacion)
       {
         direccion = 2;
         pausa = false;
-        segundos[0] = 0;
+        segunderoMotor = 0;
         digitalWrite(MotorDirA, LOW);
         digitalWrite(MotorDirB, LOW);
+        // pintarConsolaSerial();
       }
       break;
 
@@ -690,10 +761,15 @@ void controladorSensorTemperatura()
     valorTemperatura = round(thermo.getTempCByIndex(0));
     // Serial.print("Valor temperatura (Celcius): ");
     // Serial.println(valorTemperatura);
-    if (valorTemperatura >= valorTemperaturaLim && sensarTemperatura)
+    if ((valorTemperatura >= (valorTemperaturaLim + rangoTemperatura)) && sensarTemperatura)
     {
-      sensarTemperatura = false;
+      // sensarTemperatura = false;
       digitalWrite(ElectrovVapor, LOW);
+    }
+    else if ((valorTemperatura <= (valorTemperaturaLim - rangoTemperatura)) && sensarTemperatura)
+    {
+      // sensarTemperatura = false;
+      digitalWrite(ElectrovVapor, HIGH);
     }
   }
 }
@@ -705,7 +781,6 @@ void controladorSensorPresion()
   {
     valorPresion = pressure_sensor.pascal();
     // Serial.print("Valor presion (Pascal): ");
-    Serial.println(valorPresion);
     if (valorPresion <= nivelPresion1)
     {
       valorNivel = 1;
@@ -723,11 +798,23 @@ void controladorSensorPresion()
       valorNivel = 4;
     }
 
-    if (valorNivel >= valorPresionLim && sensarPresion)
+    if ((valorNivel >= valorNivelLim) && sensarPresion)
     {
       sensarPresion = false;
+      if (programa == 1)
+      {
+        iniciarSensorTemperatura();
+      }
       digitalWrite(ValvulAgua, LOW);
     }
+    // Serial.println(valorPresion);
+    // Serial.println(valorNivel);
+    // Serial.println(valorNivelLim);
+    // else if ((valorNivel <= valorNivelLim) && sensarPresion)
+    // {
+    //   // sensarTemperatura = false;
+    //   digitalWrite(ElectrovVapor, HIGH);
+    // }
   }
   else
   {
@@ -738,50 +825,64 @@ void controladorSensorPresion()
 // Subprocesos de manejo de programas
 void iniciarPrograma()
 {
-  tiempoCumplido = false;
-  programaTerminado = false;
-  programaEnPausa = false;
-  numeroVariable = 1;
-  direccion = 1;
-  fase = 1;
+  Serial.print("Contador: ");
+  Serial.println(contadorBloqueo);
+  if (contadorBloqueo < limiteBloqueo)
+  {
+    tiempoCumplido = false;
+    programaTerminado = false;
+    programaEnPausa = false;
+    numeroVariable = 1;
+    direccion = 1;
+    fase = 1;
 
-  digitalWrite(MagnetPuerta, HIGH);
-  digitalWrite(ValvulAgua, HIGH);
-  digitalWrite(ElectrovVapor, HIGH);
-  digitalWrite(ValvulDesfogue, HIGH);
+    digitalWrite(MagnetPuerta, HIGH);
+    digitalWrite(ValvulAgua, HIGH);
+    digitalWrite(ValvulDesfogue, HIGH);
 
-  // reiniciamos temporizadores
-  segundos[0] = 0;
-  segundos[1] = 0;
-  minutos[0] = 0;
-  minutos[1] = 0;
+    // reiniciamos temporizadores
+    segundos[0] = 0;
+    segundos[1] = 0;
+    minutos[0] = 0;
+    minutos[1] = 0;
 
-  segundosMotor.Start();
-  iniciarTemporizador();
-  iniciarSensorTemperatura();
-  iniciarTemporizadorMotor();
-  pintarVentanaEjecucion();
+    // segundosMotor.Start();
+    iniciarTemporizador();
+    if (programa != 1)
+    {
+      iniciarSensorTemperatura();
+      // Serial.println("Sensor temperatura iniciado ");
+    }
+    iniciarSensorPresion();
+    iniciarTiempoRotacion();
+    pintarVentanaEjecucion();
+    pintarConsolaSerial();
+  }
 }
 
 void reiniciarPrograma()
 {
   programaEnPausa = false;
+  direccion = 1;
+  segunderoMotor = 0;
   iniciarTemporizador();
+  iniciarTiempoRotacion();
   digitalWrite(ValvulAgua, HIGH);
-  valorTemperaturaLim = TemperaturaLim[programa-1][fase-1];
-  valorPresionLim = NivelAgua[programa-1][fase-1];
+
+  valorTemperaturaLim = TemperaturaLim[programa - 1][fase - 1];
+  valorNivelLim = NivelAgua[programa - 1][fase - 1];
   if (valorTemperaturaLim > 0)
   {
     iniciarSensorTemperatura();
     digitalWrite(ElectrovVapor, HIGH);
   }
-  if (valorPresionLim > 0)
+  if (valorNivelLim > 0)
   {
     iniciarSensorPresion();
     digitalWrite(ValvulAgua, HIGH);
   }
   digitalWrite(ValvulDesfogue, HIGH);
-  segundosMotor.Start();
+  // segundosMotor.Start();
   segundosTemporizador.Start();
 }
 
@@ -794,6 +895,9 @@ void terminarPrograma()
     programaEnPausa = false;
     numeroVariable = 1;
     fase = 1;
+    sensarPresion = false;
+    sensarTemperatura = false;
+    contadorBloqueo++;
 
     // reiniciamos los temporizadores
     segundos[0] = 0;
@@ -801,7 +905,6 @@ void terminarPrograma()
     minutos[0] = 0;
     minutos[1] = 0;
     segunderoTemporizador = 0;
-    segundosMotor.Stop();
     segundosTemporizador.Stop();
 
     digitalWrite(MotorDirA, LOW);
@@ -819,7 +922,8 @@ void terminarPrograma()
 void pausarPrograma()
 {
   programaEnPausa = true;
-  segundosMotor.Stop();
+  sensarTemperatura = false;
+  sensarPresion = false;
   digitalWrite(MotorDirA, LOW);
   digitalWrite(MotorDirB, LOW);
   digitalWrite(ValvulAgua, LOW);
@@ -833,15 +937,16 @@ void recuperarValoresEEPROM()
   fase = EEPROM.read(1);
   minutos[1] = EEPROM.read(2);
   segundos[1] = EEPROM.read(3);
+  contadorBloqueo = EEPROM.get(4, contadorBloqueo);
 
   for (uint8_t i = 0; i < 3; i++)
   {
     for (uint8_t j = 0; j < 4; j++)
     {
-      NivelAgua[i][j] = EEPROM.read(4 * (i + 1) + j);
-      TemperaturaLim[i][j] = EEPROM.read(4 * (i + 4) + j);
-      TemporizadorLim[i][j] = EEPROM.read(4 * (i + 7) + j);
-      RotacionTam[i][j] = EEPROM.read(4 * (i + 10) + j);
+      NivelAgua[i][j] = EEPROM.read(6 * (i + 1) + j);
+      TemperaturaLim[i][j] = EEPROM.read(6 * (i + 4) + j);
+      TemporizadorLim[i][j] = EEPROM.read(6 * (i + 7) + j);
+      RotacionTam[i][j] = EEPROM.read(6 * (i + 10) + j);
       // TiempoEntFase[i][j] = EEPROM.read(4 * (i + 13) + j);
     }
   }
@@ -854,15 +959,17 @@ void guardarValoresEEPROM()
   EEPROM.update(1, fase);
   EEPROM.update(2, minutos[1]);
   EEPROM.update(3, segundos[1]);
+  EEPROM.put(4, contadorBloqueo);
+  // EEPROM.update(5, segundos[1]);
 
   for (uint8_t i = 0; i < 3; i++)
   {
     for (uint8_t j = 0; j < 4; j++)
     {
-      EEPROM.update(4 * (i + 1) + j, NivelAgua[i][j]);
-      EEPROM.update(4 * (i + 4) + j, TemperaturaLim[i][j]);
-      EEPROM.update(4 * (i + 7) + j, TemporizadorLim[i][j]);
-      EEPROM.update(4 * (i + 10) + j, RotacionTam[i][j]);
+      EEPROM.update(6 * (i + 1) + j, NivelAgua[i][j]);
+      EEPROM.update(6 * (i + 4) + j, TemperaturaLim[i][j]);
+      EEPROM.update(6 * (i + 7) + j, TemporizadorLim[i][j]);
+      EEPROM.update(6 * (i + 10) + j, RotacionTam[i][j]);
     }
   }
 
@@ -889,10 +996,17 @@ void pintarConsolaSerial()
   Serial.println(programa);
   Serial.print("Fase: ");
   Serial.println(fase);
-  Serial.print("ProgramaTerminado: ");
-  Serial.println(programaTerminado);
-  Serial.print("Programa en pausa: ");
-  Serial.println(programaEnPausa);
+  Serial.print("Direccion de motor: ");
+  Serial.println(direccion);
+  Serial.print("temporizador motor: ");
+  Serial.println(segunderoMotor);
+  Serial.print("Nivel rotacion tambor: ");
+  Serial.println(nivelRotacionTambor);
+  Serial.print("tiempo rotacion: ");
+  Serial.println(tiempoRotacion);
+  Serial.print("tiempo pausa: ");
+  Serial.println(tiempoPausa);
+  Serial.println();
   // Serial.print("Valor obtenido: ");
   // Serial.println(valorVariable);
 }
@@ -1064,7 +1178,7 @@ void editarPrograma()
                     }
                     else if (numeroVariable == 1)
                     {
-                      if (valorVariable > 10)
+                      if (valorVariable > 4)
                       {
                         valorVariable = 1;
                       }
@@ -1098,7 +1212,7 @@ void editarPrograma()
                     {
                       if (valorVariable < 1)
                       {
-                        valorVariable = 10;
+                        valorVariable = 4;
                       }
                     }
                     else
@@ -1173,6 +1287,8 @@ void editarPrograma()
         {
           iniciarTemporizador();
           iniciarSensorTemperatura();
+          iniciarSensorPresion();
+          iniciarTiempoRotacion();
           pintarVentanaEjecucion();
         }
         else
@@ -1192,4 +1308,14 @@ void editarPrograma()
       flagBtnComenzar1 = 0;
     }
   }
+}
+
+void aumentarAgua()
+{
+  digitalWrite(ValvulAgua, HIGH);
+}
+
+void disminuirAgua()
+{
+  digitalWrite(ValvulAgua, LOW);
 }
