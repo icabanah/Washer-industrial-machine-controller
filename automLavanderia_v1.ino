@@ -65,7 +65,7 @@ uint8_t flagBtnParar1 = 0;
 // Variables de proceso
 boolean pausa = false;
 uint8_t programa = 1;
-uint16_t contadorBloqueo = 1498;
+uint16_t contadorBloqueo = 0;
 uint16_t limiteBloqueo = 1500;
 uint8_t numeroVariable = 1;
 uint8_t valorVariable = 0;
@@ -205,151 +205,162 @@ void setup()
 
 void loop()
 {
-  // Eligiendo programa
-  if (digitalRead(btnAumentar) == nivelActivo)
+  if (contadorBloqueo < limiteBloqueo)
   {
-    if (flagBtnAumentar == 0)
+    // Eligiendo programa
+    if (digitalRead(btnAumentar) == nivelActivo)
     {
-      flagBtnAumentar = 1;
-      programa++;
-      if (programa > 3)
-        programa = 1;
-      pintarVentanaSeleccion();
-      // pintarConsolaSerial();
-    }
-  }
-  else
-  {
-    flagBtnAumentar = 0;
-  }
-
-  if (digitalRead(btnDisminuir) == nivelActivo)
-  {
-    if (flagBtnDisminuir == 0)
-    {
-      flagBtnDisminuir = 1;
-      programa--;
-      if (programa < 1)
+      if (flagBtnAumentar == 0)
       {
-        programa = 3;
-      }
-      pintarVentanaSeleccion();
-      // pintarConsolaSerial();
-    }
-  }
-  else
-  {
-    flagBtnDisminuir = 0;
-  }
-
-  // Comenzando programa seleccionado
-  if (digitalRead(btnComenzar) == nivelActivo)
-  {
-    if (flagBtnComenzar1 == 0)
-    {
-      flagBtnComenzar1 = 1;
-      iniciarPrograma();
-      while (!tiempoCumplido)
-      {
-        controladorTemporizador();
-        if (!programaEnPausa)
-        {
-          controladorDireccionMotor();
-        }
-        if (programaTerminado)
-        {
-          digitalWrite(buzzer, HIGH);
-          delay(2000);
-          digitalWrite(buzzer, LOW);
-        }
-        if (digitalRead(btnParar) == nivelActivo)
-        {
-          if (flagBtnParar1 == 0)
-          {
-            flagBtnParar1 = 1;
-            terminarPrograma();
-            Serial.println("Programa terminado con boton");
-            // eeprom_write();
-            // delay(100);
-          }
-        }
-        else
-        {
-          flagBtnParar1 = 0;
-        }
-
-        // if (digitalRead(btnEditar) == nivelActivo)
-        // {
-        //   if (flagBtnEditar1 == 0)
-        //   {
-        //     flagBtnEditar1 = 1;
-        //     editandoProgramaEjecucion = true;
-        //     editarPrograma();
-        //   }
-        // }
-        // else
-        // {
-        //   flagBtnEditar1 = 0;
-        // }
-
-        if (digitalRead(btnAumentar) == nivelActivo)
-        {
-          if (flagBtnAumentar == 0)
-          {
-            flagBtnAumentar = 1;
-            aumentarAgua();
-          }
-        }
-        else
-        {
-          flagBtnAumentar = 0;
-        }
-
-        if (digitalRead(btnDisminuir) == nivelActivo)
-        {
-          if (flagBtnDisminuir == 0)
-          {
-            flagBtnDisminuir = 1;
-            disminuirAgua();
-          }
-        }
-        else
-        {
-          flagBtnDisminuir = 0;
-        }
+        flagBtnAumentar = 1;
+        programa++;
+        if (programa > 3)
+          programa = 1;
+        pintarVentanaSeleccion();
+        // pintarConsolaSerial();
       }
     }
-  }
-  else
-  {
-    flagBtnComenzar1 = 0;
-  }
-
-  // Edicion de programa
-  if (digitalRead(btnEditar) == nivelActivo)
-  {
-    if (flagBtnEditar1 == 0)
+    else
     {
-      // Edicion de numero de variable
-      flagBtnEditar1 = 1;
-      editarPrograma();
+      flagBtnAumentar = 0;
     }
-  }
-  else
-  {
-    flagBtnEditar1 = 0;
-  }
 
-  if (digitalRead(btnParar) == nivelActivo)
-  {
-    if (flagBtnParar1 == 0)
+    if (digitalRead(btnDisminuir) == nivelActivo)
     {
-      guardarValoresEEPROM();
+      if (flagBtnDisminuir == 0)
+      {
+        flagBtnDisminuir = 1;
+        programa--;
+        if (programa < 1)
+        {
+          programa = 3;
+        }
+        pintarVentanaSeleccion();
+        // pintarConsolaSerial();
+      }
     }
+    else
+    {
+      flagBtnDisminuir = 0;
+    }
+
+    // Comenzando programa seleccionado
+    if (digitalRead(btnComenzar) == nivelActivo)
+    {
+      if (flagBtnComenzar1 == 0)
+      {
+        flagBtnComenzar1 = 1;
+        iniciarPrograma();
+        while (!tiempoCumplido)
+        {
+          controladorTemporizador();
+          if (!programaEnPausa)
+          {
+            controladorDireccionMotor();
+          }
+          if (programaTerminado)
+          {
+            digitalWrite(buzzer, HIGH);
+            delay(2000);
+            digitalWrite(buzzer, LOW);
+          }
+          if (digitalRead(btnParar) == nivelActivo)
+          {
+            if (flagBtnParar1 == 0)
+            {
+              flagBtnParar1 = 1;
+              terminarPrograma();
+              Serial.println("Programa terminado con boton");
+              // eeprom_write();
+              // delay(100);
+            }
+          }
+          else
+          {
+            flagBtnParar1 = 0;
+          }
+
+          // if (digitalRead(btnEditar) == nivelActivo)
+          // {
+          //   if (flagBtnEditar1 == 0)
+          //   {
+          //     flagBtnEditar1 = 1;
+          //     editandoProgramaEjecucion = true;
+          //     editarPrograma();
+          //   }
+          // }
+          // else
+          // {
+          //   flagBtnEditar1 = 0;
+          // }
+
+          if (digitalRead(btnAumentar) == nivelActivo)
+          {
+            if (flagBtnAumentar == 0)
+            {
+              flagBtnAumentar = 1;
+              aumentarAgua();
+            }
+          }
+          else
+          {
+            flagBtnAumentar = 0;
+          }
+
+          if (digitalRead(btnDisminuir) == nivelActivo)
+          {
+            if (flagBtnDisminuir == 0)
+            {
+              flagBtnDisminuir = 1;
+              disminuirAgua();
+            }
+          }
+          else
+          {
+            flagBtnDisminuir = 0;
+          }
+        }
+      }
+    }
+    else
+    {
+      flagBtnComenzar1 = 0;
+    }
+
+    // Edicion de programa
+    if (digitalRead(btnEditar) == nivelActivo)
+    {
+      if (flagBtnEditar1 == 0)
+      {
+        // Edicion de numero de variable
+        flagBtnEditar1 = 1;
+        editarPrograma();
+      }
+    }
+    else
+    {
+      flagBtnEditar1 = 0;
+    }
+
+    // if (digitalRead(btnParar) == nivelActivo)
+    // {
+    //   if (flagBtnParar1 == 0)
+    //   {
+    //     flagBtnParar1 == 1;
+    //     guardarValoresEEPROM();
+    //   }
+    // }
+    // else
+    // {
+    //   flagBtnParar1 = 0;
+    // }
   }
   else
   {
-    flagBtnParar1 = 0;
+    pintarVentanaError();
+    while (true)
+    {
+    }
   }
 }
 
@@ -538,6 +549,15 @@ void pintarVentanaEjecucion()
   lcd.print("R:");
   lcd.setCursor(14, 1);
   lcd.print(RotacionTam[programa - 1][fase - 1]);
+}
+
+void pintarVentanaError()
+{
+  lcd.clear();
+  lcd.setCursor(6, 0);
+  lcd.print("ERROR: ");
+  lcd.setCursor(7, 1);
+  lcd.print("400");
 }
 
 // Subprocesos de obtencion/edicin de variables
@@ -825,39 +845,36 @@ void controladorSensorPresion()
 // Subprocesos de manejo de programas
 void iniciarPrograma()
 {
-  Serial.print("Contador: ");
-  Serial.println(contadorBloqueo);
-  if (contadorBloqueo < limiteBloqueo)
+  // Serial.print("Contador: ");
+  // Serial.println(contadorBloqueo);
+  tiempoCumplido = false;
+  programaTerminado = false;
+  programaEnPausa = false;
+  numeroVariable = 1;
+  direccion = 1;
+  fase = 1;
+
+  digitalWrite(MagnetPuerta, HIGH);
+  digitalWrite(ValvulAgua, HIGH);
+  digitalWrite(ValvulDesfogue, HIGH);
+
+  // reiniciamos temporizadores
+  segundos[0] = 0;
+  segundos[1] = 0;
+  minutos[0] = 0;
+  minutos[1] = 0;
+
+  // segundosMotor.Start();
+  iniciarTemporizador();
+  if (programa != 1)
   {
-    tiempoCumplido = false;
-    programaTerminado = false;
-    programaEnPausa = false;
-    numeroVariable = 1;
-    direccion = 1;
-    fase = 1;
-
-    digitalWrite(MagnetPuerta, HIGH);
-    digitalWrite(ValvulAgua, HIGH);
-    digitalWrite(ValvulDesfogue, HIGH);
-
-    // reiniciamos temporizadores
-    segundos[0] = 0;
-    segundos[1] = 0;
-    minutos[0] = 0;
-    minutos[1] = 0;
-
-    // segundosMotor.Start();
-    iniciarTemporizador();
-    if (programa != 1)
-    {
-      iniciarSensorTemperatura();
-      // Serial.println("Sensor temperatura iniciado ");
-    }
-    iniciarSensorPresion();
-    iniciarTiempoRotacion();
-    pintarVentanaEjecucion();
-    pintarConsolaSerial();
+    iniciarSensorTemperatura();
+    // Serial.println("Sensor temperatura iniciado ");
   }
+  iniciarSensorPresion();
+  iniciarTiempoRotacion();
+  pintarVentanaEjecucion();
+  // pintarConsolaSerial();
 }
 
 void reiniciarPrograma()
@@ -937,7 +954,11 @@ void recuperarValoresEEPROM()
   fase = EEPROM.read(1);
   minutos[1] = EEPROM.read(2);
   segundos[1] = EEPROM.read(3);
-  contadorBloqueo = EEPROM.get(4, contadorBloqueo);
+  byte highByte = EEPROM.read(4);
+  byte lowByte = EEPROM.read(5);
+  contadorBloqueo = (highByte << 8) | lowByte;
+  Serial.print("contadorBloque: ");
+  Serial.println(contadorBloqueo);
 
   for (uint8_t i = 0; i < 3; i++)
   {
@@ -947,7 +968,6 @@ void recuperarValoresEEPROM()
       TemperaturaLim[i][j] = EEPROM.read(6 * (i + 4) + j);
       TemporizadorLim[i][j] = EEPROM.read(6 * (i + 7) + j);
       RotacionTam[i][j] = EEPROM.read(6 * (i + 10) + j);
-      // TiempoEntFase[i][j] = EEPROM.read(4 * (i + 13) + j);
     }
   }
   Serial.println("Recuperado exitosamente");
@@ -959,8 +979,10 @@ void guardarValoresEEPROM()
   EEPROM.update(1, fase);
   EEPROM.update(2, minutos[1]);
   EEPROM.update(3, segundos[1]);
-  EEPROM.put(4, contadorBloqueo);
-  // EEPROM.update(5, segundos[1]);
+  byte lowByte = (contadorBloqueo & 0x00FF);
+  byte highByte = ((contadorBloqueo & 0xFF00) >> 8);
+  EEPROM.update(4, highByte);
+  EEPROM.update(5, lowByte);
 
   for (uint8_t i = 0; i < 3; i++)
   {
