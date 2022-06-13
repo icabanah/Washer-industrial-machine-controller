@@ -77,6 +77,7 @@ int8_t minutos[2] = {0, 0};
 int8_t segundos[2] = {0, 0};
 int16_t segunderoTemporizador = 0;
 int16_t segunderoMotor = 0;
+boolean motorON = false;
 uint8_t tiempoRotacion = 0;
 uint8_t tiempoPausa = 0;
 uint8_t nivelRotacionTambor = 0;
@@ -89,10 +90,10 @@ uint8_t rangoTemperatura = 2;
 boolean sensarTemperatura = false;
 
 // Sensor de presion
-uint16_t nivelPresion1 = 650;
-uint16_t nivelPresion2 = 750;
-uint16_t nivelPresion3 = 850;
-uint16_t nivelPresion4 = 950;
+uint16_t nivelPresion1 = 601;
+uint16_t nivelPresion2 = 628;
+uint16_t nivelPresion3 = 645;
+uint16_t nivelPresion4 = 663;
 
 uint16_t valorPresion = 0;
 uint16_t valorNivelLim = 0;
@@ -141,7 +142,7 @@ void pintarVariables()
 AsyncTask segundosTemporizador(200, true, []()
                                { 
   segunderoTemporizador--;
-  if (!programaEnPausa)
+  if (!programaEnPausa && motorON)
   {
     segunderoMotor++;
   }
@@ -149,7 +150,7 @@ AsyncTask segundosTemporizador(200, true, []()
   segundos[1] = segunderoTemporizador - (minutos[1] * 60); 
   controladorSensorTemperatura();
   controladorSensorPresion();
-  // pintarConsolaSerial();
+  pintarConsolaSerial();
   if (!editandoProgramaEjecucion){ pintarVariables(); 
   } });
 
@@ -212,6 +213,7 @@ void loop()
     {
       if (flagBtnAumentar == 0)
       {
+        // Serial.println("btnAumentar ON");
         flagBtnAumentar = 1;
         programa++;
         if (programa > 3)
@@ -229,6 +231,7 @@ void loop()
     {
       if (flagBtnDisminuir == 0)
       {
+        // Serial.println("btnDisminuir ON");
         flagBtnDisminuir = 1;
         programa--;
         if (programa < 1)
@@ -249,6 +252,7 @@ void loop()
     {
       if (flagBtnComenzar1 == 0)
       {
+        // Serial.println("btnComenzar ON");
         flagBtnComenzar1 = 1;
         iniciarPrograma();
         while (!tiempoCumplido)
@@ -332,6 +336,7 @@ void loop()
     {
       if (flagBtnEditar1 == 0)
       {
+        // Serial.println("btnEditar ON");
         // Edicion de numero de variable
         flagBtnEditar1 = 1;
         editarPrograma();
@@ -646,13 +651,14 @@ void iniciarTemporizador()
 
 void iniciarTiempoRotacion()
 {
+  motorON = true;
   if (editandoProgramaEjecucion)
   {
     nivelRotacionTambor = RotacionTam[programa - 1][fase - 1];
     tiempoRotacion = TiempoRotacion[nivelRotacionTambor - 1][0];
     tiempoPausa = TiempoRotacion[nivelRotacionTambor - 1][1];
   }
-  else
+  else if(motorON)
   {
     nivelRotacionTambor = RotacionTam[programa - 1][fase - 1];
     tiempoRotacion = TiempoRotacion[nivelRotacionTambor - 1][0];
@@ -818,23 +824,19 @@ void controladorSensorPresion()
       valorNivel = 4;
     }
 
-    if ((valorNivel >= valorNivelLim) && sensarPresion)
+    if ((valorNivel >= valorNivelLim + 1) && sensarPresion)
     {
       sensarPresion = false;
       if (programa == 1)
       {
         iniciarSensorTemperatura();
       }
+      else if (programa == 2)
+      {
+        iniciarTiempoRotacion();
+      }
       digitalWrite(ValvulAgua, LOW);
     }
-    // Serial.println(valorPresion);
-    // Serial.println(valorNivel);
-    // Serial.println(valorNivelLim);
-    // else if ((valorNivel <= valorNivelLim) && sensarPresion)
-    // {
-    //   // sensarTemperatura = false;
-    //   digitalWrite(ElectrovVapor, HIGH);
-    // }
   }
   else
   {
@@ -865,14 +867,24 @@ void iniciarPrograma()
   minutos[1] = 0;
 
   // segundosMotor.Start();
-  iniciarTemporizador();
-  if (programa != 1)
+  if (programa == 1)
   {
-    iniciarSensorTemperatura();
+    iniciarTiempoRotacion();
     // Serial.println("Sensor temperatura iniciado ");
   }
+  else if (programa == 2)
+  {
+    iniciarSensorTemperatura();
+  }
+  else
+  {
+    iniciarSensorTemperatura();
+    iniciarTiempoRotacion();
+    // motorON = true;
+  }
+
+  iniciarTemporizador();
   iniciarSensorPresion();
-  iniciarTiempoRotacion();
   pintarVentanaEjecucion();
   // pintarConsolaSerial();
 }
@@ -882,6 +894,7 @@ void reiniciarPrograma()
   programaEnPausa = false;
   direccion = 1;
   segunderoMotor = 0;
+  motorON = true;
   iniciarTemporizador();
   iniciarTiempoRotacion();
   digitalWrite(ValvulAgua, HIGH);
@@ -912,6 +925,7 @@ void terminarPrograma()
     programaEnPausa = false;
     numeroVariable = 1;
     fase = 1;
+    motorON = false;
     sensarPresion = false;
     sensarTemperatura = false;
     contadorBloqueo++;
@@ -939,6 +953,7 @@ void terminarPrograma()
 void pausarPrograma()
 {
   programaEnPausa = true;
+  motorON = false;
   sensarTemperatura = false;
   sensarPresion = false;
   digitalWrite(MotorDirA, LOW);
@@ -1018,16 +1033,18 @@ void pintarConsolaSerial()
   Serial.println(programa);
   Serial.print("Fase: ");
   Serial.println(fase);
-  Serial.print("Direccion de motor: ");
-  Serial.println(direccion);
-  Serial.print("temporizador motor: ");
-  Serial.println(segunderoMotor);
-  Serial.print("Nivel rotacion tambor: ");
-  Serial.println(nivelRotacionTambor);
-  Serial.print("tiempo rotacion: ");
-  Serial.println(tiempoRotacion);
-  Serial.print("tiempo pausa: ");
-  Serial.println(tiempoPausa);
+  Serial.print("Nivel: ");
+  Serial.println(valorNivel);
+  Serial.print("Nivel limite: ");
+  Serial.println(valorNivelLim);
+  Serial.print("Presion: ");
+  Serial.println(valorPresion);
+  // Serial.print("Nivel rotacion tambor: ");
+  // Serial.println(nivelRotacionTambor);
+  // Serial.print("tiempo rotacion: ");
+  // Serial.println(tiempoRotacion);
+  // Serial.print("tiempo pausa: ");
+  // Serial.println(tiempoPausa);
   Serial.println();
   // Serial.print("Valor obtenido: ");
   // Serial.println(valorVariable);

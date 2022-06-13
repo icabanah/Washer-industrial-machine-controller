@@ -2,3 +2,13 @@ No cambia el valor de salida de electrovalvula de vapor cuando se edita, luego d
 Corregir: 
 - Escalas sensor presion.
 - Temperatura controlador.
+
+22 
+- Conservar solo fase 1
+
+23
+- Conservar solo fase 1
+- Motor se activa con nivel de agua.
+
+24
+- Dejar como esta
