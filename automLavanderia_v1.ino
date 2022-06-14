@@ -208,6 +208,7 @@ void loop()
 {
   if (contadorBloqueo < limiteBloqueo)
   {
+    // pintarConsolaSerial();
     // Eligiendo programa
     if (digitalRead(btnAumentar) == nivelActivo)
     {
@@ -388,52 +389,87 @@ void pintarVentanaSeleccion()
   lcd.setCursor(1, 0);
   lcd.print(programa + 21);
 
-  lcd.setCursor(4, 0);
-  lcd.print("N");
-  for (uint8_t i = 0; i < 4; i++)
+  if (programa == 3)
   {
-    lcd.setCursor(i + 5, 0);
-    lcd.print(NivelAgua[programa - 1][i]);
-  }
-
-  lcd.setCursor(10, 0);
-  lcd.print("T");
-  for (uint8_t i = 0; i < 4; i++)
-  {
-    lcd.setCursor(i + 11, 0);
-    lcd.print(TemporizadorLim[programa - 1][i]);
-  }
-
-  // Segunda fila
-  lcd.setCursor(0, 1);
-  lcd.print("T");
-  lcd.setCursor(2, 1);
-  lcd.print("/");
-  lcd.setCursor(5, 1);
-  lcd.print("/");
-  lcd.setCursor(8, 1);
-  lcd.print("/");
-  for (uint8_t i = 0; i < 4; i++)
-  {
-    if (TemperaturaLim[programa - 1][i] < 10)
+    lcd.setCursor(4, 0);
+    lcd.print("N");
+    for (uint8_t i = 0; i < 4; i++)
     {
-      lcd.setCursor(3 * i, 1);
+      lcd.setCursor(i + 5, 0);
+      lcd.print(NivelAgua[programa - 1][i]);
+    }
+
+    lcd.setCursor(10, 0);
+    lcd.print("T");
+    for (uint8_t i = 0; i < 4; i++)
+    {
+      lcd.setCursor(i + 11, 0);
+      lcd.print(TemporizadorLim[programa - 1][i]);
+    }
+
+    // Segunda fila
+    lcd.setCursor(0, 1);
+    lcd.print("T");
+    lcd.setCursor(2, 1);
+    lcd.print("/");
+    lcd.setCursor(5, 1);
+    lcd.print("/");
+    lcd.setCursor(8, 1);
+    lcd.print("/");
+    for (uint8_t i = 0; i < 4; i++)
+    {
+      if (TemperaturaLim[programa - 1][i] < 10)
+      {
+        lcd.setCursor(3 * i, 1);
+        lcd.print(0);
+        lcd.print(TemperaturaLim[programa - 1][i]);
+      }
+      else
+      {
+        lcd.setCursor(3 * i, 1);
+        lcd.print(TemperaturaLim[programa - 1][i]);
+      }
+    }
+
+    lcd.setCursor(11, 1);
+    lcd.print("R");
+    for (uint8_t i = 0; i < 4; i++)
+    {
+      lcd.setCursor(i + 12, 1);
+      lcd.print(RotacionTam[programa - 1][i]);
+    }
+  }
+  else
+  {
+    lcd.setCursor(4, 0);
+    lcd.print("Niv:");
+    lcd.setCursor(8, 0);
+    lcd.print(NivelAgua[programa - 1][0]);
+
+    lcd.setCursor(10, 0);
+    lcd.print("Tie:");
+    lcd.setCursor(14, 0);
+    lcd.print(TemporizadorLim[programa - 1][0]);
+
+    lcd.setCursor(0, 1);
+    lcd.print("Temp:");
+
+    lcd.setCursor(5, 1);
+    if (TemperaturaLim[programa - 1][0] < 10)
+    {
       lcd.print(0);
-      lcd.print(TemperaturaLim[programa - 1][i]);
+      lcd.print(TemperaturaLim[programa - 1][0]);
     }
     else
     {
-      lcd.setCursor(3 * i, 1);
-      lcd.print(TemperaturaLim[programa - 1][i]);
+      // lcd.setCursor(5, 1);
+      lcd.print(TemperaturaLim[programa - 1][0]);
     }
-  }
 
-  lcd.setCursor(11, 1);
-  lcd.print("R");
-  for (uint8_t i = 0; i < 4; i++)
-  {
-    lcd.setCursor(i + 12, 1);
-    lcd.print(RotacionTam[programa - 1][i]);
+    lcd.setCursor(10, 1);
+    lcd.print("Rot:");
+    lcd.setCursor(14, 1);
+    lcd.print(RotacionTam[programa - 1][0]);
   }
 }
 
@@ -642,8 +678,8 @@ void iniciarTemporizador()
   {
     segunderoTemp = TiempoEntFase[programa - 1][fase - 1];
     segunderoTemporizador = segunderoTemp;
-    // Serial.print("SegunderoTemporizador en pausa: ");
-    // Serial.println(segunderoTemporizador);
+    Serial.print("SegunderoTemporizador en pausa: ");
+    Serial.println(segunderoTemporizador);
   }
   // Serial.println(segunderoTemporizador);
   segundosTemporizador.Start();
@@ -658,7 +694,7 @@ void iniciarTiempoRotacion()
     tiempoRotacion = TiempoRotacion[nivelRotacionTambor - 1][0];
     tiempoPausa = TiempoRotacion[nivelRotacionTambor - 1][1];
   }
-  else if(motorON)
+  else if (motorON)
   {
     nivelRotacionTambor = RotacionTam[programa - 1][fase - 1];
     tiempoRotacion = TiempoRotacion[nivelRotacionTambor - 1][0];
@@ -691,7 +727,7 @@ void controladorTemporizador()
       {
         pausarPrograma();
         iniciarTemporizador();
-        pintarConsolaSerial();
+        // pintarConsolaSerial();
       }
     }
     else
@@ -699,17 +735,24 @@ void controladorTemporizador()
       if (segunderoTemporizador == 0)
       {
         segundosTemporizador.Stop();
-        fase++;
-        reiniciarPrograma();
-        if (fase > 4)
+        if (programa == 3)
         {
-          terminarPrograma();
+          fase++;
+          reiniciarPrograma();
+          if (fase > 4)
+          {
+            terminarPrograma();
+          }
+          else
+          {
+            iniciarTemporizador();
+          }
         }
         else
         {
-          iniciarTemporizador();
+          terminarPrograma();
         }
-        pintarConsolaSerial();
+        // pintarConsolaSerial();
       }
     }
   }
@@ -936,6 +979,7 @@ void terminarPrograma()
     minutos[0] = 0;
     minutos[1] = 0;
     segunderoTemporizador = 0;
+    segunderoMotor = 0;
     segundosTemporizador.Stop();
 
     digitalWrite(MotorDirA, LOW);
@@ -952,6 +996,7 @@ void terminarPrograma()
 
 void pausarPrograma()
 {
+  // pintarConsolaSerial();
   programaEnPausa = true;
   motorON = false;
   sensarTemperatura = false;
@@ -1033,8 +1078,8 @@ void pintarConsolaSerial()
   Serial.println(programa);
   Serial.print("Fase: ");
   Serial.println(fase);
-  Serial.print("Nivel: ");
-  Serial.println(valorNivel);
+  Serial.print("Programa en pausa: ");
+  Serial.println(programaEnPausa);
   Serial.print("Nivel limite: ");
   Serial.println(valorNivelLim);
   Serial.print("Presion: ");
@@ -1088,14 +1133,17 @@ void editarPrograma()
       if (flagBtnAumentar == 0)
       {
         flagBtnAumentar = 1;
-        fase++;
-        if (fase > 4)
+        if (programa == 3)
         {
-          fase = 1;
+          fase++;
+          if (fase > 4)
+          {
+            fase = 1;
+          }
+          pintarVentanaEdicionMenu();
+          asignarBlinkLCD();
+          pintarConsolaSerial();
         }
-        pintarVentanaEdicionMenu();
-        asignarBlinkLCD();
-        // pintarConsolaSerial();
       }
     }
     else
@@ -1108,14 +1156,17 @@ void editarPrograma()
       if (flagBtnDisminuir == 0)
       {
         flagBtnDisminuir = 1;
-        fase--;
-        if (fase < 1)
+        if (programa == 3)
         {
-          fase = 4;
+          fase--;
+          if (fase < 1)
+          {
+            fase = 4;
+          }
+          pintarVentanaEdicionMenu();
+          asignarBlinkLCD();
+          pintarConsolaSerial();
         }
-        pintarVentanaEdicionMenu();
-        asignarBlinkLCD();
-        // pintarConsolaSerial();
       }
     }
     else
