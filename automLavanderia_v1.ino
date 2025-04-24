@@ -2,8 +2,9 @@
 #include <DallasTemperature.h>
 #include <HX710B.h>
 #include <AsyncTaskLib.h>
-#include <LiquidCrystal.h>
+// #include <LiquidCrystal.h>
 #include <EEPROM.h>
+#include "LiquidCrystal/src/LiquidCrystal.h"
 
 // Iniciamos el lcd
 const int rs = 19, en = 18, d4 = 17, d5 = 16, d6 = 15, d7 = 14; //
@@ -1081,23 +1082,23 @@ void recuperarValoresEEPROM()
 
 void guardarValoresEEPROM()
 {
-  EEPROM.update(0, programa);
-  EEPROM.update(1, fase);
-  EEPROM.update(2, minutos[1]);
-  EEPROM.update(3, segundos[1]);
+  EEPROM.write(0, programa);
+  EEPROM.write(1, fase);
+  EEPROM.write(2, minutos[1]);
+  EEPROM.write(3, segundos[1]);
   byte lowByte = (contadorBloqueo & 0x00FF);
   byte highByte = ((contadorBloqueo & 0xFF00) >> 8);
-  EEPROM.update(4, highByte);
-  EEPROM.update(5, lowByte);
+  EEPROM.write(4, highByte);
+  EEPROM.write(5, lowByte);
 
   for (uint8_t i = 0; i < 3; i++)
   {
     for (uint8_t j = 0; j < 4; j++)
     {
-      EEPROM.update(6 * (i + 1) + j, NivelAgua[i][j]);
-      EEPROM.update(6 * (i + 4) + j, TemperaturaLim[i][j]);
-      EEPROM.update(6 * (i + 7) + j, TemporizadorLim[i][j]);
-      EEPROM.update(6 * (i + 10) + j, RotacionTam[i][j]);
+      EEPROM.write(6 * (i + 1) + j, NivelAgua[i][j]);
+      EEPROM.write(6 * (i + 4) + j, TemperaturaLim[i][j]);
+      EEPROM.write(6 * (i + 7) + j, TemporizadorLim[i][j]);
+      EEPROM.write(6 * (i + 10) + j, RotacionTam[i][j]);
     }
   }
 

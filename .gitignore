@@ -1,2 +1,9 @@
 .vscode
 output
+/Librerias/Adafruit_BusIO-master
+/Librerias/Arduino-AsyncTask-master
+/Librerias/DallasTemperature
+/Librerias/EEPROM
+/Librerias/hx710B_pressure_sensor-main
+/Librerias/LiquidCrystal
+/Librerias/OneWire
