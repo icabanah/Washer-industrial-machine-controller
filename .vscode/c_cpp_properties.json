@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "name": "ESP32-WROOM-DA",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.2.0/**",
+                "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/tools/**",
+                "C:/Users/Daniele/Documents/Arduino/libraries/**",
+                "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/**",
+                "${workspaceFolder}/Librerias"
+            ],
+            "defines": [
+                "ARDUINO=10819",
+                "ESP32",
+                "ESP_PLATFORM",
+                "F_CPU=240000000L",
+                "HAVE_CONFIG_H",
+                "MBEDTLS_CONFIG_FILE=\"mbedtls/esp_config.h\""
+            ],
+            "compilerPath": "C:/Users/DANIELE/AppData/Local/Arduino15/packages/esp32/tools/esp-x32/2411/bin/xtensa-esp32-elf-g++.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
