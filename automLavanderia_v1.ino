@@ -39,7 +39,6 @@ HX710B pressure_sensor;
 #define ValvulDesfogue 8 //
 #define MagnetPuerta 7   //
 #define buzzer 34
-// #define sensorMPX2010 A0
 
 // Definimos variables de los programas
 uint8_t NivelAgua[3][4];
@@ -104,8 +103,6 @@ uint8_t contadorNivel = 0;
 boolean sensarPresion = false;
 
 boolean botonON = false;
-// AsyncTask antirebote(20, false, []()
-//                      { botonON = true; });
 
 void pintarVariables()
 {
