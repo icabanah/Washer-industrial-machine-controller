@@ -50,6 +50,9 @@
 #define TIEMPO_BUZZER 2000
 #define INTERVALO_TEMPORIZADOR 800
 
+// Configuración de tareas asíncronas
+#define MAX_ASYNC_TASKS 10  // Número máximo de tareas asíncronas que se pueden gestionar
+
 // Configuración de programas
 #define NUM_PROGRAMAS 3
 #define NUM_FASES 4

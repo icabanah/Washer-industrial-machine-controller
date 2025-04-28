@@ -21,7 +21,7 @@ La implementación de la estructura modular se puede comparar con la renovación
    - Reemplazar valores literales en el código original por las constantes definidas.
 
 3. **Preparar el Archivo Principal**:
-   - Modificar `automLavanderia_v1.ino` para incluir todos los nuevos módulos.
+   - Modificar `mainController.ino` para incluir todos los nuevos módulos.
    - Mantener temporalmente el código original intacto.
 
 ### Fase 2: Implementación de Módulos Básicos
@@ -72,7 +72,7 @@ La implementación de la estructura modular se puede comparar con la renovación
    - Asegurar que la comunicación entre módulos funcione correctamente.
 
 2. **Simplificar el Archivo Principal**:
-   - Reducir `automLavanderia_v1.ino` a un simple coordinador.
+   - Reducir `mainController.ino` a un simple coordinador.
    - Mover toda la lógica específica a los módulos correspondientes.
 
 3. **Probar el Sistema Completo**:

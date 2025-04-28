@@ -16,14 +16,14 @@
  * - Programas de lavado configurables
  */
 
-#include "config.h"
-#include "hardware.h"
-#include "utils.h"
-#include "storage.h"
-#include "sensors.h"
-#include "actuators.h"
-#include "ui_controller.h"
-#include "program_controller.h"
+#include "../config.h"
+#include "../hardware.h"
+#include "../utils.h"
+#include "../storage.h"
+#include "../sensors.h"
+#include "../actuators.h"
+#include "../ui_controller.h"
+#include "../program_controller.h"
 
 // Declaración de funciones
 void checkEmergencyButton();
@@ -63,7 +63,7 @@ void loop() {
   ProgramController.update();
   
   // Procesar eventos de AsyncTaskLib
-  AsyncTask::Update();
+  Utils.updateAsyncTasks();
   
   // Pequeña pausa para evitar saturación del CPU
   yield();
@@ -83,9 +83,12 @@ void showWelcomeScreen() {
   // Mostrar pantalla de bienvenida
   UIController.showWelcomeScreen();
   
-  // Esperar tiempo determinado usando AsyncTaskLib, no delay()
-  AsyncTask welcomeDelay(TIEMPO_BIENVENIDA, false, []() {
+  // Crear tarea asíncrona para cambiar de pantalla después del tiempo de bienvenida
+  static AsyncTask welcomeDelay(TIEMPO_BIENVENIDA, false, []() {
     UIController.showSelectionScreen(ProgramController.getCurrentProgram());
   });
+  
+  // Registrar y activar la tarea
+  Utils.registerAsyncTask(&welcomeDelay);
   welcomeDelay.Start();
 }

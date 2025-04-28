@@ -3,7 +3,7 @@
 #define UTILS_H
 
 #include "config.h"
-#include <AsyncTaskLib.h>
+#include "../Librerias/Arduino-AsyncTask-master/src/AsyncTaskLib.h"
 
 class UtilsClass {
 public:
@@ -14,6 +14,11 @@ public:
   void startMainTimer();
   void stopMainTimer();
   bool isMainTimerRunning();
+  
+  // Gestión de tareas asíncronas
+  void registerAsyncTask(AsyncTask* task);
+  void unregisterAsyncTask(AsyncTask* task);
+  void updateAsyncTasks();
   
   // Manejo y conversión de tiempo
   void updateTimers();
@@ -34,6 +39,10 @@ private:
   // Variables para control de temporizadores
   bool _mainTimerRunning;
   AsyncTask* _mainTimer;
+  
+  // Lista de tareas asíncronas a gestionar
+  AsyncTask* _asyncTasks[MAX_ASYNC_TASKS];
+  uint8_t _taskCount;
   
   // Métodos internos
   void _setupMainTimer();

@@ -15,7 +15,7 @@ La nueva estructura mantiene la organización modular pero adapta los módulos p
 ```
 washerController/
 │
-├── washerController.ino       # Archivo principal (incluye setup, loop)
+├── mainController.ino       # Archivo principal (incluye setup, loop)
 ├── config.h                     # Configuraciones, constantes y definiciones globales
 ├── hardware.cpp                 # Gestión del hardware físico (ESP32, Nextion, botón de emergencia)
 ├── hardware.h

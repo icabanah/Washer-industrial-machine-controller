@@ -29,7 +29,7 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Documentar cada constante para facilitar futuras modificaciones
 
 4. **Preparación del Archivo Principal (2 días)** - 100% completado
-   - Crear la estructura mínima del archivo principal automLavanderia_v1.ino
+   - Crear la estructura mínima del archivo principal mainController.ino
    - Implementar las funciones setup() y loop() con la estructura básica
    - Incluir todos los módulos necesarios
 

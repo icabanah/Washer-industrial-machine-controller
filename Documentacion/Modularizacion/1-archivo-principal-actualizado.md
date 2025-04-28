@@ -1,4 +1,4 @@
-# Archivo Principal (automLavanderia_v1.ino)
+# Archivo Principal (mainController.ino)
 
 ## Descripción
 
@@ -19,7 +19,7 @@ El archivo principal se reducirá significativamente en tamaño, delegando la ma
 ## Implementación Propuesta
 
 ```cpp
-// automLavanderia_v1.ino
+// mainController.ino
 #include "config.h"
 #include "hardware.h"
 #include "ui_controller.h"

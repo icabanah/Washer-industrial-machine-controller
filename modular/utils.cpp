@@ -5,9 +5,19 @@
 UtilsClass Utils;
 
 void UtilsClass::init() {
+  // Inicializar variables de control
   _mainTimerRunning = false;
   _mainTimer = nullptr;
+  _taskCount = 0;
+  
+  // Inicializar array de tareas asíncronas
+  for (uint8_t i = 0; i < MAX_ASYNC_TASKS; i++) {
+    _asyncTasks[i] = nullptr;
+  }
+  
+  // Configurar temporizador principal
   _setupMainTimer();
+  
   debug("Utils inicializado");
 }
 
@@ -49,6 +59,69 @@ void UtilsClass::stopMainTimer() {
 
 bool UtilsClass::isMainTimerRunning() {
   return _mainTimerRunning;
+}
+
+/**
+ * Registra una tarea asíncrona para ser gestionada automáticamente
+ * Esto permite centralizar la actualización de todas las tareas en un solo lugar
+ * @param task Puntero a la tarea AsyncTask a registrar
+ */
+void UtilsClass::registerAsyncTask(AsyncTask* task) {
+  if (task == nullptr || _taskCount >= MAX_ASYNC_TASKS) {
+    return;
+  }
+  
+  // Verificar si la tarea ya está registrada
+  for (uint8_t i = 0; i < _taskCount; i++) {
+    if (_asyncTasks[i] == task) {
+      return;  // La tarea ya está registrada
+    }
+  }
+  
+  // Registrar la nueva tarea
+  _asyncTasks[_taskCount++] = task;
+  debug("Nueva tarea asíncrona registrada");
+}
+
+/**
+ * Elimina una tarea asíncrona del gestor
+ * @param task Puntero a la tarea AsyncTask a eliminar
+ */
+void UtilsClass::unregisterAsyncTask(AsyncTask* task) {
+  if (task == nullptr || _taskCount == 0) {
+    return;
+  }
+  
+  // Buscar la tarea en el array
+  for (uint8_t i = 0; i < _taskCount; i++) {
+    if (_asyncTasks[i] == task) {
+      // Eliminar la tarea desplazando las demás
+      for (uint8_t j = i; j < _taskCount - 1; j++) {
+        _asyncTasks[j] = _asyncTasks[j + 1];
+      }
+      _asyncTasks[--_taskCount] = nullptr;
+      debug("Tarea asíncrona eliminada");
+      return;
+    }
+  }
+}
+
+/**
+ * Actualiza todas las tareas asíncronas registradas
+ * Esta función debe ser llamada en cada iteración del loop principal
+ */
+void UtilsClass::updateAsyncTasks() {
+  // Actualizar el temporizador principal si está activo
+  if (_mainTimer && _mainTimerRunning) {
+    _mainTimer->Update();
+  }
+  
+  // Actualizar todas las tareas registradas
+  for (uint8_t i = 0; i < _taskCount; i++) {
+    if (_asyncTasks[i] && _asyncTasks[i]->IsActive()) {
+      _asyncTasks[i]->Update();
+    }
+  }
 }
 
 void UtilsClass::updateTimers() {
