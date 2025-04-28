@@ -1,0 +1,285 @@
+// actuators.cpp
+#include "actuators.h"
+#include "utils.h"
+
+// Instancia global
+ActuatorsClass Actuators;
+
+void ActuatorsClass::init() {
+  // Inicializar estados
+  _motorState = MOTOR_OFF;
+  _waterValveOpen = false;
+  _steamValveOpen = false;
+  _drainValveOpen = false;
+  _doorLocked = false;
+  _buzzerActive = false;
+  _autoRotationActive = false;
+  
+  // Inicializar variables de rotación
+  _motorSeconds = 0;
+  _currentRotationLevel = 0;
+  _rotationDirection = MOTOR_FORWARD;
+  _forwardTime = 0;
+  _reverseTime = 0;
+  _pauseTime = 0;
+  
+  // Configurar temporizadores
+  _buzzerTimer = nullptr;
+  _motorTimer = nullptr;
+  _setupBuzzerTimer();
+  
+  // Asegurar que todos los actuadores estén en estado seguro
+  stopMotor();
+  closeWaterValve();
+  closeSteamValve();
+  openDrainValve(); // Por seguridad, la válvula de drenaje se abre al iniciar
+  unlockDoor();
+  stopBuzzer();
+  
+  Utils.debug("Actuadores inicializados");
+}
+
+void ActuatorsClass::_setupBuzzerTimer() {
+  // Inicializamos a nullptr, se creará cuando sea necesario en startBuzzer()
+  _buzzerTimer = nullptr;
+}
+
+void ActuatorsClass::startMotorForward() {
+  Hardware.digitalWrite(PIN_MOTOR_DIR_A, HIGH);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
+  _motorState = MOTOR_FORWARD;
+  Utils.debug("Motor iniciado en dirección adelante");
+}
+
+void ActuatorsClass::startMotorReverse() {
+  Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_B, HIGH);
+  _motorState = MOTOR_REVERSE;
+  Utils.debug("Motor iniciado en dirección reversa");
+}
+
+void ActuatorsClass::stopMotor() {
+  Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
+  _motorState = MOTOR_OFF;
+  Utils.debug("Motor detenido");
+}
+
+bool ActuatorsClass::isMotorRunning() {
+  return _motorState != MOTOR_OFF;
+}
+
+uint8_t ActuatorsClass::getMotorState() {
+  return _motorState;
+}
+
+void ActuatorsClass::setRotationLevel(uint8_t level) {
+  if (level > MAX_NIVEL_ROTACION) level = MAX_NIVEL_ROTACION;
+  _currentRotationLevel = level;
+  _configureRotationTiming(level);
+}
+
+void ActuatorsClass::_configureRotationTiming(uint8_t level) {
+  // Configurar los tiempos según el nivel de rotación
+  switch (level) {
+    case 0: // Sin rotación
+      _forwardTime = 0;
+      _reverseTime = 0;
+      _pauseTime = 0;
+      break;
+    case 1: // Rotación suave
+      _forwardTime = 5;
+      _reverseTime = 5;
+      _pauseTime = 3;
+      break;
+    case 2: // Rotación media
+      _forwardTime = 8;
+      _reverseTime = 8;
+      _pauseTime = 2;
+      break;
+    case 3: // Rotación intensa
+      _forwardTime = 12;
+      _reverseTime = 12;
+      _pauseTime = 1;
+      break;
+  }
+}
+
+void ActuatorsClass::openWaterValve() {
+  Hardware.digitalWrite(PIN_VALVULA_AGUA, HIGH);
+  _waterValveOpen = true;
+  Utils.debug("Válvula de agua abierta");
+}
+
+void ActuatorsClass::closeWaterValve() {
+  Hardware.digitalWrite(PIN_VALVULA_AGUA, LOW);
+  _waterValveOpen = false;
+  Utils.debug("Válvula de agua cerrada");
+}
+
+bool ActuatorsClass::isWaterValveOpen() {
+  return _waterValveOpen;
+}
+
+void ActuatorsClass::openSteamValve() {
+  Hardware.digitalWrite(PIN_ELECTROV_VAPOR, HIGH);
+  _steamValveOpen = true;
+  Utils.debug("Válvula de vapor abierta");
+}
+
+void ActuatorsClass::closeSteamValve() {
+  Hardware.digitalWrite(PIN_ELECTROV_VAPOR, LOW);
+  _steamValveOpen = false;
+  Utils.debug("Válvula de vapor cerrada");
+}
+
+bool ActuatorsClass::isSteamValveOpen() {
+  return _steamValveOpen;
+}
+
+void ActuatorsClass::openDrainValve() {
+  Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, HIGH);
+  _drainValveOpen = true;
+  Utils.debug("Válvula de drenaje abierta");
+}
+
+void ActuatorsClass::closeDrainValve() {
+  Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, LOW);
+  _drainValveOpen = false;
+  Utils.debug("Válvula de drenaje cerrada");
+}
+
+bool ActuatorsClass::isDrainValveOpen() {
+  return _drainValveOpen;
+}
+
+void ActuatorsClass::lockDoor() {
+  Hardware.digitalWrite(PIN_MAGNET_PUERTA, HIGH);
+  _doorLocked = true;
+  Utils.debug("Puerta bloqueada");
+}
+
+void ActuatorsClass::unlockDoor() {
+  Hardware.digitalWrite(PIN_MAGNET_PUERTA, LOW);
+  _doorLocked = false;
+  Utils.debug("Puerta desbloqueada");
+}
+
+bool ActuatorsClass::isDoorLocked() {
+  return _doorLocked;
+}
+
+void ActuatorsClass::startBuzzer(uint16_t duration) {
+  Hardware.digitalWrite(PIN_BUZZER, HIGH);
+  _buzzerActive = true;
+  
+  // Si se especifica una duración, configurar el temporizador
+  if (duration > 0) {
+    // Primero detener el temporizador anterior si existe
+    if (_buzzerTimer != nullptr) {
+      delete _buzzerTimer;
+    }
+    
+    // Crear un nuevo temporizador con la duración especificada
+    _buzzerTimer = new AsyncTask(duration, false, []() {
+      Actuators.stopBuzzer();
+    });
+    
+    _buzzerTimer->Start();
+  }
+  
+  Utils.debug("Zumbador activado");
+}
+
+void ActuatorsClass::stopBuzzer() {
+  Hardware.digitalWrite(PIN_BUZZER, LOW);
+  _buzzerActive = false;
+  
+  // Detener el temporizador si está activo
+  if (_buzzerTimer && _buzzerTimer->IsActive()) {
+    _buzzerTimer->Stop();
+  }
+  
+  Utils.debug("Zumbador desactivado");
+}
+
+bool ActuatorsClass::isBuzzerActive() {
+  return _buzzerActive;
+}
+
+void ActuatorsClass::startAutoRotation(uint8_t level) {
+  if (level > 0 && level <= MAX_NIVEL_ROTACION) {
+    setRotationLevel(level);
+    _autoRotationActive = true;
+    _motorSeconds = 0;
+    startMotorForward(); // Iniciar con dirección hacia adelante
+    Utils.debug("Rotación automática iniciada");
+  }
+}
+
+void ActuatorsClass::stopAutoRotation() {
+  _autoRotationActive = false;
+  stopMotor();
+  Utils.debug("Rotación automática detenida");
+}
+
+bool ActuatorsClass::isAutoRotationActive() {
+  return _autoRotationActive;
+}
+
+void ActuatorsClass::updateTimers() {
+  // Manejar la rotación automática si está activa
+  if (_autoRotationActive) {
+    _motorSeconds++;
+    _updateMotorDirection();
+  }
+}
+
+void ActuatorsClass::_updateMotorDirection() {
+  if (_currentRotationLevel == 0) return;
+  
+  uint16_t totalCycleTime = _forwardTime + _pauseTime + _reverseTime + _pauseTime;
+  uint16_t cyclePosition = _motorSeconds % totalCycleTime;
+  
+  // Determinar la acción basada en la posición en el ciclo
+  if (cyclePosition < _forwardTime) {
+    // Giro hacia adelante
+    if (_motorState != MOTOR_FORWARD) {
+      startMotorForward();
+    }
+  } else if (cyclePosition < (_forwardTime + _pauseTime)) {
+    // Pausa después del giro hacia adelante
+    if (_motorState != MOTOR_OFF) {
+      stopMotor();
+    }
+  } else if (cyclePosition < (_forwardTime + _pauseTime + _reverseTime)) {
+    // Giro hacia atrás
+    if (_motorState != MOTOR_REVERSE) {
+      startMotorReverse();
+    }
+  } else {
+    // Pausa después del giro hacia atrás
+    if (_motorState != MOTOR_OFF) {
+      stopMotor();
+    }
+  }
+}
+
+void ActuatorsClass::emergencyStop() {
+  // Detener todos los actuadores y llevar el sistema a un estado seguro
+  stopMotor();
+  closeWaterValve();
+  closeSteamValve();
+  openDrainValve();
+  unlockDoor();
+  startBuzzer(TIEMPO_BUZZER);
+  
+  Utils.debug("PARADA DE EMERGENCIA ACTIVADA");
+}
+
+void ActuatorsClass::emergencyReset() {
+  // Restablecer el sistema después de una emergencia
+  stopBuzzer();
+  
+  Utils.debug("Sistema restablecido después de emergencia");
+}

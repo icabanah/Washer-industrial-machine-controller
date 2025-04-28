@@ -5,7 +5,8 @@
 - Responde como ingeniero electrónico senior.   
 - Implementar según el documento: "Documentacion\plan-implementacion.md" y actualiza el avance en porcentaje luego de cada tarea.
 - No usar la función delay() ni similares. En cambio usar la librería AsyncTaskLib.
-- Elegir los pines adecuados según el uso que se le de (por ejemplo, si es óptimo para tareas digitales o analógicas)
+- Elegir los pines adecuados según el uso que se le de (por ejemplo, si es óptimo para tareas digitales o analógicas).
+- Comenta la utilidad de cada función o bloque importante.
 - Luego de culminar cada tarea, no generes archivos .md a menos que yo te lo indique. 
 - Luego de culminar cada una tarea espera que yo te indique para proseguir con otra tarea. 
 

@@ -8,28 +8,27 @@ El proyecto consiste en modernizar un controlador de lavadora industrial, migrá
 
 La estrategia se basa en dividir el sistema en módulos independientes pero interconectados, siguiendo el principio de responsabilidad única. Esto permitirá un desarrollo incremental, donde cada módulo puede ser implementado y probado individualmente antes de ser integrado en el sistema completo.
 
-## Progreso General del Proyecto: 25%
+## Progreso General del Proyecto: 35%
 
 ## Etapas de Implementación
 
-### Etapa 1: Preparación y Estructura Base (2 semanas) - 60% completado
+### Etapa 1: Preparación y Estructura Base (2 semanas) - 80% completado
 
 1. **Configuración del Entorno de Desarrollo (3 días)** - 100% completado
    - Configurar el IDE de Arduino con soporte para ESP32
    - Instalar las bibliotecas necesarias (AsyncTaskLib, OneWire, DallasTemperature, HX710B, EEPROM)
    - Configurar la comunicación serial con la pantalla Nextion
 
-2. **Creación de la Estructura de Archivos (2 días)** - 80% completado
+2. **Creación de la Estructura de Archivos (2 días)** - 100% completado
    - Crear los archivos de cabecera (.h) y de implementación (.cpp) para cada módulo
    - Organizar la estructura de directorios del proyecto
-   - Pendiente: completar estructura para otros módulos
 
 3. **Implementación del Módulo de Configuración (2 días)** - 100% completado
    - Definir todas las constantes, parámetros y configuraciones en config.h
    - Adaptar definiciones para ESP32 y pantalla Nextion
    - Documentar cada constante para facilitar futuras modificaciones
 
-4. **Preparación del Archivo Principal (2 días)** - 0% completado
+4. **Preparación del Archivo Principal (2 días)** - 100% completado
    - Crear la estructura mínima del archivo principal automLavanderia_v1.ino
    - Implementar las funciones setup() y loop() con la estructura básica
    - Incluir todos los módulos necesarios

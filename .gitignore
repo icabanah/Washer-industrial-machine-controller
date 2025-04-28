@@ -11,4 +11,5 @@ output
 # *.md
 !3-estructura-software.md
 Documentacion/Presupuesto/
-Documentacion/Analisis de código/
+Documentacion/Analisis-de-codigo/
+Documentacion/Librerias/
