@@ -6,7 +6,7 @@
 #include "../../Librerias/OneWire/OneWire.h"
 #include "../../Librerias/DallasTemperature/DallasTemperature.h"
 #include "../../Librerias/hx710B_pressure_sensor-main/HX710B.h"
-#include "../Librerias/Arduino-AsyncTask-master/src/AsyncTaskLib.h"
+#include "../../Librerias/Arduino-AsyncTask-master/src/AsyncTaskLib.h"
 
 class SensorsClass {
 public:
@@ -28,7 +28,7 @@ public:
   uint8_t getCurrentWaterLevel();
   
   // Verificación de objetivos
-  bool isTemperatureReached(uint8_t targetTemp);
+  bool isTemperatureReached(uint8_t targetTemp);  
   bool isWaterLevelReached(uint8_t targetLevel);
   
   // Control de sensores

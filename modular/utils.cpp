@@ -21,16 +21,17 @@ void UtilsClass::init() {
   debug("Utils inicializado");
 }
 
-/* Configuración del temporizador principal
-Este temporizador se encargará de actualizar los contadores y estados
-del sistema cada cierto intervalo de tiempo
-Se utiliza AsyncTaskLib para evitar bloqueos en el loop principal
-y permitir una ejecución más fluida de otras tareas
-El temporizador se configura para ejecutarse cada INTERVALO_TEMPORIZADOR
-y se detiene automáticamente si no se necesita
-En la implementación final, se llamará a ProgramController.updateTimers()
-para actualizar los contadores y estados del sistema
-**/
+/** 
+  * Configuración del temporizador principal
+  * Este temporizador se encargará de actualizar los contadores y estados
+  * del sistema cada cierto intervalo de tiempo
+  * Se utiliza AsyncTaskLib para evitar bloqueos en el loop principal
+  * y permitir una ejecución más fluida de otras tareas
+  * El temporizador se configura para ejecutarse cada INTERVALO_TEMPORIZADOR
+  * y se detiene automáticamente si no se necesita
+  * En la implementación final, se llamará a ProgramController.updateTimers()
+  * para actualizar los contadores y estados del sistema
+  */
 
 void UtilsClass::_setupMainTimer() {
   // Usar AsyncTaskLib para crear un temporizador no bloqueante

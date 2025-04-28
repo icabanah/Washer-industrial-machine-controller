@@ -3,18 +3,18 @@
 #define STORAGE_H
 
 #include "config.h"
-#include <EEPROM.h>
+#include <Preferences.h>
 
 class StorageClass {
 public:
   // Inicialización
   void init();
   
-  // Operaciones básicas de EEPROM
-  uint8_t readByte(int address);
-  void writeByte(int address, uint8_t value);
-  uint16_t readWord(int address);
-  void writeWord(int address, uint16_t value);
+  // Operaciones básicas de almacenamiento
+  uint8_t readByte(const char* key, uint8_t defaultValue = 0);
+  void writeByte(const char* key, uint8_t value);
+  uint16_t readWord(const char* key, uint16_t defaultValue = 0);
+  void writeWord(const char* key, uint16_t value);
   
   // Gestión de programas y configuraciones
   void saveProgram(uint8_t program);
@@ -45,13 +45,13 @@ public:
 private:
   // Variables para manejo interno
   bool _initialized;
+  Preferences _preferences;
   
   // Métodos internos
-  void _commitChanges();
-  int _getWaterLevelAddress(uint8_t program, uint8_t phase);
-  int _getTemperatureAddress(uint8_t program, uint8_t phase);
-  int _getTimeAddress(uint8_t program, uint8_t phase);
-  int _getRotationAddress(uint8_t program, uint8_t phase);
+  const char* _getWaterLevelKey(uint8_t program, uint8_t phase);
+  const char* _getTemperatureKey(uint8_t program, uint8_t phase);
+  const char* _getTimeKey(uint8_t program, uint8_t phase);
+  const char* _getRotationKey(uint8_t program, uint8_t phase);
 };
 
 // Instancia global

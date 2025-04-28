@@ -4,6 +4,7 @@
             "name": "ESP32-WROOM-DA",
             "includePath": [
                 "${workspaceFolder}/**",
+                // "C:/Users/DANIELE/AppData/Local/Arduino15/packages/arduino/hardware/esp32/2.0.18-arduino.5/cores/esp32/**",
                 "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.2.0/**",
                 "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/tools/**",
                 "C:/Users/Daniele/Documents/Arduino/libraries/**",

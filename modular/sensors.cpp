@@ -29,8 +29,8 @@ void SensorsClass::_setupTemperatureSensor() {
 }
 
 void SensorsClass::_setupPressureSensor() {
-  _pressureSensor = new HX710B(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
-  _pressureSensor->begin();
+  _pressureSensor = new HX710B();
+  _pressureSensor->begin(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
   
   // Leer presión inicial
   updatePressure();

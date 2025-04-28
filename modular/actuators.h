@@ -4,7 +4,7 @@
 
 #include "config.h"
 #include "hardware.h"
-#include <AsyncTaskLib.h>
+#include "../../Librerias/Arduino-AsyncTask-master/src/AsyncTaskLib.h"
 
 // Definición de estados para actuadores
 #define MOTOR_OFF 0

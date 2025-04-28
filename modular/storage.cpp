@@ -1,11 +1,16 @@
 // storage.cpp
 #include "storage.h"
+#include <string>
 
 // Instancia global
 StorageClass Storage;
 
+// Espacio de nombres para la configuración
+#define STORAGE_NAMESPACE "washerCfg"
+
 void StorageClass::init() {
-  EEPROM.begin(512); // Inicializar EEPROM con 512 bytes
+  // Inicializar el espacio de nombres de Preferences en modo lectura/escritura
+  _preferences.begin(STORAGE_NAMESPACE, false);
   _initialized = true;
   
   // Validar configuraciones al iniciar
@@ -14,141 +19,132 @@ void StorageClass::init() {
   }
 }
 
-uint8_t StorageClass::readByte(int address) {
-  if (!_initialized) return 0;
-  return EEPROM.read(address);
+uint8_t StorageClass::readByte(const char* key, uint8_t defaultValue) {
+  if (!_initialized) return defaultValue;
+  return _preferences.getUChar(key, defaultValue);
 }
 
-void StorageClass::writeByte(int address, uint8_t value) {
+void StorageClass::writeByte(const char* key, uint8_t value) {
   if (!_initialized) return;
-  EEPROM.write(address, value);
-  _commitChanges();
+  _preferences.putUChar(key, value);
 }
 
-uint16_t StorageClass::readWord(int address) {
-  if (!_initialized) return 0;
-  uint16_t value = EEPROM.read(address);
-  value |= (EEPROM.read(address + 1) << 8);
-  return value;
+uint16_t StorageClass::readWord(const char* key, uint16_t defaultValue) {
+  if (!_initialized) return defaultValue;
+  return _preferences.getUShort(key, defaultValue);
 }
 
-void StorageClass::writeWord(int address, uint16_t value) {
+void StorageClass::writeWord(const char* key, uint16_t value) {
   if (!_initialized) return;
-  EEPROM.write(address, value & 0xFF);
-  EEPROM.write(address + 1, (value >> 8) & 0xFF);
-  _commitChanges();
-}
-
-void StorageClass::_commitChanges() {
-  EEPROM.commit();
+  _preferences.putUShort(key, value);
 }
 
 void StorageClass::saveProgram(uint8_t program) {
-  writeByte(EEPROM_ADDR_PROGRAMA, program);
+  writeByte("programa", program);
 }
 
 uint8_t StorageClass::loadProgram() {
-  uint8_t program = readByte(EEPROM_ADDR_PROGRAMA);
+  uint8_t program = readByte("programa", 0);
   return (program < NUM_PROGRAMAS) ? program : 0;
 }
 
 void StorageClass::savePhase(uint8_t phase) {
-  writeByte(EEPROM_ADDR_FASE, phase);
+  writeByte("fase", phase);
 }
 
 uint8_t StorageClass::loadPhase() {
-  uint8_t phase = readByte(EEPROM_ADDR_FASE);
+  uint8_t phase = readByte("fase", 0);
   return (phase < NUM_FASES) ? phase : 0;
 }
 
 void StorageClass::saveTimer(uint8_t minutes, uint8_t seconds) {
-  writeByte(EEPROM_ADDR_MINUTOS, minutes);
-  writeByte(EEPROM_ADDR_SEGUNDOS, seconds);
+  writeByte("minutos", minutes);
+  writeByte("segundos", seconds);
 }
 
 void StorageClass::loadTimer(uint8_t &minutes, uint8_t &seconds) {
-  minutes = readByte(EEPROM_ADDR_MINUTOS);
-  seconds = readByte(EEPROM_ADDR_SEGUNDOS);
+  minutes = readByte("minutos", 0);
+  seconds = readByte("segundos", 0);
 }
 
-int StorageClass::_getWaterLevelAddress(uint8_t program, uint8_t phase) {
-  return EEPROM_ADDR_BASE_NIVELES + (program * NUM_FASES) + phase;
+const char* StorageClass::_getWaterLevelKey(uint8_t program, uint8_t phase) {
+  static char key[16];
+  sprintf(key, "nivel_%u_%u", program, phase);
+  return key;
 }
 
 void StorageClass::saveWaterLevel(uint8_t program, uint8_t phase, uint8_t level) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  int address = _getWaterLevelAddress(program, phase);
-  writeByte(address, level);
+  writeByte(_getWaterLevelKey(program, phase), level);
 }
 
 uint8_t StorageClass::loadWaterLevel(uint8_t program, uint8_t phase) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0;
-  int address = _getWaterLevelAddress(program, phase);
-  return readByte(address);
+  return readByte(_getWaterLevelKey(program, phase), 0);
 }
 
-int StorageClass::_getTemperatureAddress(uint8_t program, uint8_t phase) {
-  return EEPROM_ADDR_BASE_TEMP + (program * NUM_FASES) + phase;
+const char* StorageClass::_getTemperatureKey(uint8_t program, uint8_t phase) {
+  static char key[16];
+  sprintf(key, "temp_%u_%u", program, phase);
+  return key;
 }
 
 void StorageClass::saveTemperature(uint8_t program, uint8_t phase, uint8_t temperature) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  int address = _getTemperatureAddress(program, phase);
-  writeByte(address, temperature);
+  writeByte(_getTemperatureKey(program, phase), temperature);
 }
 
 uint8_t StorageClass::loadTemperature(uint8_t program, uint8_t phase) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0;
-  int address = _getTemperatureAddress(program, phase);
-  return readByte(address);
+  return readByte(_getTemperatureKey(program, phase), 0);
 }
 
-int StorageClass::_getTimeAddress(uint8_t program, uint8_t phase) {
-  return EEPROM_ADDR_BASE_TIEMPOS + (program * NUM_FASES) + phase;
+const char* StorageClass::_getTimeKey(uint8_t program, uint8_t phase) {
+  static char key[16];
+  sprintf(key, "tiempo_%u_%u", program, phase);
+  return key;
 }
 
 void StorageClass::saveTime(uint8_t program, uint8_t phase, uint8_t time) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  int address = _getTimeAddress(program, phase);
-  writeByte(address, time);
+  writeByte(_getTimeKey(program, phase), time);
 }
 
 uint8_t StorageClass::loadTime(uint8_t program, uint8_t phase) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0;
-  int address = _getTimeAddress(program, phase);
-  return readByte(address);
+  return readByte(_getTimeKey(program, phase), 0);
 }
 
-int StorageClass::_getRotationAddress(uint8_t program, uint8_t phase) {
-  return EEPROM_ADDR_BASE_ROTACION + (program * NUM_FASES) + phase;
+const char* StorageClass::_getRotationKey(uint8_t program, uint8_t phase) {
+  static char key[16];
+  sprintf(key, "rotacion_%u_%u", program, phase);
+  return key;
 }
 
 void StorageClass::saveRotation(uint8_t program, uint8_t phase, uint8_t rotation) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  int address = _getRotationAddress(program, phase);
-  writeByte(address, rotation);
+  writeByte(_getRotationKey(program, phase), rotation);
 }
 
 uint8_t StorageClass::loadRotation(uint8_t program, uint8_t phase) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0;
-  int address = _getRotationAddress(program, phase);
-  return readByte(address);
+  return readByte(_getRotationKey(program, phase), 0);
 }
 
 uint16_t StorageClass::loadUsageCounter() {
-  return readWord(EEPROM_ADDR_CONTADOR_L);
+  return readWord("contador", 0);
 }
 
 void StorageClass::incrementUsageCounter() {
   uint16_t counter = loadUsageCounter();
   counter++;
-  writeWord(EEPROM_ADDR_CONTADOR_L, counter);
+  writeWord("contador", counter);
 }
 
 bool StorageClass::validateSettings() {
   // Verificar que los programas y fases estén dentro de los límites
-  uint8_t program = readByte(EEPROM_ADDR_PROGRAMA);
-  uint8_t phase = readByte(EEPROM_ADDR_FASE);
+  uint8_t program = readByte("programa", 0);
+  uint8_t phase = readByte("fase", 0);
   
   return (program < NUM_PROGRAMAS && phase < NUM_FASES);
 }
@@ -158,6 +154,9 @@ void StorageClass::resetToDefaults() {
   saveProgram(0);
   savePhase(0);
   saveTimer(0, 0);
+  
+  // Reiniciar el contador de uso
+  writeWord("contador", 0);
   
   // Valores por defecto para el programa 1
   uint8_t defaultWaterLevels[3][4] = {
