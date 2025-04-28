@@ -2,6 +2,7 @@
 #ifndef UI_CONTROLLER_H
 #define UI_CONTROLLER_H
 
+#include "Arduino.h"
 #include "config.h"
 #include "hardware.h"
 

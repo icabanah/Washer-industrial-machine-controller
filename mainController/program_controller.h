@@ -2,12 +2,14 @@
 #ifndef PROGRAM_CONTROLLER_H
 #define PROGRAM_CONTROLLER_H
 
+#include "Arduino.h"
 #include "config.h"
 #include "utils.h"
 #include "storage.h"
 #include "sensors.h"
 #include "actuators.h"
 #include "ui_controller.h"
+
 
 class ProgramControllerClass {
 public:

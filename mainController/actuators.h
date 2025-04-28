@@ -2,6 +2,7 @@
 #ifndef ACTUATORS_H
 #define ACTUATORS_H
 
+#include "Arduino.h"
 #include "config.h"
 #include "hardware.h"
 
@@ -64,6 +65,10 @@ public:
   
   // Actualización de temporizadores
   void updateTimers();
+  
+  // Métodos para gestión de callbacks
+  void incrementMotorSeconds();
+  void updateMotorDirection();
 
 private:
   // Variables de estado

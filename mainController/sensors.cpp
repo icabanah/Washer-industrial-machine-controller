@@ -5,6 +5,20 @@
 // Instancia global
 SensorsClass Sensors;
 
+// Callbacks para las tareas temporizadas
+// void temperatureTimerCallback() {
+//   Sensors.updateTemperature();
+// }
+
+// void pressureTimerCallback() {
+//   Sensors.updatePressure();
+// }
+
+void monitoringTimerCallback() {
+  Sensors.updateTemperature();
+  Sensors.updatePressure();
+}
+
 void SensorsClass::init() {
   _currentTemperature = 0.0;
   _currentPressureRaw = 0;
@@ -38,10 +52,13 @@ void SensorsClass::_setupPressureSensor() {
 
 void SensorsClass::_setupMonitoring() {
   // Configurar temporizador asincrónico para lectura de sensores
-  _sensorTimer = new AsyncTask(500, true, []() {
-    Sensors.updateTemperature();
-    Sensors.updatePressure();
-  });
+
+  // _monitoringTaskId = Utils.createInterval(500, []() {
+  //   Sensors.updateTemperature();
+  //   Sensors.updatePressure();
+  // }, true);
+
+  _monitoringTaskId = Utils.createInterval(500, monitoringTimerCallback, true);
 }
 
 void SensorsClass::startMonitoring() {

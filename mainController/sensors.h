@@ -2,11 +2,12 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
+#include "Arduino.h"
 #include "config.h"
 #include "../Librerias/OneWire/OneWire.h"
 #include "../Librerias/DallasTemperature/DallasTemperature.h"
 #include "../Librerias/hx710B_pressure_sensor-main/HX710B.h"
-#include "../Librerias/Arduino-AsyncTask/src/AsyncTaskLib.h"
+// #include "../Librerias/Arduino-AsyncTask/src/AsyncTaskLib.h"
 
 class SensorsClass {
 public:
@@ -39,13 +40,16 @@ private:
   OneWire* _oneWire;
   DallasTemperature* _tempSensors;
   HX710B* _pressureSensor;
-  AsyncTask* _sensorTimer;
+  // AsyncTask* _sensorTimer;
   
   // Variables para almacenar lecturas
   float _currentTemperature;
   uint16_t _currentPressureRaw;
   uint8_t _currentWaterLevel;
   bool _monitoring;
+
+  // IDs de tareas temporizadas
+  int _monitoringTaskId;
   
   // Métodos internos
   void _setupTemperatureSensor();

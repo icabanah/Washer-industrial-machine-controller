@@ -2,6 +2,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "Arduino.h"
 #include "config.h"
 
 // Definimos un tipo para funciones callback

@@ -11,8 +11,8 @@ void buzzerTimerCallback() {
 }
 
 void rotationTimerCallback() {
-  Actuators._motorSeconds++;
-  Actuators._updateMotorDirection();
+  Actuators.incrementMotorSeconds();
+  Actuators.updateMotorDirection();
 }
 
 ActuatorsClass::~ActuatorsClass() {
@@ -277,6 +277,16 @@ void ActuatorsClass::updateTimers() {
   // En este método podríamos agregar funcionalidades adicionales
   // que necesiten actualizarse periódicamente pero que no requieran
   // un temporizador independiente
+}
+
+// Método público para incrementar segundos del motor
+void ActuatorsClass::incrementMotorSeconds() {
+  _motorSeconds++;
+}
+
+// Método público para actualizar dirección del motor
+void ActuatorsClass::updateMotorDirection() {
+  _updateMotorDirection();
 }
 
 void ActuatorsClass::_updateMotorDirection() {

@@ -2,9 +2,9 @@
 #ifndef HARDWARE_H
 #define HARDWARE_H
 
+#include "Arduino.h"
 #include "config.h"
 #include <HardwareSerial.h>
-// #include ".../../Librerias/Hardware-serial/HardwareSerial.h"
 
 class HardwareClass {
 public:
