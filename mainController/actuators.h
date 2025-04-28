@@ -4,7 +4,7 @@
 
 #include "config.h"
 #include "hardware.h"
-#include "../Librerias/Arduino-AsyncTask-master/src/AsyncTaskLib.h"
+#include "../Librerias/Arduino-AsyncTask/src/AsyncTaskLib.h"
 
 // Definición de estados para actuadores
 #define MOTOR_OFF 0
@@ -46,7 +46,7 @@ public:
   bool isDoorLocked();
   
   // Control del zumbador
-  void startBuzzer(uint16_t duration = 0);
+  void startBuzzer(unsigned long duration = 0);
   void stopBuzzer();
   bool isBuzzerActive();
   

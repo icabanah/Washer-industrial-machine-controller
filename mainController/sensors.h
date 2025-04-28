@@ -6,7 +6,7 @@
 #include "../Librerias/OneWire/OneWire.h"
 #include "../Librerias/DallasTemperature/DallasTemperature.h"
 #include "../Librerias/hx710B_pressure_sensor-main/HX710B.h"
-#include "../Librerias/Arduino-AsyncTask-master/src/AsyncTaskLib.h"
+#include "../Librerias/Arduino-AsyncTask/src/AsyncTaskLib.h"
 
 class SensorsClass {
 public:

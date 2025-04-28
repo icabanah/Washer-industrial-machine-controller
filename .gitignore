@@ -1,7 +1,7 @@
 # .vscode
 output
 /Librerias/Adafruit_BusIO-master
-/Librerias/Arduino-AsyncTask-master
+/Librerias/Arduino-AsyncTask
 /Librerias/DallasTemperature
 /Librerias/EEPROM
 /Librerias/Hardware-Serial

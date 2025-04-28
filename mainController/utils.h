@@ -3,7 +3,7 @@
 #define UTILS_H
 
 #include "config.h"
-#include "../Librerias/Arduino-AsyncTask-master/src/AsyncTaskLib.h"
+#include "../Librerias/Arduino-AsyncTask/src/AsyncTaskLib.h"
 
 class UtilsClass {
 public:
