@@ -5,18 +5,9 @@
 // Instancia global
 SensorsClass Sensors;
 
-// Callbacks para las tareas temporizadas
-// void temperatureTimerCallback() {
-//   Sensors.updateTemperature();
-// }
-
-// void pressureTimerCallback() {
-//   Sensors.updatePressure();
-// }
-
+// Callback para la tarea de monitoreo
 void monitoringTimerCallback() {
-  Sensors.updateTemperature();
-  Sensors.updatePressure();
+  Sensors.updateSensors();
 }
 
 void SensorsClass::init() {
@@ -24,6 +15,7 @@ void SensorsClass::init() {
   _currentPressureRaw = 0;
   _currentWaterLevel = 0;
   _monitoring = false;
+  _monitoringTaskId = 0;
   
   _setupTemperatureSensor();
   _setupPressureSensor();
@@ -51,27 +43,34 @@ void SensorsClass::_setupPressureSensor() {
 }
 
 void SensorsClass::_setupMonitoring() {
-  // Configurar temporizador asincrónico para lectura de sensores
+  // No iniciamos el monitoreo automáticamente, se iniciará cuando se llame a startMonitoring()
+  _monitoringTaskId = 0;
+}
 
-  // _monitoringTaskId = Utils.createInterval(500, []() {
-  //   Sensors.updateTemperature();
-  //   Sensors.updatePressure();
-  // }, true);
-
-  _monitoringTaskId = Utils.createInterval(500, monitoringTimerCallback, true);
+// Método para actualizar todos los sensores a la vez
+void SensorsClass::updateSensors() {
+  updateTemperature();
+  updatePressure();
 }
 
 void SensorsClass::startMonitoring() {
   if (!_monitoring) {
-    _sensorTimer->Start();
-    _monitoring = true;
-    Utils.debug("Monitoreo de sensores iniciado");
+    // Crear una tarea recurrente para monitoreo cada 500ms
+    _monitoringTaskId = Utils.createInterval(500, monitoringTimerCallback, true);
+    
+    if (_monitoringTaskId > 0) {
+      _monitoring = true;
+      Utils.debug("Monitoreo de sensores iniciado");
+    } else {
+      Utils.debug("Error al iniciar monitoreo de sensores");
+    }
   }
 }
 
 void SensorsClass::stopMonitoring() {
-  if (_monitoring) {
-    _sensorTimer->Stop();
+  if (_monitoring && _monitoringTaskId > 0) {
+    Utils.stopTask(_monitoringTaskId);
+    _monitoringTaskId = 0;
     _monitoring = false;
     Utils.debug("Monitoreo de sensores detenido");
   }

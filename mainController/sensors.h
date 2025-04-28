@@ -7,7 +7,6 @@
 #include "../Librerias/OneWire/OneWire.h"
 #include "../Librerias/DallasTemperature/DallasTemperature.h"
 #include "../Librerias/hx710B_pressure_sensor-main/HX710B.h"
-// #include "../Librerias/Arduino-AsyncTask/src/AsyncTaskLib.h"
 
 class SensorsClass {
 public:
@@ -22,6 +21,7 @@ public:
   // Lectura de sensores
   void updateTemperature();
   void updatePressure();
+  void updateSensors(); // Método para actualizar todos los sensores
   
   // Obtención de valores actuales
   float getCurrentTemperature();
@@ -40,7 +40,6 @@ private:
   OneWire* _oneWire;
   DallasTemperature* _tempSensors;
   HX710B* _pressureSensor;
-  // AsyncTask* _sensorTimer;
   
   // Variables para almacenar lecturas
   float _currentTemperature;
@@ -48,7 +47,7 @@ private:
   uint8_t _currentWaterLevel;
   bool _monitoring;
 
-  // IDs de tareas temporizadas
+  // ID de tarea temporizada
   int _monitoringTaskId;
   
   // Métodos internos
