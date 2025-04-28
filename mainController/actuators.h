@@ -4,7 +4,6 @@
 
 #include "config.h"
 #include "hardware.h"
-#include "../Librerias/Arduino-AsyncTask/src/AsyncTaskLib.h"
 
 // Definición de estados para actuadores
 #define MOTOR_OFF 0
@@ -16,6 +15,10 @@
 
 class ActuatorsClass {
 public:
+  // Constructor y destructor
+  ActuatorsClass() = default;
+  ~ActuatorsClass();
+  
   // Inicialización
   void init();
   
@@ -80,14 +83,16 @@ private:
   uint16_t _reverseTime;
   uint16_t _pauseTime;
   
-  // Temporizadores
-  AsyncTask* _buzzerTimer;
-  AsyncTask* _motorTimer;
+  // IDs de tareas temporizadas
+  int _buzzerTaskId;      // ID de la tarea del zumbador
+  int _rotationTaskId;    // ID de la tarea de rotación
+  
+  // Tiempo para control manual de temporizadores
+  unsigned long _lastRotationUpdate;
   
   // Métodos internos
   void _configureRotationTiming(uint8_t level);
   void _updateMotorDirection();
-  void _setupBuzzerTimer();
 };
 
 // Instancia global

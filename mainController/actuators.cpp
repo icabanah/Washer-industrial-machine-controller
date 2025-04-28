@@ -5,6 +5,29 @@
 // Instancia global
 ActuatorsClass Actuators;
 
+// Callbacks para las tareas temporizadas
+void buzzerTimerCallback() {
+  Actuators.stopBuzzer();
+}
+
+void rotationTimerCallback() {
+  Actuators._motorSeconds++;
+  Actuators._updateMotorDirection();
+}
+
+ActuatorsClass::~ActuatorsClass() {
+  // Detener cualquier tarea activa
+  if (_buzzerTaskId > 0) {
+    Utils.stopTask(_buzzerTaskId);
+    _buzzerTaskId = 0;
+  }
+  
+  if (_rotationTaskId > 0) {
+    Utils.stopTask(_rotationTaskId);
+    _rotationTaskId = 0;
+  }
+}
+
 void ActuatorsClass::init() {
   // Inicializar estados
   _motorState = MOTOR_OFF;
@@ -23,10 +46,10 @@ void ActuatorsClass::init() {
   _reverseTime = 0;
   _pauseTime = 0;
   
-  // Configurar temporizadores
-  _buzzerTimer = nullptr;
-  _motorTimer = nullptr;
-  _setupBuzzerTimer();
+  // Inicializar IDs de tareas
+  _buzzerTaskId = 0;
+  _rotationTaskId = 0;
+  _lastRotationUpdate = 0;
   
   // Asegurar que todos los actuadores estén en estado seguro
   stopMotor();
@@ -37,11 +60,6 @@ void ActuatorsClass::init() {
   stopBuzzer();
   
   Utils.debug("Actuadores inicializados");
-}
-
-void ActuatorsClass::_setupBuzzerTimer() {
-  // Inicializamos a nullptr, se creará cuando sea necesario en startBuzzer()
-  _buzzerTimer = nullptr;
 }
 
 void ActuatorsClass::startMotorForward() {
@@ -169,27 +187,25 @@ bool ActuatorsClass::isDoorLocked() {
   return _doorLocked;
 }
 
-void ActuatorsClass::startBuzzer(uint16_t duration) {
+void ActuatorsClass::startBuzzer(unsigned long duration) {
   Hardware.digitalWrite(PIN_BUZZER, HIGH);
   _buzzerActive = true;
   
   // Si se especifica una duración, configurar el temporizador
   if (duration > 0) {
-    // Primero detener el temporizador anterior si existe
-    if (_buzzerTimer != nullptr) {
-      delete _buzzerTimer;
+    // Detener el temporizador anterior si existe
+    if (_buzzerTaskId > 0) {
+      Utils.stopTask(_buzzerTaskId);
+      _buzzerTaskId = 0;
     }
     
-    // Crear un nuevo temporizador con la duración especificada
-    // Convertir el uint16_t duration a unsigned long para que coincida con la firma del constructor
-    _buzzerTimer = new AsyncTask(static_cast<unsigned long>(duration), false, []() {
-      Actuators.stopBuzzer();
-    });
+    // Crear un nuevo temporizador de un solo uso
+    _buzzerTaskId = Utils.createTimeout(duration, buzzerTimerCallback);
     
-    _buzzerTimer->Start();
+    Utils.debug("Zumbador activado por " + String(duration) + " ms");
+  } else {
+    Utils.debug("Zumbador activado indefinidamente");
   }
-  
-  Utils.debug("Zumbador activado");
 }
 
 void ActuatorsClass::stopBuzzer() {
@@ -197,8 +213,9 @@ void ActuatorsClass::stopBuzzer() {
   _buzzerActive = false;
   
   // Detener el temporizador si está activo
-  if (_buzzerTimer && _buzzerTimer->IsActive()) {
-    _buzzerTimer->Stop();
+  if (_buzzerTaskId > 0) {
+    Utils.stopTask(_buzzerTaskId);
+    _buzzerTaskId = 0;
   }
   
   Utils.debug("Zumbador desactivado");
@@ -210,17 +227,39 @@ bool ActuatorsClass::isBuzzerActive() {
 
 void ActuatorsClass::startAutoRotation(uint8_t level) {
   if (level > 0 && level <= MAX_NIVEL_ROTACION) {
+    // Detener rotación anterior si existe
+    stopAutoRotation();
+    
+    // Configurar nivel de rotación
     setRotationLevel(level);
-    _autoRotationActive = true;
     _motorSeconds = 0;
-    startMotorForward(); // Iniciar con dirección hacia adelante
-    Utils.debug("Rotación automática iniciada");
+    
+    // Iniciar con dirección hacia adelante
+    startMotorForward();
+    _autoRotationActive = true;
+    
+    // Crear un temporizador recurrente que actualizará la rotación del motor
+    // Este se ejecutará cada segundo (1000 ms)
+    _rotationTaskId = Utils.createInterval(1000, rotationTimerCallback, true);
+    
+    Utils.debug("Rotación automática iniciada con nivel " + String(level));
+  } else {
+    Utils.debug("Error: Nivel de rotación inválido (" + String(level) + ")");
   }
 }
 
 void ActuatorsClass::stopAutoRotation() {
   _autoRotationActive = false;
+  
+  // Detener el motor
   stopMotor();
+  
+  // Detener el temporizador de rotación si existe
+  if (_rotationTaskId > 0) {
+    Utils.stopTask(_rotationTaskId);
+    _rotationTaskId = 0;
+  }
+  
   Utils.debug("Rotación automática detenida");
 }
 
@@ -229,11 +268,15 @@ bool ActuatorsClass::isAutoRotationActive() {
 }
 
 void ActuatorsClass::updateTimers() {
-  // Manejar la rotación automática si está activa
-  if (_autoRotationActive) {
-    _motorSeconds++;
-    _updateMotorDirection();
-  }
+  // Esta función se llama periódicamente desde el temporizador principal
+  // a través de Utils.updateTimers()
+  
+  // Ya no necesitamos incrementar _motorSeconds aquí, porque ahora
+  // se maneja a través del temporizador recurrente creado en startAutoRotation
+  
+  // En este método podríamos agregar funcionalidades adicionales
+  // que necesiten actualizarse periódicamente pero que no requieran
+  // un temporizador independiente
 }
 
 void ActuatorsClass::_updateMotorDirection() {
@@ -273,6 +316,8 @@ void ActuatorsClass::emergencyStop() {
   closeSteamValve();
   openDrainValve();
   unlockDoor();
+  
+  // Activar el zumbador por un tiempo determinado
   startBuzzer(TIEMPO_BUZZER);
   
   Utils.debug("PARADA DE EMERGENCIA ACTIVADA");

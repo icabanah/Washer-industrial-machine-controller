@@ -62,8 +62,8 @@ void loop() {
   // Actualizar controlador de programa
   ProgramController.update();
   
-  // Procesar eventos de AsyncTaskLib
-  Utils.updateAsyncTasks();
+  // Procesar eventos de tareas temporizadas
+  Utils.updateTasks();
   
   // Pequeña pausa para evitar saturación del CPU
   yield();
@@ -79,16 +79,17 @@ void checkEmergencyButton() {
   }
 }
 
+// Callback para el cambio de pantalla después de la bienvenida
+void welcomeScreenCallback() {
+  UIController.showSelectionScreen(ProgramController.getCurrentProgram());
+}
+
 void showWelcomeScreen() {
   // Mostrar pantalla de bienvenida
   UIController.showWelcomeScreen();
   
-  // Crear tarea asíncrona para cambiar de pantalla después del tiempo de bienvenida
-  static AsyncTask welcomeDelay(TIEMPO_BIENVENIDA, false, []() {
-    UIController.showSelectionScreen(ProgramController.getCurrentProgram());
-  });
+  // Crear temporizador para cambiar de pantalla después del tiempo de bienvenida
+  Utils.createTimeout(TIEMPO_BIENVENIDA, welcomeScreenCallback);
   
-  // Registrar y activar la tarea
-  Utils.registerAsyncTask(&welcomeDelay);
-  welcomeDelay.Start();
+  Serial.println("Pantalla de bienvenida mostrada, cambiará en " + String(TIEMPO_BIENVENIDA) + " ms");
 }
