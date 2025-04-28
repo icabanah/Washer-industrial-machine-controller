@@ -181,7 +181,8 @@ void ActuatorsClass::startBuzzer(uint16_t duration) {
     }
     
     // Crear un nuevo temporizador con la duración especificada
-    _buzzerTimer = new AsyncTask(duration, false, []() {
+    // Convertir el uint16_t duration a unsigned long para que coincida con la firma del constructor
+    _buzzerTimer = new AsyncTask(static_cast<unsigned long>(duration), false, []() {
       Actuators.stopBuzzer();
     });
     

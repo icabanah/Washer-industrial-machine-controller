@@ -16,14 +16,14 @@
  * - Programas de lavado configurables
  */
 
-#include "../config.h"
-#include "../hardware.h"
-#include "../utils.h"
-#include "../storage.h"
-#include "../sensors.h"
-#include "../actuators.h"
-#include "../ui_controller.h"
-#include "../program_controller.h"
+#include "config.h"
+#include "hardware.h"
+#include "utils.h"
+#include "storage.h"
+#include "sensors.h"
+#include "actuators.h"
+#include "ui_controller.h"
+#include "program_controller.h"
 
 // Declaración de funciones
 void checkEmergencyButton();
