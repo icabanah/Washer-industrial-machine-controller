@@ -4,12 +4,31 @@
 // Definición de la instancia global
 UIControllerClass UIController;
 
-// Variables externas que necesitan ser declaradas aquí para la versión de prueba
-// En la implementación final, estas vendrán del módulo Program Controller
-extern uint8_t NivelAgua[3][4];
-extern uint8_t RotacionTam[3][4];
-extern uint8_t TemperaturaLim[3][4];
-extern uint8_t TemporizadorLim[3][4];
+// Definición de variables para almacenar datos de programa
+// Estas variables simulan los datos que vendrían de Program Controller
+uint8_t NivelAgua[3][4] = {
+  {2, 3, 4, 1},  // Programa 1
+  {3, 2, 4, 2},  // Programa 2
+  {4, 3, 2, 1}   // Programa 3
+};
+
+uint8_t RotacionTam[3][4] = {
+  {1, 2, 1, 3},  // Programa 1
+  {2, 1, 3, 2},  // Programa 2
+  {3, 2, 1, 2}   // Programa 3
+};
+
+uint8_t TemperaturaLim[3][4] = {
+  {30, 40, 50, 40},  // Programa 1
+  {35, 45, 55, 45},  // Programa 2
+  {40, 50, 60, 50}   // Programa 3
+};
+
+uint8_t TemporizadorLim[3][4] = {
+  {5, 10, 15, 5},   // Programa 1
+  {10, 15, 20, 10}, // Programa 2
+  {15, 20, 25, 15}  // Programa 3
+};
 
 void UIControllerClass::init() {
   // Obtener referencia a los datos de programa

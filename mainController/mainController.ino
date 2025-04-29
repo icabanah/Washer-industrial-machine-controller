@@ -1,5 +1,5 @@
 /*
- * automLavanderia_v1.ino
+ * mainController.ino
  * 
  * Controlador para lavadora industrial
  * Arquitectura modular para ESP32-WROOM con pantalla táctil Nextion
