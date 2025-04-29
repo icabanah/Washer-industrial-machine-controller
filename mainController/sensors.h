@@ -8,7 +8,7 @@
 #include <OneWire.h>
 // #include "../Librerias/DallasTemperature/DallasTemperature.h"
 #include <DallasTemperature.h>
-#include "../Librerias/hx710B_pressure_sensor-main/HX710B.h"
+#include "HX710B.h"
 
 class SensorsClass {
 public:
