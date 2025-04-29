@@ -59,33 +59,33 @@ void SensorsClass::_setupTemperatureSensor() {
   _requestTemperature();
 }
 
-// void SensorsClass::_setupPressureSensor() {
-//   // Usar objeto estático en lugar de asignación dinámica
-//   _pressureSensor.begin(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
-//   _pressureSensorErrorCount = 0;
-//   _pressureSensorCalibrated = false;
+void SensorsClass::_setupPressureSensor() {
+  // Usar objeto estático en lugar de asignación dinámica
+  _pressureSensor.begin(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
+  _pressureSensorErrorCount = 0;
+  _pressureSensorCalibrated = false;
   
-//   // Intentar leer el sensor para verificar que funciona
-//   if (_pressureSensor.wait_ready_timeout(1000, 100)) {
-//     // Sensor está respondiendo, realizar calibración inicial
-//     _calibratePressureSensor();
-//     Utils.debug("Sensor de presión inicializado correctamente");
-//   } else {
-//     Utils.debug("ADVERTENCIA: Sensor de presión no responde");
-//   }
-// }
+  // Intentar leer el sensor para verificar que funciona
+  if (_pressureSensor.wait_ready_timeout(1000, 100)) {
+    // Sensor está respondiendo, realizar calibración inicial
+    _calibratePressureSensor();
+    Utils.debug("Sensor de presión inicializado correctamente");
+  } else {
+    Utils.debug("ADVERTENCIA: Sensor de presión no responde");
+  }
+}
 
-// void SensorsClass::_calibratePressureSensor() {
-//   // Realizar varias lecturas para establecer un offset y calibración adecuados
-//   if (_pressureSensor.wait_ready_timeout(1000, 100)) {
-//     _pressureSensor.tare(10); // 10 lecturas para establecer offset
-//     _pressureSensorCalibrated = true;
-//     Utils.debug("Sensor de presión calibrado");
-//   } else {
-//     _pressureSensorCalibrated = false;
-//     Utils.debug("Error al calibrar sensor de presión");
-//   }
-// }
+void SensorsClass::_calibratePressureSensor() {
+  // Realizar varias lecturas para establecer un offset y calibración adecuados
+  if (_pressureSensor.wait_ready_timeout(1000, 100)) {
+    _pressureSensor.tare(10); // 10 lecturas para establecer offset
+    _pressureSensorCalibrated = true;
+    Utils.debug("Sensor de presión calibrado");
+  } else {
+    _pressureSensorCalibrated = false;
+    Utils.debug("Error al calibrar sensor de presión");
+  }
+}
 
 void SensorsClass::_requestTemperature() {
   // Iniciar la solicitud de temperatura
@@ -127,7 +127,7 @@ void SensorsClass::_setupMonitoring() {
 // Método para actualizar todos los sensores a la vez
 void SensorsClass::updateSensors() {
   updateTemperature();
-  // updatePressure();
+  updatePressure();
 }
 
 void SensorsClass::startMonitoring() {
@@ -163,67 +163,67 @@ void SensorsClass::updateTemperature() {
   _requestTemperature();
 }
 
-// void SensorsClass::updatePressure() {
-//   if (_pressureSensor.is_ready()) {
-//     // Usar el método pascal() para obtener la presión en unidades adecuadas
-//     _currentPressurePascal = _pressureSensor.pascal();
-//     _currentPressureRaw = (uint16_t)_currentPressurePascal; // Para compatibilidad
-//     _currentWaterLevel = _convertPressureToLevel(_currentPressurePascal);
-//     _pressureSensorErrorCount = 0; // Resetear contador de errores
-//   } else {
-//     // Incrementar contador de errores si el sensor no responde
-//     _pressureSensorErrorCount++;
+void SensorsClass::updatePressure() {
+  if (_pressureSensor.is_ready()) {
+    // Usar el método pascal() para obtener la presión en unidades adecuadas
+    _currentPressurePascal = _pressureSensor.pascal();
+    _currentPressureRaw = (uint16_t)_currentPressurePascal; // Para compatibilidad
+    _currentWaterLevel = _convertPressureToLevel(_currentPressurePascal);
+    _pressureSensorErrorCount = 0; // Resetear contador de errores
+  } else {
+    // Incrementar contador de errores si el sensor no responde
+    _pressureSensorErrorCount++;
     
-//     if (_pressureSensorErrorCount > 10) {
-//       Utils.debug("ERROR: Múltiples lecturas fallidas del sensor de presión");
-//       // Si han pasado muchos errores, intentar reiniciar el sensor
-//       if (_pressureSensorErrorCount > 20) {
-//         _setupPressureSensor();
-//       }
-//     }
-//   }
-// }
+    if (_pressureSensorErrorCount > 10) {
+      Utils.debug("ERROR: Múltiples lecturas fallidas del sensor de presión");
+      // Si han pasado muchos errores, intentar reiniciar el sensor
+      if (_pressureSensorErrorCount > 20) {
+        _setupPressureSensor();
+      }
+    }
+  }
+}
 
 float SensorsClass::getCurrentTemperature() {
   return _currentTemperature;
 }
 
-// uint16_t SensorsClass::getCurrentPressureRaw() {
-//   return _currentPressureRaw;
-// }
+uint16_t SensorsClass::getCurrentPressureRaw() {
+  return _currentPressureRaw;
+}
 
-// float SensorsClass::getCurrentPressurePascal() {
-//   return _currentPressurePascal;
-// }
+float SensorsClass::getCurrentPressurePascal() {
+  return _currentPressurePascal;
+}
 
 uint8_t SensorsClass::getCurrentWaterLevel() {
   return _currentWaterLevel;
 }
 
-// uint8_t SensorsClass::_convertPressureToLevel(float pressure) {
-//   // Implementación mejorada con interpolación lineal entre niveles
-//   if (pressure < NIVEL_PRESION_1) return 0;
+uint8_t SensorsClass::_convertPressureToLevel(float pressure) {
+  // Implementación mejorada con interpolación lineal entre niveles
+  if (pressure < NIVEL_PRESION_1) return 0;
   
-//   if (pressure < NIVEL_PRESION_2) {
-//     float p = (pressure - NIVEL_PRESION_1) / (NIVEL_PRESION_2 - NIVEL_PRESION_1);
-//     uint8_t level = (uint8_t)(1 + p);
-//     return (level < 1) ? 1 : ((level > 2) ? 2 : level); // Nivel 1-2 interpolado
-//   }
+  if (pressure < NIVEL_PRESION_2) {
+    float p = (pressure - NIVEL_PRESION_1) / (NIVEL_PRESION_2 - NIVEL_PRESION_1);
+    uint8_t level = (uint8_t)(1 + p);
+    return (level < 1) ? 1 : ((level > 2) ? 2 : level); // Nivel 1-2 interpolado
+  }
   
-//   if (pressure < NIVEL_PRESION_3) {
-//     float p = (pressure - NIVEL_PRESION_2) / (NIVEL_PRESION_3 - NIVEL_PRESION_2);
-//     uint8_t level = (uint8_t)(2 + p);
-//     return (level < 2) ? 2 : ((level > 3) ? 3 : level); // Nivel 2-3 interpolado
-//   }
+  if (pressure < NIVEL_PRESION_3) {
+    float p = (pressure - NIVEL_PRESION_2) / (NIVEL_PRESION_3 - NIVEL_PRESION_2);
+    uint8_t level = (uint8_t)(2 + p);
+    return (level < 2) ? 2 : ((level > 3) ? 3 : level); // Nivel 2-3 interpolado
+  }
   
-//   if (pressure < NIVEL_PRESION_4) {
-//     float p = (pressure - NIVEL_PRESION_3) / (NIVEL_PRESION_4 - NIVEL_PRESION_3);
-//     uint8_t level = (uint8_t)(3 + p);
-//     return (level < 3) ? 3 : ((level > 4) ? 4 : level); // Nivel 3-4 interpolado
-//   }
+  if (pressure < NIVEL_PRESION_4) {
+    float p = (pressure - NIVEL_PRESION_3) / (NIVEL_PRESION_4 - NIVEL_PRESION_3);
+    uint8_t level = (uint8_t)(3 + p);
+    return (level < 3) ? 3 : ((level > 4) ? 4 : level); // Nivel 3-4 interpolado
+  }
   
-//   return 4; // Máximo nivel
-// }
+  return 4; // Máximo nivel
+}
 
 bool SensorsClass::isTemperatureReached(uint8_t targetTemp) {
   // Considerar que se ha alcanzado la temperatura si está dentro del rango definido
@@ -238,6 +238,6 @@ void SensorsClass::setTemperatureResolution(uint8_t resolution) {
   _tempSensors.setResolution(resolution);
 }
 
-// void SensorsClass::resetPressureCalibration() {
-//   _calibratePressureSensor();
-// }
+void SensorsClass::resetPressureCalibration() {
+  _calibratePressureSensor();
+}
