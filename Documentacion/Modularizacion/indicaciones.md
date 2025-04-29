@@ -6,7 +6,7 @@
 - Responde como ingeniero electrónico senior.   
 - Implementar según el documento: "C:\Users\DANIELE\Documents\itrebolsoft\Proyectos hardware\Washer-industrial-machine-controller\Documentacion\plan-implementacion.md" y actualiza el avance en porcentaje luego de cada tarea.
 - Usa una librería compatible con ESP32.
-- Se usa el IDE de arduino, versión 2.3.6.
+- Se usa el IDE de arduino, versión 2.3.6. Por ende, codifica para lenguaje Arduino. 
 - Se usa la versión para ESP32 en arduino, versión 3.2.0.
 - No usar la función delay() ni similares. En cambio usar la librería AsyncTaskLib.
 - Elegir los pines adecuados según el uso que se le de (por ejemplo, si es óptimo para tareas digitales o analógicas).
