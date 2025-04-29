@@ -10,12 +10,18 @@ void monitoringTimerCallback() {
   Sensors.updateSensors();
 }
 
+// Callback para lectura de temperatura
+void temperatureReadCallback() {
+  Sensors._readTemperature();
+}
+
 void SensorsClass::init() {
   _currentTemperature = 0.0;
   _currentPressureRaw = 0;
   _currentWaterLevel = 0;
   _monitoring = false;
   _monitoringTaskId = 0;
+  _tempSensorErrorCount = 0;
   
   _setupTemperatureSensor();
   _setupPressureSensor();
@@ -25,13 +31,28 @@ void SensorsClass::init() {
 }
 
 void SensorsClass::_setupTemperatureSensor() {
-  _oneWire = new OneWire(PIN_TEMP_SENSOR);
-  _tempSensors = new DallasTemperature(_oneWire);
-  _tempSensors->begin();
-  _tempSensors->setResolution(TEMP_RESOLUTION);
+  // Inicializar objetos estáticos en lugar de usar asignación dinámica
+  _oneWire = OneWire(PIN_TEMP_SENSOR);
+  _tempSensors = DallasTemperature(&_oneWire);
   
-  // Leer temperatura inicial
-  updateTemperature();
+  // Inicializar sensor
+  _tempSensors.begin();
+  
+  // Configurar para lecturas asíncronas (no bloqueantes)
+  _tempSensors.setWaitForConversion(false);
+  
+  // Establecer resolución
+  _tempSensors.setResolution(TEMP_RESOLUTION);
+  
+  // Verificar si el sensor está conectado
+  if (_tempSensors.getDeviceCount() == 0) {
+    Utils.debug("ADVERTENCIA: No se detectaron sensores de temperatura DS18B20");
+  } else {
+    Utils.debug("Sensor de temperatura inicializado. Sensores encontrados: " + String(_tempSensors.getDeviceCount()));
+  }
+  
+  // Realizar primera solicitud de temperatura
+  _requestTemperature();
 }
 
 void SensorsClass::_setupPressureSensor() {
@@ -40,6 +61,33 @@ void SensorsClass::_setupPressureSensor() {
   
   // Leer presión inicial
   updatePressure();
+}
+
+void SensorsClass::_requestTemperature() {
+  // Iniciar la solicitud de temperatura
+  _tempSensors.requestTemperatures();
+  
+  // Programar lectura después del tiempo de conversión
+  int conversionTime = _tempSensors.millisToWaitForConversion(_tempSensors.getResolution());
+  Utils.createTimeout(conversionTime, temperatureReadCallback);
+}
+
+void SensorsClass::_readTemperature() {
+  float temp = _tempSensors.getTempCByIndex(0);
+  
+  // Verificar si la lectura es válida
+  if (temp != DEVICE_DISCONNECTED_C) {
+    _currentTemperature = temp;
+    _tempSensorErrorCount = 0; // Reiniciar contador de errores
+  } else {
+    // Si la lectura falló, incrementar contador de errores
+    _tempSensorErrorCount++;
+    
+    // Si hay demasiados errores consecutivos, reportar problema
+    if (_tempSensorErrorCount > 5) {
+      Utils.debug("ERROR: Múltiples lecturas fallidas del sensor de temperatura");
+    }
+  }
 }
 
 void SensorsClass::_setupMonitoring() {
@@ -81,13 +129,9 @@ bool SensorsClass::isMonitoring() {
 }
 
 void SensorsClass::updateTemperature() {
-  _tempSensors->requestTemperatures();
-  float temp = _tempSensors->getTempCByIndex(0);
-  
-  // Solo actualizar si es una lectura válida (DS18B20 devuelve -127 en caso de error)
-  if (temp > -100.0) {
-    _currentTemperature = temp;
-  }
+  // En lugar de solicitar y leer de inmediato (bloqueante),
+  // iniciamos el proceso asíncrono
+  _requestTemperature();
 }
 
 void SensorsClass::updatePressure() {
@@ -128,5 +172,5 @@ bool SensorsClass::isWaterLevelReached(uint8_t targetLevel) {
 }
 
 void SensorsClass::setTemperatureResolution(uint8_t resolution) {
-  _tempSensors->setResolution(resolution);
+  _tempSensors.setResolution(resolution);
 }

@@ -37,8 +37,8 @@ public:
 
 private:
   // Variables para sensores
-  OneWire* _oneWire;
-  DallasTemperature* _tempSensors;
+  OneWire _oneWire;
+  DallasTemperature _tempSensors;
   HX710B* _pressureSensor;
   
   // Variables para almacenar lecturas
@@ -46,6 +46,7 @@ private:
   uint16_t _currentPressureRaw;
   uint8_t _currentWaterLevel;
   bool _monitoring;
+  uint8_t _tempSensorErrorCount;
 
   // ID de tarea temporizada
   int _monitoringTaskId;
@@ -54,6 +55,8 @@ private:
   void _setupTemperatureSensor();
   void _setupPressureSensor();
   void _setupMonitoring();
+  void _requestTemperature();
+  void _readTemperature();
   uint8_t _convertPressureToLevel(uint16_t pressure);
 };
 
