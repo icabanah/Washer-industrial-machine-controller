@@ -12,7 +12,8 @@ void monitoringTimerCallback() {
 
 // Callback para lectura de temperatura
 void temperatureReadCallback() {
-  Sensors._readTemperature();
+  // Llamamos al método público que internamente llamará al método privado
+  Sensors.readTemperatureCallback();
 }
 
 void SensorsClass::init() {
@@ -56,8 +57,8 @@ void SensorsClass::_setupTemperatureSensor() {
 }
 
 void SensorsClass::_setupPressureSensor() {
-  _pressureSensor = new HX710B();
-  _pressureSensor->begin(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
+  // Usar objeto estático en lugar de asignación dinámica
+  _pressureSensor.begin(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
   
   // Leer presión inicial
   updatePressure();
@@ -70,6 +71,11 @@ void SensorsClass::_requestTemperature() {
   // Programar lectura después del tiempo de conversión
   int conversionTime = _tempSensors.millisToWaitForConversion(_tempSensors.getResolution());
   Utils.createTimeout(conversionTime, temperatureReadCallback);
+}
+
+// Método público que actúa como puente para el callback estático
+void SensorsClass::readTemperatureCallback() {
+  _readTemperature();
 }
 
 void SensorsClass::_readTemperature() {
@@ -135,8 +141,8 @@ void SensorsClass::updateTemperature() {
 }
 
 void SensorsClass::updatePressure() {
-  if (_pressureSensor->is_ready()) {
-    _currentPressureRaw = _pressureSensor->read();
+  if (_pressureSensor.is_ready()) {
+    _currentPressureRaw = _pressureSensor.read();
     _currentWaterLevel = _convertPressureToLevel(_currentPressureRaw);
   }
 }

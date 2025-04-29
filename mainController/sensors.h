@@ -22,6 +22,7 @@ public:
   void updateTemperature();
   void updatePressure();
   void updateSensors(); // Método para actualizar todos los sensores
+  void readTemperatureCallback(); // Método público para el callback de temperatura
   
   // Obtención de valores actuales
   float getCurrentTemperature();
@@ -39,7 +40,7 @@ private:
   // Variables para sensores
   OneWire _oneWire;
   DallasTemperature _tempSensors;
-  HX710B* _pressureSensor;
+  HX710B _pressureSensor;
   
   // Variables para almacenar lecturas
   float _currentTemperature;
