@@ -5,7 +5,8 @@
 #include "Arduino.h"
 #include "config.h"
 #include "../Librerias/OneWire/OneWire.h"
-#include "../Librerias/DallasTemperature/DallasTemperature.h"
+// #include "../Librerias/DallasTemperature/DallasTemperature.h"
+#include <DallasTemperature.h>
 #include "../Librerias/hx710B_pressure_sensor-main/HX710B.h"
 
 class SensorsClass {
@@ -27,6 +28,7 @@ public:
   // Obtención de valores actuales
   float getCurrentTemperature();
   uint16_t getCurrentPressureRaw();
+  float getCurrentPressurePascal();
   uint8_t getCurrentWaterLevel();
   
   // Verificación de objetivos
@@ -35,6 +37,7 @@ public:
   
   // Control de sensores
   void setTemperatureResolution(uint8_t resolution);
+  void resetPressureCalibration();
 
 private:
   // Variables para sensores
@@ -44,10 +47,13 @@ private:
   
   // Variables para almacenar lecturas
   float _currentTemperature;
-  uint16_t _currentPressureRaw;
+  uint16_t _currentPressureRaw;  // Mantener para compatibilidad
+  float _currentPressurePascal;  // Almacenar la presión en Pascales
   uint8_t _currentWaterLevel;
   bool _monitoring;
   uint8_t _tempSensorErrorCount;
+  uint8_t _pressureSensorErrorCount;
+  bool _pressureSensorCalibrated;
 
   // ID de tarea temporizada
   int _monitoringTaskId;
@@ -58,7 +64,8 @@ private:
   void _setupMonitoring();
   void _requestTemperature();
   void _readTemperature();
-  uint8_t _convertPressureToLevel(uint16_t pressure);
+  void _calibratePressureSensor();
+  uint8_t _convertPressureToLevel(float pressure);
 };
 
 // Instancia global

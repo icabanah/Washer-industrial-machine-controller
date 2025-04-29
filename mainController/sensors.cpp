@@ -19,10 +19,13 @@ void temperatureReadCallback() {
 void SensorsClass::init() {
   _currentTemperature = 0.0;
   _currentPressureRaw = 0;
+  _currentPressurePascal = 0.0;
   _currentWaterLevel = 0;
   _monitoring = false;
   _monitoringTaskId = 0;
   _tempSensorErrorCount = 0;
+  _pressureSensorErrorCount = 0;
+  _pressureSensorCalibrated = false;
   
   _setupTemperatureSensor();
   _setupPressureSensor();
@@ -59,9 +62,29 @@ void SensorsClass::_setupTemperatureSensor() {
 void SensorsClass::_setupPressureSensor() {
   // Usar objeto estático en lugar de asignación dinámica
   _pressureSensor.begin(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
+  _pressureSensorErrorCount = 0;
+  _pressureSensorCalibrated = false;
   
-  // Leer presión inicial
-  updatePressure();
+  // Intentar leer el sensor para verificar que funciona
+  if (_pressureSensor.wait_ready_timeout(1000, 100)) {
+    // Sensor está respondiendo, realizar calibración inicial
+    _calibratePressureSensor();
+    Utils.debug("Sensor de presión inicializado correctamente");
+  } else {
+    Utils.debug("ADVERTENCIA: Sensor de presión no responde");
+  }
+}
+
+void SensorsClass::_calibratePressureSensor() {
+  // Realizar varias lecturas para establecer un offset y calibración adecuados
+  if (_pressureSensor.wait_ready_timeout(1000, 100)) {
+    _pressureSensor.tare(10); // 10 lecturas para establecer offset
+    _pressureSensorCalibrated = true;
+    Utils.debug("Sensor de presión calibrado");
+  } else {
+    _pressureSensorCalibrated = false;
+    Utils.debug("Error al calibrar sensor de presión");
+  }
 }
 
 void SensorsClass::_requestTemperature() {
@@ -142,8 +165,22 @@ void SensorsClass::updateTemperature() {
 
 void SensorsClass::updatePressure() {
   if (_pressureSensor.is_ready()) {
-    _currentPressureRaw = _pressureSensor.read();
-    _currentWaterLevel = _convertPressureToLevel(_currentPressureRaw);
+    // Usar el método pascal() para obtener la presión en unidades adecuadas
+    _currentPressurePascal = _pressureSensor.pascal();
+    _currentPressureRaw = (uint16_t)_currentPressurePascal; // Para compatibilidad
+    _currentWaterLevel = _convertPressureToLevel(_currentPressurePascal);
+    _pressureSensorErrorCount = 0; // Resetear contador de errores
+  } else {
+    // Incrementar contador de errores si el sensor no responde
+    _pressureSensorErrorCount++;
+    
+    if (_pressureSensorErrorCount > 10) {
+      Utils.debug("ERROR: Múltiples lecturas fallidas del sensor de presión");
+      // Si han pasado muchos errores, intentar reiniciar el sensor
+      if (_pressureSensorErrorCount > 20) {
+        _setupPressureSensor();
+      }
+    }
   }
 }
 
@@ -155,17 +192,34 @@ uint16_t SensorsClass::getCurrentPressureRaw() {
   return _currentPressureRaw;
 }
 
+float SensorsClass::getCurrentPressurePascal() {
+  return _currentPressurePascal;
+}
+
 uint8_t SensorsClass::getCurrentWaterLevel() {
   return _currentWaterLevel;
 }
 
-uint8_t SensorsClass::_convertPressureToLevel(uint16_t pressure) {
-  // Convertir la presión a nivel de agua (0-4)
+uint8_t SensorsClass::_convertPressureToLevel(float pressure) {
+  // Implementación mejorada con interpolación lineal entre niveles
   if (pressure < NIVEL_PRESION_1) return 0;
-  if (pressure < NIVEL_PRESION_2) return 1;
-  if (pressure < NIVEL_PRESION_3) return 2;
-  if (pressure < NIVEL_PRESION_4) return 3;
-  return 4;
+  
+  if (pressure < NIVEL_PRESION_2) {
+    float p = (pressure - NIVEL_PRESION_1) / (NIVEL_PRESION_2 - NIVEL_PRESION_1);
+    return max(1, min(2, (uint8_t)(1 + p))); // Nivel 1-2 interpolado
+  }
+  
+  if (pressure < NIVEL_PRESION_3) {
+    float p = (pressure - NIVEL_PRESION_2) / (NIVEL_PRESION_3 - NIVEL_PRESION_2);
+    return max(2, min(3, (uint8_t)(2 + p))); // Nivel 2-3 interpolado
+  }
+  
+  if (pressure < NIVEL_PRESION_4) {
+    float p = (pressure - NIVEL_PRESION_3) / (NIVEL_PRESION_4 - NIVEL_PRESION_3);
+    return max(3, min(4, (uint8_t)(3 + p))); // Nivel 3-4 interpolado
+  }
+  
+  return 4; // Máximo nivel
 }
 
 bool SensorsClass::isTemperatureReached(uint8_t targetTemp) {
@@ -179,4 +233,8 @@ bool SensorsClass::isWaterLevelReached(uint8_t targetLevel) {
 
 void SensorsClass::setTemperatureResolution(uint8_t resolution) {
   _tempSensors.setResolution(resolution);
+}
+
+void SensorsClass::resetPressureCalibration() {
+  _calibratePressureSensor();
 }
