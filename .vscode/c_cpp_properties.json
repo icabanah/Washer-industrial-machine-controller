@@ -8,12 +8,14 @@
                 "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.2.0/**",
                 "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/tools/**",
                 "C:/Users/Daniele/Documents/Arduino/libraries/**",
-                "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/Adafruit_BusIO-master",
-                "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/Arduino-AsyncTask-master",
-                "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/DallasTemperature",
-                "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/EEPROM/src",
-                "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/hx710B_pressure_sensor-main",
-                "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/OneWire"
+                "C:/Users/DANIELE/Documents/Arduino/libraries/OneWire",
+                "C:/Users/DANIELE/Documents/Arduino/libraries/DallasTemperature",
+                "C:/Users/DANIELE/Documents/Arduino/libraries/HX710B",
+                // "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/**",
+                // "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/Arduino-AsyncTask-master",
+                // "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/DallasTemperature",
+                // "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/OneWire"
+                // "C:/Users/DANIELE/Documents/itrebolsoft/Proyectos hardware/Washer-industrial-machine-controller/Librerias/hx710B_pressure_sensor-main",
                 // "${workspaceFolder}/Librerias"
             ],
             "defines": [

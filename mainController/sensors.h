@@ -4,11 +4,9 @@
 
 #include "Arduino.h"
 #include "config.h"
-// #include "../Librerias/OneWire/OneWire.h"
 #include <OneWire.h>
-// #include "../Librerias/DallasTemperature/DallasTemperature.h"
 #include <DallasTemperature.h>
-#include "HX710B.h"
+#include <HX710B.h>
 
 class SensorsClass {
 public:
