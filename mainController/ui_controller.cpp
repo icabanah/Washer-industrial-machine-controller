@@ -48,8 +48,8 @@ void UIControllerClass::showWelcomeScreen() {
   Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
   
   // Establecer textos de bienvenida
-  Hardware.nextionSetText(1, "RH Electronics");
-  Hardware.nextionSetText(2, "958970967");
+  Hardware.nextionSetText("txtTitulo", "RH Electronics");
+  Hardware.nextionSetText("txtContacto", "958970967");
   
   // Activar animación de inicio si existe (ejemplo)
   Hardware.nextionSendCommand("anim.en=1");
@@ -65,10 +65,9 @@ void UIControllerClass::showSelectionScreen(uint8_t programa) {
   _updateProgramInfo(programa);
   
   // Resaltar el botón del programa seleccionado
-  for (uint8_t i = 1; i <= 3; i++) {
-    String buttonState = (i == programa) ? "1" : "0";
-    Hardware.nextionSendCommand("b" + String(i) + ".val=" + buttonState);
-  }
+  Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM1, (programa == 1) ? 1 : 0);
+  Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (programa == 2) ? 1 : 0);
+  Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (programa == 3) ? 1 : 0);
   
   Serial.println("Mostrando pantalla de selección de programa");
 }
@@ -78,11 +77,11 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   Hardware.nextionSetPage(NEXTION_PAGE_EXECUTION);
   
   // Mostrar información del programa
-  Hardware.nextionSetText(1, "P" + String(programa + 21));
+  Hardware.nextionSetText("txtPrograma", "P" + String(programa + 21));
   
   // Establecer valores iniciales
-  Hardware.nextionSetText(2, "Fase: " + String(fase));
-  Hardware.nextionSetText(3, "00:00");  // Tiempo inicial
+  Hardware.nextionSetText("txtFase", "Fase: " + String(fase));
+  Hardware.nextionSetText(NEXTION_COMP_TXT_TIME, "00:00");  // Tiempo inicial
   
   // Actualizar indicadores
   updateWaterLevel(nivelAgua);
@@ -100,7 +99,7 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase, uint8_t n
   Hardware.nextionSetPage(NEXTION_PAGE_EDIT);
   
   // Mostrar información básica
-  Hardware.nextionSetText(1, "P" + String(programa + 21) + " - F" + String(fase));
+  Hardware.nextionSetText("txtProgramaFase", "P" + String(programa + 21) + " - F" + String(fase));
   
   // Mostrar etiqueta según variable seleccionada
   String varLabel;
@@ -112,10 +111,10 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase, uint8_t n
     default: varLabel = "Desconocido"; break;
   }
   
-  Hardware.nextionSetText(2, varLabel);
+  Hardware.nextionSetText("txtVariable", varLabel);
   
   // Mostrar valor actual
-  Hardware.nextionSetText(3, String(valor));
+  Hardware.nextionSetText("txtValor", String(valor));
   
   // Configurar rangos para los controles
   int minVal = 0;
@@ -127,9 +126,9 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase, uint8_t n
   }
   
   // Configurar controles
-  Hardware.nextionSendCommand("h0.minval=" + String(minVal));
-  Hardware.nextionSendCommand("h0.maxval=" + String(maxVal));
-  Hardware.nextionSendCommand("h0.val=" + String(valor));
+  Hardware.nextionSendCommand("sliderValor.minval=" + String(minVal));
+  Hardware.nextionSendCommand("sliderValor.maxval=" + String(maxVal));
+  Hardware.nextionSendCommand("sliderValor.val=" + String(valor));
   
   Serial.println("Mostrando pantalla de edición");
 }
@@ -139,18 +138,18 @@ void UIControllerClass::showErrorScreen(uint8_t errorCode, const String& errorMe
   Hardware.nextionSetPage(NEXTION_PAGE_ERROR);
   
   // Mostrar código de error
-  Hardware.nextionSetText(1, "ERROR " + String(errorCode));
+  Hardware.nextionSetText("txtCodigo", "ERROR " + String(errorCode));
   
   // Mostrar mensaje de error si se proporciona
   if (errorMessage.length() > 0) {
-    Hardware.nextionSetText(2, errorMessage);
+    Hardware.nextionSetText("txtMensaje", errorMessage);
   } else {
     // Mensaje por defecto basado en código
     switch (errorCode) {
-      case 400: Hardware.nextionSetText(2, "Error de sistema"); break;
-      case 401: Hardware.nextionSetText(2, "Error de temperatura"); break;
-      case 402: Hardware.nextionSetText(2, "Error de presión"); break;
-      default: Hardware.nextionSetText(2, "Error desconocido"); break;
+      case 400: Hardware.nextionSetText("txtMensaje", "Error de sistema"); break;
+      case 401: Hardware.nextionSetText("txtMensaje", "Error de temperatura"); break;
+      case 402: Hardware.nextionSetText("txtMensaje", "Error de presión"); break;
+      default: Hardware.nextionSetText("txtMensaje", "Error desconocido"); break;
     }
   }
   
@@ -165,8 +164,8 @@ void UIControllerClass::showEmergencyScreen() {
   Hardware.nextionSetPage(NEXTION_PAGE_EMERGENCY);
   
   // Mostrar mensaje de emergencia
-  Hardware.nextionSetText(1, "PARADA DE EMERGENCIA");
-  Hardware.nextionSetText(2, "Sistema detenido por seguridad");
+  Hardware.nextionSetText("txtEmergencia", "PARADA DE EMERGENCIA");
+  Hardware.nextionSetText("txtMensajeEmerg", "Sistema detenido por seguridad");
   
   // Activar indicador visual de emergencia
   Hardware.nextionSendCommand("alarm.en=1");
@@ -180,7 +179,7 @@ void UIControllerClass::showEmergencyScreen() {
 void UIControllerClass::updateTime(uint8_t minutos, uint8_t segundos) {
   char timeBuffer[6];
   _formatTimeDisplay(minutos, segundos, timeBuffer);
-  Hardware.nextionSetText(3, timeBuffer);
+  Hardware.nextionSetText(NEXTION_COMP_TXT_TIME, timeBuffer);
   
   // Actualizar barra de progreso si es necesario
   // (suponiendo fase de 60 minutos máximo)
@@ -194,7 +193,7 @@ void UIControllerClass::_formatTimeDisplay(uint8_t minutos, uint8_t segundos, ch
 
 void UIControllerClass::updateTemperature(uint8_t temperatura) {
   // Actualizar texto de temperatura
-  Hardware.nextionSetText(4, String(temperatura) + "°C");
+  Hardware.nextionSetText(NEXTION_COMP_TXT_TEMP, String(temperatura) + "°C");
   
   // Actualizar medidor visual si existe
   Hardware.nextionSetValue(NEXTION_COMP_GAUGE_TEMP, temperatura);
@@ -202,7 +201,7 @@ void UIControllerClass::updateTemperature(uint8_t temperatura) {
 
 void UIControllerClass::updateWaterLevel(uint8_t nivel) {
   // Actualizar texto de nivel
-  Hardware.nextionSetText(5, "Nivel: " + String(nivel));
+  Hardware.nextionSetText(NEXTION_COMP_TXT_PRESSURE, "Nivel: " + String(nivel));
   
   // Actualizar indicador visual
   Hardware.nextionSetValue(NEXTION_COMP_GAUGE_PRESSURE, nivel * 25);  // 0-100%
@@ -210,19 +209,19 @@ void UIControllerClass::updateWaterLevel(uint8_t nivel) {
 
 void UIControllerClass::updateRotation(uint8_t rotacion) {
   // Actualizar texto de rotación
-  Hardware.nextionSetText(6, "Vel: " + String(rotacion));
+  Hardware.nextionSetText("txtRotacion", "Vel: " + String(rotacion));
   
   // Actualizar indicador visual si existe
   Hardware.nextionSendCommand("motor.val=" + String(rotacion));
 }
 
 void UIControllerClass::updatePhase(uint8_t fase) {
-  Hardware.nextionSetText(2, "Fase: " + String(fase));
+  Hardware.nextionSetText("txtFase", "Fase: " + String(fase));
 }
 
 void UIControllerClass::updateProgressBar(uint8_t progress) {
   // Actualizar barra de progreso
-  Hardware.nextionSendCommand("j0.val=" + String(progress));
+  Hardware.nextionSendCommand("barraProgreso.val=" + String(progress));
 }
 
 void UIControllerClass::processEvents() {
@@ -247,29 +246,34 @@ void UIControllerClass::_handleNextionEvent(const String& event) {
   
   if (event.length() >= 3) {
     uint8_t eventType = event[0];
-    int componentId = event[1];  // Convertir byte a int
+    String componentName;
     int pageId = event[2];       // Convertir byte a int
     
     Serial.print("Evento procesado: Tipo=");
     Serial.print(eventType);
-    Serial.print(" Componente=");
-    Serial.print(componentId);
     Serial.print(" Página=");
     Serial.println(pageId);
     
     // Eventos de botón (código 65)
     if (eventType == 65) {
+      // Obtener nombre del componente basado en el ID del evento
       switch (pageId) {
         case NEXTION_PAGE_SELECTION:
-          if (componentId >= 1 && componentId <= 3) {
-            // Selección de programa
-            _lastUserAction = "PROGRAM_" + String(componentId);
+          // Determinar qué botón fue presionado
+          if (event[1] == NEXTION_COMP_BTN_PROGRAM1[0]) {
+            _lastUserAction = "PROGRAM_1";
             _userActionPending = true;
-          } else if (componentId == NEXTION_COMP_BTN_START) {
+          } else if (event[1] == NEXTION_COMP_BTN_PROGRAM2[0]) {
+            _lastUserAction = "PROGRAM_2";
+            _userActionPending = true;
+          } else if (event[1] == NEXTION_COMP_BTN_PROGRAM3[0]) {
+            _lastUserAction = "PROGRAM_3";
+            _userActionPending = true;
+          } else if (event[1] == NEXTION_COMP_BTN_START[0]) {
             // Botón iniciar
             _lastUserAction = "START";
             _userActionPending = true;
-          } else if (componentId == NEXTION_COMP_BTN_EDIT) {
+          } else if (event[1] == NEXTION_COMP_BTN_EDIT[0]) {
             // Botón editar
             _lastUserAction = "EDIT";
             _userActionPending = true;
@@ -277,7 +281,7 @@ void UIControllerClass::_handleNextionEvent(const String& event) {
           break;
           
         case NEXTION_PAGE_EXECUTION:
-          if (componentId == NEXTION_COMP_BTN_STOP) {
+          if (event[1] == NEXTION_COMP_BTN_STOP[0]) {
             // Botón parar
             _lastUserAction = "STOP";
             _userActionPending = true;
@@ -285,10 +289,10 @@ void UIControllerClass::_handleNextionEvent(const String& event) {
           break;
           
         case NEXTION_PAGE_EDIT:
-          if (componentId == 7) {  // Botón guardar
+          if (event[1] == 7) {  // Botón guardar - mantener ID numérico hasta actualización
             _lastUserAction = "SAVE";
             _userActionPending = true;
-          } else if (componentId == 8) {  // Botón cancelar
+          } else if (event[1] == 8) {  // Botón cancelar - mantener ID numérico hasta actualización
             _lastUserAction = "CANCEL";
             _userActionPending = true;
           }
@@ -299,7 +303,7 @@ void UIControllerClass::_handleNextionEvent(const String& event) {
     else if (eventType == 67) {
       // Ejemplo: obtener valor de un slider
       // El formato puede variar según el componente
-      _lastUserAction = "VALUE_CHANGE_" + String(componentId) + "_" + String(pageId);
+      _lastUserAction = "VALUE_CHANGE_" + String(event[1]) + "_" + String(pageId);
       _userActionPending = true;
     }
   }
@@ -307,13 +311,13 @@ void UIControllerClass::_handleNextionEvent(const String& event) {
 
 void UIControllerClass::_updateProgramInfo(uint8_t programa) {
   // Actualizar información mostrada para el programa seleccionado
-  Hardware.nextionSetText(10, "P" + String(programa + 21));
+  Hardware.nextionSetText("txtNumPrograma", "P" + String(programa + 21));
   
   // Mostrar parámetros para la primera fase del programa
-  Hardware.nextionSetText(11, "Nivel: " + String(_nivelAgua[programa - 1][0]));
-  Hardware.nextionSetText(12, "Temp: " + String(_temperaturaLim[programa - 1][0]) + "°C");
-  Hardware.nextionSetText(13, "Tiempo: " + String(_temporizadorLim[programa - 1][0]) + " min");
-  Hardware.nextionSetText(14, "Vel: " + String(_rotacionTam[programa - 1][0]));
+  Hardware.nextionSetText("txtNivel", "Nivel: " + String(_nivelAgua[programa - 1][0]));
+  Hardware.nextionSetText("txtTemperatura", "Temp: " + String(_temperaturaLim[programa - 1][0]) + "°C");
+  Hardware.nextionSetText("txtTiempoFase", "Tiempo: " + String(_temporizadorLim[programa - 1][0]) + " min");
+  Hardware.nextionSetText("txtVelocidad", "Vel: " + String(_rotacionTam[programa - 1][0]));
   
   // Si es el programa 3, mostrar información adicional
   if (programa == 3) {
@@ -322,9 +326,9 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa) {
     for (uint8_t i = 0; i < 4; i++) {
       fasesInfo += String(i + 1) + ":" + String(_temporizadorLim[programa - 1][i]) + "m ";
     }
-    Hardware.nextionSetText(15, fasesInfo);
+    Hardware.nextionSetText("txtFasesInfo", fasesInfo);
   } else {
-    Hardware.nextionSetText(15, "");  // Limpiar texto si no es programa 3
+    Hardware.nextionSetText("txtFasesInfo", "");  // Limpiar texto si no es programa 3
   }
 }
 

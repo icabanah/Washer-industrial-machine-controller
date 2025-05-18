@@ -2,7 +2,7 @@
 
 ## Introducción
 
-Esta propuesta presenta una estructura modular actualizada para el controlador de lavadora industrial, adaptada para funcionar con ESP32-WROOM y pantalla táctil Nextion NX8048P050-011C, reemplazando la implementación original basada en Arduino y LCD. La modularización permitirá un mejor mantenimiento, mayor facilidad para implementar nuevas características y una estructura más clara.
+Esta propuesta presenta una estructura modular actualizada para el controlador de lavadora industrial, desarrollada en Arequipa, Perú. El sistema está adaptado para funcionar con el controlador ESP32-WROOM y pantalla táctil Nextion, reemplazando la implementación original basada en Arduino y LCD. La modularización permitirá un mejor mantenimiento, mayor facilidad para implementar nuevas características y una estructura más clara. Se desarrolla utilizando el IDE de Arduino versión 2.3.6 con el core ESP32 versión 3.2.0.
 
 ## Analogía: Sistema Modular de Orquesta Modernizado
 
@@ -70,7 +70,7 @@ washerController/
 
 ### 5. Otros Módulos
 
-Los demás módulos (Sensors, Actuators, Storage, Utils) mantienen su funcionalidad principal, con adaptaciones menores para integrar con el ESP32 y responder adecuadamente en situaciones de emergencia.
+Los demás módulos (Sensors, Actuators, Storage, Utils) mantienen su funcionalidad principal, con adaptaciones menores para integrar con el ESP32 y responder adecuadamente en situaciones de emergencia. Específicamente, el módulo Utils proporciona utilidades para manejo de tiempos sin usar la función delay(), implementando alternativas no bloqueantes para cronometrado de eventos.
 
 ## Beneficios Adicionales de la Actualización
 

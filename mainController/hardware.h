@@ -17,10 +17,12 @@ public:
   // Funciones para control de Nextion
   void nextionSendCommand(const String& command);
   void nextionSetPage(uint8_t pageId);
-  void nextionSetText(uint8_t componentId, const String& text);
-  void nextionSetValue(uint8_t componentId, int value);
+  void nextionSetText(const String& componentId, const String& text);
+  void nextionSetValue(const String& componentId, int value);
   bool nextionCheckForEvents();
   String nextionGetLastEvent();
+  bool isNextionInitComplete(); // Verificar si la inicialización de Nextion está completa
+  void _completeNextionInit(); // Movido a público para acceso desde callback
   
   // Control de pines de salida
   void digitalWrite(uint8_t pin, uint8_t state);
@@ -35,6 +37,9 @@ private:
   uint8_t _lastEmergencyButtonState;
   unsigned long _lastDebounceTime;
   unsigned long _debounceDelay;
+  
+  // Variable para inicialización de Nextion
+  bool _nextionInitComplete;
   
   // Búfer para comunicación Nextion
   String _nextionLastEvent;

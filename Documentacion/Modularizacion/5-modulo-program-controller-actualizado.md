@@ -2,7 +2,7 @@
 
 ## Descripción
 
-El módulo Controlador de Programas gestiona la lógica central del sistema, incluyendo la selección, edición y ejecución de programas de lavado. Este módulo coordina las transiciones entre estados, maneja los parámetros de los programas y controla el flujo general de la aplicación.
+El módulo Controlador de Programas gestiona la lógica central del sistema, incluyendo la selección, edición y ejecución de programas de lavado. Este módulo coordina las transiciones entre estados, maneja los parámetros de los programas y controla el flujo general de la aplicación. Desarrollado para el contexto específico de una lavadora industrial en Arequipa, Perú, utiliza el ESP32-WROOM como controlador principal.
 
 ## Analogía: Director de Orquesta
 
@@ -164,10 +164,9 @@ void ProgramControllerClass::update() {
   
   // Esta función se llama continuamente desde loop
   
-  // Si estamos en estado de ejecución, actualizar temporizadores
-  if (_currentState == ESTADO_EJECUCION) {
-    updateTimers();
-  }
+  // Si estamos en estado de ejecución, los temporizadores
+  // se actualizan mediante callbacks del módulo Utils
+  // No se utiliza polling aquí para evitar bloqueos
 }
 
 void ProgramControllerClass::selectProgram(uint8_t programa) {
@@ -201,9 +200,13 @@ void ProgramControllerClass::startProgram() {
       // Programa 2: Temperatura
       Sensors.startTemperatureMonitoring(_temperaturaLim[_currentProgram - 1][_currentPhase - 1]);
     } else {
-      // Programa 3: Motor + Temperatura + Nivel
+      // Programa 3: Motor + Temperatura + Nivel + Centrifugado
       Actuators.startMotor();
       Sensors.startTemperatureMonitoring(_temperaturaLim[_currentProgram - 1][_currentPhase - 1]);
+      if (_currentPhase == 4) {
+        // En la última fase activar centrifugado
+        Actuators.activateCentrifuge(true);
+      }
     }
     
     // Iniciar monitoreo de nivel de agua
@@ -218,10 +221,13 @@ void ProgramControllerClass::startProgram() {
       _rotacionTam[_currentProgram - 1][_currentPhase - 1]
     );
     
-    // Iniciar temporizador con una función de callback
-    Utils.startTimer([]() {
-      ProgramController.updateTimers();
-    }, INTERVALO_TEMPORIZADOR);
+    // Usar el sistema no bloqueante de Utils para el temporizador
+    _timerSeconds = _temporizadorLim[_currentProgram - 1][_currentPhase - 1] * 60;
+    
+    // Crear un temporizador periódico para actualizar cada segundo
+    Utils.createPeriodicTask(1000, [this]() {
+      this->updateTimers();
+    });
   }
 }
 
@@ -234,6 +240,7 @@ void ProgramControllerClass::pauseProgram() {
     Actuators.stopMotor();
     Actuators.openWaterValve(false);
     Actuators.activateSteam(false);
+    Actuators.activateCentrifuge(false);
     Actuators.openDrainValve(true);  // Abrir para desagüe
     
     // Detener sensores
@@ -261,6 +268,11 @@ void ProgramControllerClass::resumeProgram() {
       // Configurar temporizador para nueva fase
       _timerSeconds = _temporizadorLim[_currentProgram - 1][_currentPhase - 1] * 60;
       
+      // Activar centrifugado si corresponde (fase 4 del programa 3)
+      if (_currentProgram == 3 && _currentPhase == 4) {
+        Actuators.activateCentrifuge(true);
+      }
+      
       // Reactivar válvulas y sensores
       Actuators.openWaterValve(true);
       Sensors.startTemperatureMonitoring(_temperaturaLim[_currentProgram - 1][_currentPhase - 1]);
@@ -286,18 +298,18 @@ void ProgramControllerClass::stopProgram() {
     Actuators.lockDoor(false);
     Actuators.openWaterValve(false);
     Actuators.activateSteam(false);
+    Actuators.activateCentrifuge(false);
     Actuators.openDrainValve(false);
     
     Sensors.stopTemperatureMonitoring();
     Sensors.stopPressureMonitoring();
     
-    // Activar buzzer brevemente
-    Actuators.soundBuzzer(true);
-    delay(TIEMPO_BUZZER);
-    Actuators.soundBuzzer(false);
-    
-    // Detener el temporizador
-    Utils.stopTimer();
+    // No usar delay para el buzzer, usar Utils
+    // Esto es un ejemplo ilustrativo - normalmente usaríamos otras formas de notificación
+    // ya que el modelo actualizado no parece tener buzzer
+    Utils.createTimeout(TIEMPO_BUZZER, []() {
+      // Finalización del sonido o alguna otra acción
+    });
     
     // Volver a pantalla de selección
     UIController.showSelectionScreen(_currentProgram);
@@ -335,22 +347,20 @@ void ProgramControllerClass::_shutdownAllSystems() {
   Actuators.lockDoor(false);  // Desbloquear puerta en caso de emergencia
   Actuators.openWaterValve(false);
   Actuators.activateSteam(false);
+  Actuators.activateCentrifuge(false);
   Actuators.openDrainValve(true);  // Abrir desagüe para vaciar agua
   
   Sensors.stopTemperatureMonitoring();
   Sensors.stopPressureMonitoring();
   
-  // Detener temporizadores
-  Utils.stopTimer();
-  
-  // Activar alarma
-  Actuators.soundBuzzer(true);
-  delay(TIEMPO_BUZZER * 3);  // Alarma más larga
-  Actuators.soundBuzzer(false);
+  // No utilizar delay para las señales de alarma
+  Utils.createTimeout(TIEMPO_BUZZER * 3, []() {
+    // Finalizar alarma o alguna otra acción
+  });
 }
 
 void ProgramControllerClass::updateTimers() {
-  // Esta función es llamada periódicamente para actualizar temporizadores
+  // Esta función es llamada periódicamente mediante la tarea creada con Utils
   
   if (!_programFinished && !_emergencyActive) {
     if (!_programPaused) {
@@ -425,7 +435,7 @@ void ProgramControllerClass::updateTimers() {
 }
 
 void ProgramControllerClass::handleUserAction(const String& action) {
-  // Procesar acción recibida de la interfaz de usuario
+  // Procesar acción recibida de la interfaz de usuario basada en nombres de botones
   
   if (action.startsWith("PROGRAM_")) {
     uint8_t program = action.substring(8).toInt();
@@ -451,53 +461,18 @@ void ProgramControllerClass::handleUserAction(const String& action) {
     exitEditMode();
     UIController.showMessage("Edición cancelada", 2000);
   } 
-  else if (action.startsWith("VALUE_CHANGE_")) {
-    // Formato: VALUE_CHANGE_[ComponentID]_[PageID]_[Value]
-    // Procesar cambio de valor en controles deslizantes o numéricos
-    String valueStr = action.substring(action.lastIndexOf('_') + 1);
-    uint8_t value = valueStr.toInt();
-    
-    if (_currentState == ESTADO_EDICION) {
-      editVariable(_currentVariable, value);
+  else if (action == "INCREASE") {
+    // Aumentar valor de la variable en edición
+    uint8_t currentValue = getVariable(_currentVariable);
+    editVariable(_currentVariable, currentValue + 1);
+  }
+  else if (action == "DECREASE") {
+    // Disminuir valor de la variable en edición
+    uint8_t currentValue = getVariable(_currentVariable);
+    if (currentValue > 0) {
+      editVariable(_currentVariable, currentValue - 1);
     }
   }
-}
-
-void ProgramControllerClass::enterEditMode() {
-  if (_currentState == ESTADO_SELECCION) {
-    _currentState = ESTADO_EDICION;
-    _currentVariable = 1;
-    _editLevel = 1;
-    _editingProgram = true;
-    
-    // Obtener valor actual de la variable seleccionada
-    _getVariableValue();
-    
-    // Mostrar pantalla de edición
-    UIController.showEditScreen(_currentProgram, _currentPhase, _currentVariable, getVariable(_currentVariable));
-  }
-}
-
-void ProgramControllerClass::exitEditMode() {
-  if (_currentState == ESTADO_EDICION) {
-    _currentState = ESTADO_SELECCION;
-    _editingProgram = false;
-    
-    // Volver a pantalla de selección
-    UIController.showSelectionScreen(_currentProgram);
-  }
-}
-
-uint8_t ProgramControllerClass::getCurrentProgram() {
-  return _currentProgram;
-}
-
-uint8_t ProgramControllerClass::getCurrentPhase() {
-  return _currentPhase;
-}
-
-bool ProgramControllerClass::isSystemBlocked() {
-  return _blockCounter >= LIMITE_BLOQUEO;
 }
 
 // Resto de la implementación...
@@ -522,13 +497,16 @@ El módulo Controlador de Programas tiene las siguientes responsabilidades:
 3. **Mantenibilidad**: Facilita la adición o modificación de programas y comportamientos sin afectar otros módulos.
 4. **Encapsulamiento**: Los detalles internos del control del programa están encapsulados, exponiendo solo una interfaz clara.
 5. **Flexibilidad**: Permite cambiar fácilmente las reglas de transición entre estados o el comportamiento de los programas.
+6. **No Bloqueo**: Implementa funciones asíncronas mediante el módulo Utils en lugar de usar delay() para operaciones de tiempo.
 
-## Adaptaciones para el Nuevo Hardware
+## Adaptaciones para el Contexto y Hardware Específico
 
-El módulo ha sido actualizado para adaptarse a los cambios de hardware:
+El módulo ha sido actualizado para el contexto de Arequipa, Perú, y adaptado al ESP32-WROOM con pantalla Nextion:
 
-1. **Interfaz Táctil**: Se ha implementado un sistema para manejar acciones de usuario recibidas desde la pantalla Nextion, reemplazando la lógica basada en botones físicos.
-2. **Manejo de Emergencia**: Se ha añadido soporte para situaciones de emergencia activadas por el botón de emergencia.
-3. **Integración con ESP32**: Se ha adaptado para aprovechar las capacidades del ESP32, como mejores opciones de temporización.
+1. **Interfaz Táctil Nextion**: Se ha implementado un sistema para manejar acciones de usuario recibidas desde la pantalla Nextion, reemplazando la lógica basada en botones físicos.
+2. **Manejo de Emergencia**: Se ha añadido soporte para situaciones de emergencia activadas por el botón de emergencia conectado al pin 15.
+3. **Control de Centrifugado**: Incorpora manejo específico del control de centrifugado en el motor a través del pin 27.
+4. **Integración con ESP32**: Se ha adaptado para aprovechar las capacidades del ESP32-WROOM, utilizando temporizadores asíncronos para evitar bloqueos.
+5. **Sensores Específicos**: Integración con sensores de temperatura Dallas OneWire (pin 23) y sensor de presión HX710B (pines 5 y 4).
 
 Al centralizar la lógica del sistema en este módulo, se facilita la comprensión y mantenimiento del sistema como un todo, permitiendo a otros módulos enfocarse en sus responsabilidades específicas sin preocuparse por la lógica general de la aplicación.

@@ -32,6 +32,9 @@ public:
   // Inicialización
   void init();
   
+  // Iniciar monitoreo periódico de sensores
+  void startMonitoring();
+  
   // Control del sensor de temperatura
   void startTemperatureMonitoring(uint8_t targetTemperature);
   void stopTemperatureMonitoring();
@@ -95,6 +98,7 @@ extern SensorsClass Sensors;
 #include "sensors.h"
 #include "config.h"
 #include "actuators.h"
+#include "utils.h"
 
 // Definición de la instancia global
 SensorsClass Sensors;
@@ -105,9 +109,8 @@ void SensorsClass::init() {
   _temperatureSensor = DallasTemperature(&_oneWire);
   _temperatureSensor.begin();
   
-  // Configurar dirección del sensor de temperatura (podría leerse de EEPROM)
-  // Por ahora usando una dirección fija como en el código original
-  uint8_t addr[8] = {0x28, 0xFF, 0x7, 0x3, 0x93, 0x16, 0x4, 0x7A};
+  // Configurar dirección del sensor de temperatura
+  uint8_t addr[8] = TEMP_SENSOR_ADDR;
   memcpy(_temperatureAddress, addr, 8);
   
   _temperatureResolution = TEMP_RESOLUTION;
@@ -130,6 +133,14 @@ void SensorsClass::init() {
   _pressureLevel2 = NIVEL_PRESION_2;
   _pressureLevel3 = NIVEL_PRESION_3;
   _pressureLevel4 = NIVEL_PRESION_4;
+}
+
+void SensorsClass::startMonitoring() {
+  // Iniciar monitoreo periódico de sensores usando AsyncTask
+  Utils.createPeriodicTask(1000, [this]() {
+    this->updateTemperature();
+    this->updatePressure();
+  });
 }
 
 void SensorsClass::startTemperatureMonitoring(uint8_t targetTemperature) {

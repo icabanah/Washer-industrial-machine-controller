@@ -90,17 +90,17 @@
 #define NEXTION_PAGE_ERROR 4
 #define NEXTION_PAGE_EMERGENCY 5
 
-// IDs de los componentes (ejemplos)
-#define NEXTION_COMP_BTN_PROGRAM1 1
-#define NEXTION_COMP_BTN_PROGRAM2 2
-#define NEXTION_COMP_BTN_PROGRAM3 3
-#define NEXTION_COMP_BTN_START 4
-#define NEXTION_COMP_BTN_EDIT 5
-#define NEXTION_COMP_BTN_STOP 6
-#define NEXTION_COMP_TXT_TEMP 10
-#define NEXTION_COMP_TXT_PRESSURE 11
-#define NEXTION_COMP_TXT_TIME 12
-#define NEXTION_COMP_GAUGE_TEMP 20
-#define NEXTION_COMP_GAUGE_PRESSURE 21
+// Componentes de la pantalla Nextion (nombres actualizados)
+#define NEXTION_COMP_BTN_PROGRAM1 "btnPrograma1"
+#define NEXTION_COMP_BTN_PROGRAM2 "btnPrograma2"
+#define NEXTION_COMP_BTN_PROGRAM3 "btnPrograma3"
+#define NEXTION_COMP_BTN_START "btnComenzar"
+#define NEXTION_COMP_BTN_EDIT "btnEditar"
+#define NEXTION_COMP_BTN_STOP "btnParar"
+#define NEXTION_COMP_TXT_TEMP "txtTemp"
+#define NEXTION_COMP_TXT_PRESSURE "txtPresion"
+#define NEXTION_COMP_TXT_TIME "txtTiempo"
+#define NEXTION_COMP_GAUGE_TEMP "gaugeTemp"
+#define NEXTION_COMP_GAUGE_PRESSURE "gaugePresion"
 
 #endif // CONFIG_H

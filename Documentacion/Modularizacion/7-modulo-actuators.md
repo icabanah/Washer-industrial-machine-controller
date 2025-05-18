@@ -36,6 +36,10 @@ public:
   void reverseMotor();
   bool isMotorRunning();
   
+  // Control de centrifugado
+  void activateCentrifuge(bool activate);
+  bool isCentrifugeActive();
+  
   // Control de válvulas
   void openWaterValve(bool open);
   void openDrainValve(bool open);
@@ -43,9 +47,6 @@ public:
   
   // Control de seguridad
   void lockDoor(bool lock);
-  
-  // Control de indicadores
-  void soundBuzzer(bool activate);
   
   // Control avanzado
   void setMotorRotationTime(uint8_t rotationLevel, uint8_t timeRotation, uint8_t timePause);
@@ -60,11 +61,11 @@ private:
   // Estados actuales
   bool _motorRunning;
   bool _motorDirection;  // true = dirA, false = dirB
+  bool _centrifugadoActive;
   bool _waterValveOpen;
   bool _drainValveOpen;
   bool _steamActive;
   bool _doorLocked;
-  bool _buzzerActive;
 };
 
 // Instancia global
@@ -86,20 +87,20 @@ void ActuatorsClass::init() {
   // Inicializar todos los actuadores en estado seguro/apagado
   _motorRunning = false;
   _motorDirection = true;  // dirA por defecto
+  _centrifugadoActive = false;
   _waterValveOpen = false;
   _drainValveOpen = false;
   _steamActive = false;
   _doorLocked = false;
-  _buzzerActive = false;
   
   // Aplicar estados iniciales al hardware
   Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
   Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
+  Hardware.digitalWrite(PIN_CENTRIFUGADO, LOW);
   Hardware.digitalWrite(PIN_VALVULA_AGUA, LOW);
   Hardware.digitalWrite(PIN_ELECTROV_VAPOR, LOW);
   Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, LOW);
   Hardware.digitalWrite(PIN_MAGNET_PUERTA, LOW);
-  Hardware.digitalWrite(PIN_BUZZER, LOW);
 }
 
 void ActuatorsClass::startMotor() {
@@ -145,6 +146,11 @@ bool ActuatorsClass::isMotorRunning() {
   return _motorRunning;
 }
 
+void ActuatorsClass::activateCentrifuge(bool activate) {
+  _centrifugadoActive = activate;
+  Hardware.digitalWrite(PIN_CENTRIFUGADO, activate ? HIGH : LOW);
+}
+
 void ActuatorsClass::openWaterValve(bool open) {
   _waterValveOpen = open;
   Hardware.digitalWrite(PIN_VALVULA_AGUA, open ? HIGH : LOW);
@@ -165,11 +171,6 @@ void ActuatorsClass::lockDoor(bool lock) {
   Hardware.digitalWrite(PIN_MAGNET_PUERTA, lock ? HIGH : LOW);
 }
 
-void ActuatorsClass::soundBuzzer(bool activate) {
-  _buzzerActive = activate;
-  Hardware.digitalWrite(PIN_BUZZER, activate ? HIGH : LOW);
-}
-
 bool ActuatorsClass::isWaterValveOpen() {
   return _waterValveOpen;
 }
@@ -184,6 +185,10 @@ bool ActuatorsClass::isSteamActive() {
 
 bool ActuatorsClass::isDoorLocked() {
   return _doorLocked;
+}
+
+bool ActuatorsClass::isCentrifugeActive() {
+  return _centrifugadoActive;
 }
 ```
 

@@ -20,71 +20,100 @@ El archivo principal se reducirá significativamente en tamaño, delegando la ma
 
 ```cpp
 // mainController.ino
+/*
+ * mainController.ino
+ * 
+ * Controlador para lavadora industrial
+ * Arquitectura modular para ESP32-WROOM con pantalla táctil Nextion
+ * 
+ * Creado: Abril 2025
+ * Autor: itrebolsoft
+ * 
+ * Descripción:
+ * Sistema modular para control de lavadora industrial que gestiona:
+ * - Interfaz de usuario mediante pantalla táctil Nextion
+ * - Control de motor bidireccional
+ * - Sensores de temperatura y presión/nivel
+ * - Válvulas de agua, vapor y drenaje
+ * - Programas de lavado configurables
+ */
+
 #include "config.h"
 #include "hardware.h"
-#include "ui_controller.h"
-#include "program_controller.h"
+#include "utils.h"
+#include "storage.h"
 #include "sensors.h"
 #include "actuators.h"
-#include "storage.h"
-#include "utils.h"
+#include "ui_controller.h"
+#include "program_controller.h"
+
+// Declaración de funciones
+void checkEmergencyButton();
+void showWelcomeScreen();
 
 void setup() {
-  // Inicializar hardware
+  // Inicializar puerto serial para depuración
+  Serial.begin(115200);
+  Serial.println("Iniciando sistema de lavadora industrial...");
+  
+  // Inicializar módulos en orden de dependencia
   Hardware.init();
-  
-  // Inicializar UI
-  UIController.init();
-  UIController.showWelcomeScreen();
-  delay(TIEMPO_BIENVENIDA);
-  
-  // Inicializar actuadores
-  Actuators.init();
-  
-  // Inicializar sensores
+  Utils.init();
+  Storage.init();
   Sensors.init();
-  
-  // Cargar configuración de EEPROM
-  Storage.loadFromEEPROM();
-  
-  // Inicializar controlador de programas
+  Actuators.init();
+  UIController.init();
   ProgramController.init();
   
-  // Inicializar utilidades
-  Utils.init();
+  // Mostrar pantalla de bienvenida
+  showWelcomeScreen();
   
-  // Mostrar pantalla de selección
-  UIController.showSelectionScreen();
+  // Iniciar monitoreo de sensores
+  Sensors.startMonitoring();
+  
+  // Iniciar temporizador principal
+  Utils.startMainTimer();
+  
+  Serial.println("Sistema inicializado correctamente");
 }
 
 void loop() {
-  // Verificar botón de emergencia
-  Hardware.updateDebouncer();
-  if (Hardware.isEmergencyButtonPressed()) {
-    ProgramController.handleEmergency();
-    return;
-  }
+  // Verificar botón de emergencia con máxima prioridad
+  checkEmergencyButton();
   
-  // Verificar contador de bloqueo
-  if (ProgramController.isSystemBlocked()) {
-    UIController.showErrorScreen(400, "Sistema bloqueado");
-    while (true) {}  // Detener ejecución
-    return;
-  }
-  
-  // Procesar eventos de la pantalla táctil
-  UIController.processEvents();
-  
-  // Si hay acciones del usuario, procesarlas
-  if (UIController.hasUserAction()) {
-    ProgramController.handleUserAction(UIController.getUserAction());
-  }
-  
-  // Actualizar estado general del sistema
+  // Actualizar controlador de programa
   ProgramController.update();
   
-  // Actualizar temporizador si está activo
-  Utils.updateTimer();
+  // Procesar eventos de tareas temporizadas
+  Utils.updateTasks();
+  
+  // Pequeña pausa para evitar saturación del CPU
+  yield();
+}
+
+void checkEmergencyButton() {
+  // Actualizar el estado del botón de emergencia
+  Hardware.updateDebouncer();
+  
+  // Si se detecta presión del botón de emergencia, detener todo
+  if (Hardware.isEmergencyButtonPressed()) {
+    ProgramController.handleEmergency();
+  }
+}
+
+// Callback para el cambio de pantalla después de la bienvenida
+void welcomeScreenCallback() {
+  UIController.showSelectionScreen(ProgramController.getCurrentProgram());
+}
+
+void showWelcomeScreen() {
+  // Mostrar pantalla de bienvenida
+  UIController.showWelcomeScreen();
+  
+  // Crear temporizador para cambiar de pantalla después del tiempo de bienvenida
+  Utils.createTimeout(TIEMPO_BIENVENIDA, welcomeScreenCallback);
+  
+  Serial.println("Pantalla de bienvenida mostrada, cambiará en " + String(TIEMPO_BIENVENIDA) + " ms");
 }
 ```
 
@@ -103,6 +132,7 @@ El archivo principal tiene las siguientes responsabilidades:
 2. **Mantenibilidad**: Facilita la comprensión del flujo general sin distraer con detalles de implementación.
 3. **Flexibilidad**: Permite reemplazar módulos enteros sin modificar el flujo principal.
 4. **Testabilidad**: Facilita la prueba de componentes individuales al tener interfaces bien definidas.
+5. **No Bloqueo**: La implementación utiliza técnicas no bloqueantes (sin delay()) para mantener la responsividad del sistema.
 
 ## Adaptaciones para el Nuevo Hardware
 

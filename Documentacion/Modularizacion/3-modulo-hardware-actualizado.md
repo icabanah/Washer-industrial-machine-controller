@@ -36,8 +36,8 @@ public:
   // Funciones para control de Nextion
   void nextionSendCommand(const String& command);
   void nextionSetPage(uint8_t pageId);
-  void nextionSetText(uint8_t componentId, const String& text);
-  void nextionSetValue(uint8_t componentId, int value);
+  void nextionSetText(const String& componentId, const String& text);
+  void nextionSetValue(const String& componentId, int value);
   bool nextionCheckForEvents();
   String nextionGetLastEvent();
   
@@ -174,12 +174,12 @@ void HardwareClass::nextionSetPage(uint8_t pageId) {
   nextionSendCommand("page " + String(pageId));
 }
 
-void HardwareClass::nextionSetText(uint8_t componentId, const String& text) {
-  nextionSendCommand("t" + String(componentId) + ".txt=\"" + text + "\"");
+void HardwareClass::nextionSetText(const String& componentId, const String& text) {
+  nextionSendCommand(componentId + ".txt=\"" + text + "\"");
 }
 
-void HardwareClass::nextionSetValue(uint8_t componentId, int value) {
-  nextionSendCommand("x" + String(componentId) + ".val=" + String(value));
+void HardwareClass::nextionSetValue(const String& componentId, int value) {
+  nextionSendCommand(componentId + ".val=" + String(value));
 }
 
 bool HardwareClass::nextionCheckForEvents() {

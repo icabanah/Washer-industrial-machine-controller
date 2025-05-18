@@ -1,0 +1,31 @@
+### Pines
+## Entradas
+- **btnEmergencia**: Pin 15 (Botón de emergencia con antirrebote)
+
+## Salidas (Actuadores)
+- **MotorDirA**: Pin 12 (Control dirección derecha del motor)
+- **MotorDirB**: Pin 14 (Control dirección izquierda del motor)
+- **Centrifugado**: Pin 27 (Control centrifugado del motor)
+- **ValvulAgua**: Pin 26 (Control de la válvula de entrada de agua)
+- **ElectrovVapor**: Pin 33 (Control de la electroválvula de vapor para calentar)
+- **ValvulDesfogue**: Pin 13 (Control de la válvula de drenaje)
+- **MagnetPuerta**: Pin 25 (Control del bloqueo electromagnético de la puerta)
+
+## Sensores
+## Sensor de Presión (HX710B)
+- **DOUT**: Pin 05
+- **SCLK**: Pin 04
+
+## Sensor de Temperatura (OneWire Dallas)
+- **Pin de Datos**: Pin 23
+- **Resolución**: 9 bits
+- **Dirección del sensor**: 0x28, 0xFF, 0x7, 0x3, 0x93, 0x16, 0x4, 0x7A
+
+### Nextion
+## Botones en el nextion
+- **btnComenzar**
+- **btnParar** 
+- **btnEditar**
+- **btnProgramar** 
+- **btnDisminuir** 
+- **btnAumentar**

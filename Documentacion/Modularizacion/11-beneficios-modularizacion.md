@@ -2,7 +2,7 @@
 
 ## Introducción
 
-La modularización del código del controlador de lavadora industrial trae consigo numerosos beneficios técnicos y prácticos. Este documento detalla las ventajas que se obtendrán al implementar la estructura modular propuesta.
+La modularización del código del controlador de lavadora industrial desarrollado en Arequipa, Perú, trae consigo numerosos beneficios técnicos y prácticos. Este documento detalla las ventajas que se obtendrán al implementar la estructura modular propuesta para el sistema basado en ESP32-WROOM y pantalla táctil Nextion.
 
 ## Analogía: Sistema de Organización Modular
 
@@ -20,25 +20,31 @@ Podemos comparar la modularización del código con la diferencia entre una caja
 
 **Antes de la modularización**: Varias funcionalidades similares estaban implementadas en diferentes partes del código, creando redundancia.
 
-**Después de la modularización**: Las funciones comunes están centralizadas en módulos específicos, permitiendo su reutilización sin duplicación. Por ejemplo, las funciones para formatear el tiempo están en el módulo de utilidades y pueden ser utilizadas por cualquier otro módulo.
+**Después de la modularización**: Las funciones comunes están centralizadas en módulos específicos, permitiendo su reutilización sin duplicación. Por ejemplo, las funciones para formatear el tiempo y gestionar tareas asíncronas están en el módulo de utilidades y pueden ser utilizadas por cualquier otro módulo.
 
 ### 3. Encapsulamiento y Abstracción
 
 **Antes de la modularización**: Los detalles de implementación estaban expuestos en todo el código, creando dependencias innecesarias.
 
-**Después de la modularización**: Cada módulo expone solo lo necesario a través de una interfaz bien definida, ocultando los detalles internos. Por ejemplo, otros módulos no necesitan saber cómo se lee específicamente el sensor de temperatura, solo necesitan el valor actual.
+**Después de la modularización**: Cada módulo expone solo lo necesario a través de una interfaz bien definida, ocultando los detalles internos. Por ejemplo, otros módulos no necesitan saber cómo el Hardware se comunica específicamente con la pantalla Nextion, solo necesitan usar métodos simples como `nextionSetText()`.
 
-### 4. Pruebas Simplificadas
+### 4. Programación No Bloqueante
+
+**Antes de la modularización**: El uso extensivo de `delay()` bloqueaba el flujo de ejecución, impidiendo que el sistema respondiera a eventos durante ese tiempo.
+
+**Después de la modularización**: El módulo Utils proporciona un sistema de tareas asíncronas que permite ejecutar operaciones temporizadas sin bloquear el sistema, mejorando significativamente la capacidad de respuesta ante eventos como la pulsación del botón de emergencia.
+
+### 5. Pruebas Simplificadas
 
 **Antes de la modularización**: Era difícil probar componentes individuales sin ejecutar todo el sistema.
 
 **Después de la modularización**: Cada módulo puede ser probado de forma independiente, facilitando la detección y corrección de errores. Es posible crear pruebas específicas para el módulo de sensores sin necesidad de activar todo el sistema.
 
-### 5. Escalabilidad
+### 6. Escalabilidad
 
 **Antes de la modularización**: Añadir nuevas características requería modificar y entender todo el código existente.
 
-**Después de la modularización**: Se pueden añadir nuevas funcionalidades extendiendo módulos existentes o creando nuevos módulos sin perturbar el resto del sistema. Por ejemplo, añadir soporte para un nuevo tipo de programa de lavado solo requeriría modificaciones en el módulo de controlador de programas.
+**Después de la modularización**: Se pueden añadir nuevas funcionalidades extendiendo módulos existentes o creando nuevos módulos sin perturbar el resto del sistema. Por ejemplo, añadir soporte para Bluetooth o WiFi (capacidades disponibles en el ESP32) sería relativamente sencillo de implementar como un nuevo módulo.
 
 ## Beneficios Prácticos
 
@@ -58,13 +64,13 @@ Podemos comparar la modularización del código con la diferencia entre una caja
 
 **Antes de la modularización**: Cambiar componentes de hardware requería modificaciones en múltiples partes del código.
 
-**Después de la modularización**: Los detalles de hardware están encapsulados en módulos específicos, por lo que los cambios de hardware afectan solo a esos módulos. Por ejemplo, cambiar el sensor de temperatura solo requeriría modificaciones en el módulo de sensores.
+**Después de la modularización**: Los detalles de hardware están encapsulados en módulos específicos, por lo que los cambios de hardware afectan solo a esos módulos. Por ejemplo, la migración de Arduino a ESP32 y de LCD a pantalla táctil Nextion se ha gestionado principalmente modificando solo los módulos Hardware y UIController, manteniendo intacta la lógica de negocio.
 
 ### 4. Facilidad de Aprendizaje
 
 **Antes de la modularización**: Nuevos desarrolladores necesitaban entender todo el sistema para comenzar a contribuir.
 
-**Después de la modularización**: Los nuevos desarrolladores pueden comenzar trabajando en módulos específicos sin necesidad de comprender todo el sistema inmediatamente, acelerando su integración al proyecto.
+**Después de la modularización**: Los nuevos desarrolladores pueden comenzar trabajando en módulos específicos sin necesidad de comprender todo el sistema inmediatamente, acelerando su integración al proyecto. Esto es especialmente útil en el contexto de Arequipa, donde se puede fomentar la participación de nuevos ingenieros en proyectos de hardware.
 
 ### 5. Evolución Continua
 
@@ -78,22 +84,22 @@ Podemos comparar la modularización del código con la diferencia entre una caja
 
 **Antes**: Para cambiar el formato de las pantallas, era necesario modificar múltiples funciones distribuidas por todo el código principal.
 
-**Después**: Todas las funciones relacionadas con la interfaz están en el módulo UIController, facilitando cualquier actualización de diseño o formato.
+**Después**: Todas las funciones relacionadas con la interfaz están en el módulo UIController, facilitando la transición de LCD a pantalla táctil Nextion. La gestión de eventos táctiles y la comunicación serial con la pantalla está encapsulada en el módulo, simplificando futuras actualizaciones.
 
-### Ejemplo 2: Actualización de Sensor
+### Ejemplo 2: Programación No Bloqueante
 
-**Antes**: Si se necesitaba cambiar el modelo del sensor de temperatura, era necesario modificar el código en múltiples lugares, incluyendo la inicialización, lectura de datos y procesamiento.
+**Antes**: El uso de `delay()` para controlar tiempos de espera bloqueaba todo el sistema, impidiendo la detección del botón de emergencia durante esos períodos.
 
-**Después**: Con el módulo de Sensors, solo es necesario actualizar ese módulo, y el resto del sistema seguirá funcionando sin cambios mientras la interfaz pública del módulo se mantenga.
+**Después**: Con el módulo Utils proporcionando temporizadores asíncronos, el sistema puede manejar múltiples temporizadores simultáneamente sin bloquear la ejecución principal, mejorando significativamente la seguridad y la capacidad de respuesta.
 
-### Ejemplo 3: Añadir un Nuevo Programa de Lavado
+### Ejemplo 3: Expansión del Sistema
 
-**Antes**: Añadir un nuevo programa requería modificar múltiples partes del código y entender todas las interdependencias existentes.
+**Antes**: Añadir conectividad WiFi o Bluetooth requeriría una reescritura significativa del código.
 
-**Después**: Solo es necesario modificar el módulo ProgramController para añadir la lógica del nuevo programa, sin afectar otros aspectos como la interfaz de usuario o el control de hardware.
+**Después**: Gracias a la modularidad y al uso del ESP32-WROOM, añadir un módulo de conectividad que permita el control remoto o el monitoreo del sistema sería relativamente sencillo sin afectar la funcionalidad principal.
 
 ## Conclusiones
 
-La modularización del código del controlador de lavadora industrial no solo mejora la calidad técnica del software, sino que también proporciona beneficios prácticos significativos para el desarrollo, mantenimiento y evolución del sistema. Al implementar esta estructura modular, se está construyendo una base sólida que facilitará tanto el trabajo actual como el desarrollo futuro del proyecto.
+La modularización del código del controlador de lavadora industrial no solo mejora la calidad técnica del software, sino que también proporciona beneficios prácticos significativos para el desarrollo, mantenimiento y evolución del sistema. Al implementar esta estructura modular específicamente para el ESP32-WROOM y la pantalla Nextion, se está construyendo una base sólida que facilitará tanto el trabajo actual como el desarrollo futuro del proyecto en el contexto de Arequipa, Perú.
 
-La inversión inicial en tiempo y esfuerzo para realizar esta modularización se verá compensada ampliamente por los beneficios a largo plazo, especialmente en términos de mantenibilidad, adaptabilidad y escalabilidad del sistema.
+La inversión inicial en tiempo y esfuerzo para realizar esta modularización se verá compensada ampliamente por los beneficios a largo plazo, especialmente en términos de mantenibilidad, adaptabilidad y escalabilidad del sistema. Además, el uso de programación no bloqueante mejora significativamente la seguridad del sistema al garantizar que siempre se pueda responder al botón de emergencia, lo cual es crucial en equipos industriales.

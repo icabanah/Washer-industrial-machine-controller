@@ -27,25 +27,29 @@ El módulo de configuración consiste en un único archivo de cabecera (`.h`) qu
 
 // === DEFINICIÓN DE PINES ===
 // Entrada de Emergencia
-#define PIN_BTN_EMERGENCIA 2  // Pin para botón de emergencia con antirrebote
+#define PIN_BTN_EMERGENCIA 15  // Pin para botón de emergencia con antirrebote
 
-// Salidas
-#define PIN_MOTOR_DIR_A 12
-#define PIN_MOTOR_DIR_B 11
-#define PIN_VALVULA_AGUA 10
-#define PIN_ELECTROV_VAPOR 9
-#define PIN_VALVULA_DESFOGUE 8
-#define PIN_MAGNET_PUERTA 7
-#define PIN_BUZZER 34
+// Salidas (Actuadores)
+#define PIN_MOTOR_DIR_A 12     // Control dirección derecha del motor
+#define PIN_MOTOR_DIR_B 14     // Control dirección izquierda del motor
+#define PIN_CENTRIFUGADO 27    // Control centrifugado del motor
+#define PIN_VALVULA_AGUA 26    // Control de la válvula de entrada de agua
+#define PIN_ELECTROV_VAPOR 33  // Control de la electroválvula de vapor para calentar
+#define PIN_VALVULA_DESFOGUE 13  // Control de la válvula de drenaje
+#define PIN_MAGNET_PUERTA 25   // Control del bloqueo electromagnético de la puerta
 
 // Comunicación Serial para Nextion
 #define NEXTION_SERIAL Serial2
 #define NEXTION_BAUD_RATE 115200
 
 // Pines para sensores
-#define PIN_TEMP_SENSOR 25
-#define PIN_PRESION_DOUT 42
-#define PIN_PRESION_SCLK 40
+// Sensor de Presión (HX710B)
+#define PIN_PRESION_DOUT 5
+#define PIN_PRESION_SCLK 4
+
+// Sensor de Temperatura (OneWire Dallas)
+#define PIN_TEMP_SENSOR 23
+#define TEMP_SENSOR_ADDR {0x28, 0xFF, 0x7, 0x3, 0x93, 0x16, 0x4, 0x7A}
 
 // === PARÁMETROS DEL SISTEMA ===
 // Límites y configuraciones
@@ -105,18 +109,13 @@ El módulo de configuración consiste en un único archivo de cabecera (`.h`) qu
 #define NEXTION_PAGE_ERROR 4
 #define NEXTION_PAGE_EMERGENCY 5
 
-// IDs de los componentes (ejemplos)
-#define NEXTION_COMP_BTN_PROGRAM1 1
-#define NEXTION_COMP_BTN_PROGRAM2 2
-#define NEXTION_COMP_BTN_PROGRAM3 3
-#define NEXTION_COMP_BTN_START 4
-#define NEXTION_COMP_BTN_EDIT 5
-#define NEXTION_COMP_BTN_STOP 6
-#define NEXTION_COMP_TXT_TEMP 10
-#define NEXTION_COMP_TXT_PRESSURE 11
-#define NEXTION_COMP_TXT_TIME 12
-#define NEXTION_COMP_GAUGE_TEMP 20
-#define NEXTION_COMP_GAUGE_PRESSURE 21
+// Botones en el nextion
+#define NEXTION_BTN_COMENZAR "btnComenzar"
+#define NEXTION_BTN_PARAR "btnParar" 
+#define NEXTION_BTN_EDITAR "btnEditar"
+#define NEXTION_BTN_PROGRAMAR "btnProgramar" 
+#define NEXTION_BTN_DISMINUIR "btnDisminuir" 
+#define NEXTION_BTN_AUMENTAR "btnAumentar"
 
 #endif // CONFIG_H
 ```

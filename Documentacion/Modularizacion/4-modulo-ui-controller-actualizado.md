@@ -2,7 +2,7 @@
 
 ## Descripción
 
-El módulo Controlador de Interfaz de Usuario se encarga de gestionar todas las interacciones visuales con el usuario a través de la pantalla Nextion. Maneja la presentación de información en la pantalla, interpreta los eventos táctiles generados por el usuario y coordina la navegación entre las diferentes pantallas del sistema.
+El módulo Controlador de Interfaz de Usuario se encarga de gestionar todas las interacciones visuales con el usuario a través de la pantalla Nextion. Maneja la presentación de información en la pantalla, interpreta los eventos táctiles generados por el usuario y coordina la navegación entre las diferentes pantallas del sistema. Desarrollado específicamente para el contexto de una lavadora industrial en Arequipa, Perú, utiliza el ESP32-WROOM como controlador principal.
 
 ## Analogía: Director de Experiencia de Usuario
 
@@ -87,6 +87,7 @@ extern UIControllerClass UIController;
 // ui_controller.cpp
 #include "ui_controller.h"
 #include "program_controller.h"
+#include "utils.h"
 
 // Definición de la instancia global
 UIControllerClass UIController;
@@ -107,10 +108,10 @@ void UIControllerClass::showWelcomeScreen() {
   Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
   
   // Establecer textos de bienvenida
-  Hardware.nextionSetText(1, "RH Electronics");
-  Hardware.nextionSetText(2, "958970967");
+  Hardware.nextionSetText("t0", "Lavadora Industrial");
+  Hardware.nextionSetText("t1", "Desarrollado en Arequipa, Perú");
   
-  // Activar animación de inicio si existe (ejemplo)
+  // Activar animación de inicio si existe
   Hardware.nextionSendCommand("anim.en=1");
 }
 
@@ -138,11 +139,11 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   Hardware.nextionSetPage(NEXTION_PAGE_EXECUTION);
   
   // Mostrar información del programa
-  Hardware.nextionSetText(1, "P" + String(programa + 21));
+  Hardware.nextionSetText("tPrograma", "P" + String(programa + 21));
   
   // Establecer valores iniciales
-  Hardware.nextionSetText(2, "Fase: " + String(fase));
-  Hardware.nextionSetText(3, "00:00");  // Tiempo inicial
+  Hardware.nextionSetText("tFase", "Fase: " + String(fase));
+  Hardware.nextionSetText("tTiempo", "00:00");  // Tiempo inicial
   
   // Actualizar indicadores
   updateWaterLevel(nivelAgua);
@@ -158,7 +159,7 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase, uint8_t n
   Hardware.nextionSetPage(NEXTION_PAGE_EDIT);
   
   // Mostrar información básica
-  Hardware.nextionSetText(1, "P" + String(programa + 21) + " - F" + String(fase));
+  Hardware.nextionSetText("tHeader", "P" + String(programa + 21) + " - F" + String(fase));
   
   // Mostrar etiqueta según variable seleccionada
   String varLabel;
@@ -170,10 +171,10 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase, uint8_t n
     default: varLabel = "Desconocido"; break;
   }
   
-  Hardware.nextionSetText(2, varLabel);
+  Hardware.nextionSetText("tVariable", varLabel);
   
   // Mostrar valor actual
-  Hardware.nextionSetText(3, String(valor));
+  Hardware.nextionSetText("tValor", String(valor));
   
   // Configurar rangos para los controles
   int minVal = 0;
@@ -195,18 +196,18 @@ void UIControllerClass::showErrorScreen(uint8_t errorCode, const String& errorMe
   Hardware.nextionSetPage(NEXTION_PAGE_ERROR);
   
   // Mostrar código de error
-  Hardware.nextionSetText(1, "ERROR " + String(errorCode));
+  Hardware.nextionSetText("tError", "ERROR " + String(errorCode));
   
   // Mostrar mensaje de error si se proporciona
   if (errorMessage.length() > 0) {
-    Hardware.nextionSetText(2, errorMessage);
+    Hardware.nextionSetText("tMensaje", errorMessage);
   } else {
     // Mensaje por defecto basado en código
     switch (errorCode) {
-      case 400: Hardware.nextionSetText(2, "Error de sistema"); break;
-      case 401: Hardware.nextionSetText(2, "Error de temperatura"); break;
-      case 402: Hardware.nextionSetText(2, "Error de presión"); break;
-      default: Hardware.nextionSetText(2, "Error desconocido"); break;
+      case 400: Hardware.nextionSetText("tMensaje", "Error de sistema"); break;
+      case 401: Hardware.nextionSetText("tMensaje", "Error de temperatura"); break;
+      case 402: Hardware.nextionSetText("tMensaje", "Error de presión"); break;
+      default: Hardware.nextionSetText("tMensaje", "Error desconocido"); break;
     }
   }
   
@@ -219,8 +220,8 @@ void UIControllerClass::showEmergencyScreen() {
   Hardware.nextionSetPage(NEXTION_PAGE_EMERGENCY);
   
   // Mostrar mensaje de emergencia
-  Hardware.nextionSetText(1, "PARADA DE EMERGENCIA");
-  Hardware.nextionSetText(2, "Sistema detenido por seguridad");
+  Hardware.nextionSetText("tEmergencia", "PARADA DE EMERGENCIA");
+  Hardware.nextionSetText("tMensaje", "Sistema detenido por seguridad");
   
   // Activar indicador visual de emergencia
   Hardware.nextionSendCommand("alarm.en=1");
@@ -232,7 +233,7 @@ void UIControllerClass::showEmergencyScreen() {
 void UIControllerClass::updateTime(uint8_t minutos, uint8_t segundos) {
   char timeBuffer[6];
   _formatTimeDisplay(minutos, segundos, timeBuffer);
-  Hardware.nextionSetText(3, timeBuffer);
+  Hardware.nextionSetText("tTiempo", timeBuffer);
   
   // Actualizar barra de progreso si es necesario
   // (suponiendo fase de 60 minutos máximo)
@@ -246,35 +247,35 @@ void UIControllerClass::_formatTimeDisplay(uint8_t minutos, uint8_t segundos, ch
 
 void UIControllerClass::updateTemperature(uint8_t temperatura) {
   // Actualizar texto de temperatura
-  Hardware.nextionSetText(4, String(temperatura) + "°C");
+  Hardware.nextionSetText("tTemp", String(temperatura) + "°C");
   
   // Actualizar medidor visual si existe
-  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_TEMP, temperatura);
+  Hardware.nextionSendCommand("gTemp.val=" + String(temperatura));
 }
 
 void UIControllerClass::updateWaterLevel(uint8_t nivel) {
   // Actualizar texto de nivel
-  Hardware.nextionSetText(5, "Nivel: " + String(nivel));
+  Hardware.nextionSetText("tNivel", "Nivel: " + String(nivel));
   
   // Actualizar indicador visual
-  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_PRESSURE, nivel * 25);  // 0-100%
+  Hardware.nextionSendCommand("gNivel.val=" + String(nivel * 25));  // 0-100%
 }
 
 void UIControllerClass::updateRotation(uint8_t rotacion) {
   // Actualizar texto de rotación
-  Hardware.nextionSetText(6, "Vel: " + String(rotacion));
+  Hardware.nextionSetText("tVelocidad", "Vel: " + String(rotacion));
   
   // Actualizar indicador visual si existe
-  Hardware.nextionSendCommand("motor.val=" + String(rotacion));
+  Hardware.nextionSendCommand("gMotor.val=" + String(rotacion));
 }
 
 void UIControllerClass::updatePhase(uint8_t fase) {
-  Hardware.nextionSetText(2, "Fase: " + String(fase));
+  Hardware.nextionSetText("tFase", "Fase: " + String(fase));
 }
 
 void UIControllerClass::updateProgressBar(uint8_t progress) {
   // Actualizar barra de progreso
-  Hardware.nextionSendCommand("j0.val=" + String(progress));
+  Hardware.nextionSendCommand("jProgreso.val=" + String(progress));
 }
 
 void UIControllerClass::processEvents() {
@@ -284,7 +285,7 @@ void UIControllerClass::processEvents() {
     _handleNextionEvent(event);
   }
   
-  // Actualizar mensajes temporales
+  // Actualizar mensajes temporales usando utils en lugar de delay
   if (_messageActive && (millis() - _messageTimestamp > 2000)) {
     _messageActive = false;
     // Ocultar mensaje
@@ -294,71 +295,43 @@ void UIControllerClass::processEvents() {
 
 void UIControllerClass::_handleNextionEvent(const String& event) {
   // Procesar evento de la pantalla Nextion
-  // Los eventos típicos son del formato:
-  // 65 1 2 : Botón 1 presionado en página 2
   
-  if (event.length() >= 3) {
-    char eventType = event[0];
-    int componentId = event[1] - '0';  // Convertir char a int
-    int pageId = event[2] - '0';       // Convertir char a int
-    
-    // Eventos de botón (código 65)
-    if (eventType == 65) {
-      switch (pageId) {
-        case NEXTION_PAGE_SELECTION:
-          if (componentId >= 1 && componentId <= 3) {
-            // Selección de programa
-            _lastUserAction = "PROGRAM_" + String(componentId);
-            _userActionPending = true;
-          } else if (componentId == NEXTION_COMP_BTN_START) {
-            // Botón iniciar
-            _lastUserAction = "START";
-            _userActionPending = true;
-          } else if (componentId == NEXTION_COMP_BTN_EDIT) {
-            // Botón editar
-            _lastUserAction = "EDIT";
-            _userActionPending = true;
-          }
-          break;
-          
-        case NEXTION_PAGE_EXECUTION:
-          if (componentId == NEXTION_COMP_BTN_STOP) {
-            // Botón parar
-            _lastUserAction = "STOP";
-            _userActionPending = true;
-          }
-          break;
-          
-        case NEXTION_PAGE_EDIT:
-          if (componentId == 7) {  // Botón guardar
-            _lastUserAction = "SAVE";
-            _userActionPending = true;
-          } else if (componentId == 8) {  // Botón cancelar
-            _lastUserAction = "CANCEL";
-            _userActionPending = true;
-          }
-          break;
-      }
-    }
-    // Eventos de slider o controles numéricos (código 67)
-    else if (eventType == 67) {
-      // Ejemplo: obtener valor de un slider
-      // El formato puede variar según el componente
-      _lastUserAction = "VALUE_CHANGE_" + String(componentId) + "_" + String(pageId);
-      _userActionPending = true;
-    }
+  // Comparar el evento con nombres de botones definidos
+  if (event.indexOf(NEXTION_BTN_COMENZAR) >= 0) {
+    _lastUserAction = "START";
+    _userActionPending = true;
+  }
+  else if (event.indexOf(NEXTION_BTN_PARAR) >= 0) {
+    _lastUserAction = "STOP";
+    _userActionPending = true;
+  }
+  else if (event.indexOf(NEXTION_BTN_EDITAR) >= 0) {
+    _lastUserAction = "EDIT";
+    _userActionPending = true;
+  }
+  else if (event.indexOf(NEXTION_BTN_PROGRAMAR) >= 0) {
+    _lastUserAction = "PROGRAM";
+    _userActionPending = true;
+  }
+  else if (event.indexOf(NEXTION_BTN_AUMENTAR) >= 0) {
+    _lastUserAction = "INCREASE";
+    _userActionPending = true;
+  }
+  else if (event.indexOf(NEXTION_BTN_DISMINUIR) >= 0) {
+    _lastUserAction = "DECREASE";
+    _userActionPending = true;
   }
 }
 
 void UIControllerClass::_updateProgramInfo(uint8_t programa) {
   // Actualizar información mostrada para el programa seleccionado
-  Hardware.nextionSetText(10, "P" + String(programa + 21));
+  Hardware.nextionSetText("tPrograma", "P" + String(programa + 21));
   
   // Mostrar parámetros para la primera fase del programa
-  Hardware.nextionSetText(11, "Nivel: " + String(_nivelAgua[programa - 1][0]));
-  Hardware.nextionSetText(12, "Temp: " + String(_temperaturaLim[programa - 1][0]) + "°C");
-  Hardware.nextionSetText(13, "Tiempo: " + String(_temporizadorLim[programa - 1][0]) + " min");
-  Hardware.nextionSetText(14, "Vel: " + String(_rotacionTam[programa - 1][0]));
+  Hardware.nextionSetText("tNivel", "Nivel: " + String(_nivelAgua[programa - 1][0]));
+  Hardware.nextionSetText("tTemp", "Temp: " + String(_temperaturaLim[programa - 1][0]) + "°C");
+  Hardware.nextionSetText("tTiempo", "Tiempo: " + String(_temporizadorLim[programa - 1][0]) + " min");
+  Hardware.nextionSetText("tVelocidad", "Vel: " + String(_rotacionTam[programa - 1][0]));
   
   // Si es el programa 3, mostrar información adicional
   if (programa == 3) {
@@ -367,9 +340,9 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa) {
     for (uint8_t i = 0; i < 4; i++) {
       fasesInfo += String(i + 1) + ":" + String(_temporizadorLim[programa - 1][i]) + "m ";
     }
-    Hardware.nextionSetText(15, fasesInfo);
+    Hardware.nextionSetText("tFases", fasesInfo);
   } else {
-    Hardware.nextionSetText(15, "");  // Limpiar texto si no es programa 3
+    Hardware.nextionSetText("tFases", "");  // Limpiar texto si no es programa 3
   }
 }
 
@@ -389,6 +362,12 @@ void UIControllerClass::showMessage(const String& message, uint16_t duration) {
   
   _messageActive = true;
   _messageTimestamp = millis();
+  
+  // Usar Utils para crear un timeout en lugar de delay
+  Utils.createTimeout(duration, [this]() {
+    Hardware.nextionSendCommand("msgBox.vis=0");
+    _messageActive = false;
+  });
 }
 
 void UIControllerClass::playSound(uint8_t soundType) {
@@ -416,14 +395,17 @@ El módulo Controlador de UI tiene las siguientes responsabilidades:
 3. **Mantenibilidad**: Los cambios en la interfaz se pueden realizar en un solo lugar.
 4. **Experiencia de Usuario**: Facilita la implementación de una interfaz moderna e intuitiva.
 5. **Reutilización**: Los métodos de formateo y visualización pueden reutilizarse en diferentes pantallas.
+6. **No Bloqueo**: Utiliza temporizadores asíncronos del módulo Utils en lugar de delay() para operaciones de tiempo.
 
-## Adaptaciones para el Nuevo Hardware
+## Adaptaciones para el Contexto y Hardware Específico
 
-El módulo ha sido completamente rediseñado para adaptarse a la pantalla Nextion:
+El módulo ha sido rediseñado específicamente para el contexto de Arequipa, Perú, y adaptado a la pantalla Nextion con el controlador ESP32-WROOM:
 
-1. **Pantalla Táctil**: Se han implementado métodos para procesar eventos táctiles, eliminando la dependencia de los botones físicos.
-2. **Comunicación Serial**: La interfaz utiliza comandos seriales específicos de Nextion para controlar la pantalla.
-3. **Capacidades Gráficas**: Se aprovechan las capacidades gráficas de la pantalla Nextion para mostrar indicadores visuales, barras de progreso y animaciones.
-4. **Estado de Emergencia**: Se ha añadido soporte específico para la pantalla de emergencia, activada por el botón de emergencia.
+1. **Pantalla Táctil Nextion**: Implementa métodos para procesar eventos táctiles específicos de la pantalla Nextion, eliminando la dependencia de botones físicos.
+2. **Comunicación Serial con ESP32**: La interfaz utiliza comandos seriales específicos para controlar la pantalla desde el ESP32.
+3. **Nombres de Componentes**: Utiliza los nombres exactos de los componentes en la pantalla (btnComenzar, btnParar, etc.) en lugar de índices numéricos.
+4. **Capacidades Gráficas**: Aprovecha las capacidades gráficas de la pantalla para mostrar indicadores visuales, barras de progreso y animaciones.
+5. **Estado de Emergencia**: Incluye soporte específico para la pantalla de emergencia, activada por el botón de emergencia conectado al pin 15.
+6. **Implementación No Bloqueante**: Todas las funciones de temporización utilizan las utilidades asíncronas en lugar de delay().
 
 Al centralizar toda la lógica de presentación en este módulo, se facilita la adaptación de la interfaz a diferentes requisitos sin afectar la lógica de negocio, y se garantiza una experiencia de usuario coherente y mejorada en toda la aplicación.

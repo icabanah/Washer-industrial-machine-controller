@@ -1,8 +1,14 @@
 // hardware.cpp
 #include "hardware.h"
+#include "utils.h"
 
 // Definición de la instancia global
 HardwareClass Hardware;
+
+// Callback para completar la inicialización de la pantalla Nextion
+void completeNextionInitCallback() {
+  Hardware._completeNextionInit();
+}
 
 void HardwareClass::init() {
   _initEmergencyButton();
@@ -15,6 +21,7 @@ void HardwareClass::init() {
   _debounceDelay = 50;  // 50ms para el antirrebote
   
   _nextionLastEvent = "";
+  _nextionInitComplete = false;
 }
 
 void HardwareClass::_initEmergencyButton() {
@@ -47,9 +54,14 @@ void HardwareClass::_initNextion() {
   // En ESP32, Serial2 puede asignarse a diferentes pines
   NEXTION_SERIAL.begin(NEXTION_BAUD_RATE, SERIAL_8N1, NEXTION_RX_PIN, NEXTION_TX_PIN);
   
-  // Dar tiempo a que la pantalla se inicialice
-  delay(500);
+  // En lugar de usar delay, programamos una tarea para completar la inicialización
+  // después de que la pantalla haya tenido tiempo de inicializarse
+  Utils.createTimeout(500, completeNextionInitCallback);
   
+  Serial.println("Iniciando pantalla Nextion. Completando inicialización en 500ms...");
+}
+
+void HardwareClass::_completeNextionInit() {
   // Establecer el brillo a un nivel medio (valores 0-100)
   nextionSendCommand("dim=50");
   
@@ -64,7 +76,8 @@ void HardwareClass::_initNextion() {
   nextionSendCommand("cls 0");
   nextionSendCommand("ref 0");
   
-  Serial.println("Pantalla Nextion inicializada");
+  _nextionInitComplete = true;
+  Serial.println("Pantalla Nextion inicializada completamente");
 }
 
 void HardwareClass::updateDebouncer() {
@@ -116,16 +129,14 @@ void HardwareClass::nextionSetPage(uint8_t pageId) {
   nextionSendCommand("page " + String(pageId));
 }
 
-void HardwareClass::nextionSetText(uint8_t componentId, const String& text) {
-  // Establece el texto de un componente específico en la pantalla Nextion
-  // Los componentes de texto en Nextion generalmente tienen el prefijo 't'
-  nextionSendCommand("t" + String(componentId) + ".txt=\"" + text + "\"");
+void HardwareClass::nextionSetText(const String& componentId, const String& text) {
+  // Establece el texto de un componente específico en la pantalla Nextion utilizando su nombre
+  nextionSendCommand(componentId + ".txt=\"" + text + "\"");
 }
 
-void HardwareClass::nextionSetValue(uint8_t componentId, int value) {
-  // Establece el valor numérico de un componente específico en la pantalla Nextion
-  // Los componentes numéricos en Nextion generalmente tienen el prefijo 'n'
-  nextionSendCommand("n" + String(componentId) + ".val=" + String(value));
+void HardwareClass::nextionSetValue(const String& componentId, int value) {
+  // Establece el valor numérico de un componente específico en la pantalla Nextion utilizando su nombre
+  nextionSendCommand(componentId + ".val=" + String(value));
 }
 
 bool HardwareClass::nextionCheckForEvents() {
@@ -181,6 +192,11 @@ bool HardwareClass::_readNextionResponse() {
 String HardwareClass::nextionGetLastEvent() {
   // Retorna el último evento capturado desde la pantalla Nextion
   return _nextionLastEvent;
+}
+
+bool HardwareClass::isNextionInitComplete() {
+  // Retorna si la inicialización de la pantalla Nextion está completa
+  return _nextionInitComplete;
 }
 
 void HardwareClass::digitalWrite(uint8_t pin, uint8_t state) {
