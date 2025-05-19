@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="900" height="660" viewBox="0 0 900 660">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#000"/>
+    </marker>
+  </defs>
+  
+  <style>
+    .module {
+      fill: #fff;
+      stroke: #333;
+      stroke-width: 2;
+      filter: drop-shadow(3px 3px 4px rgba(0,0,0,0.3));
+    }
+    .core-module {
+      fill: #e6f7ff;
+    }
+    .hardware-module {
+      fill: #ffe6e6;
+    }
+    .control-module {
+      fill: #e6ffe6;
+    }
+    .module-text {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      font-weight: bold;
+      text-anchor: middle;
+    }
+    .module-desc {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      text-anchor: middle;
+    }
+    .dependency-line {
+      stroke: #666;
+      stroke-width: 1.5;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+    .title {
+      font-family: Arial, sans-serif;
+      font-size: 20px;
+      font-weight: bold;
+      text-anchor: middle;
+    }
+    .subtitle {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      text-anchor: middle;
+    }
+    .legend-box {
+      fill: #f9f9f9;
+      stroke: #ccc;
+      stroke-width: 1;
+    }
+    .legend-title {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .legend-item {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+    }
+  </style>
+
+  <!-- Title -->
+  <text x="450" y="30" class="title">Arquitectura Modular del Controlador de Lavadora Industrial</text>
+  <text x="450" y="55" class="subtitle">Basado en ESP32-WROOM con pantalla Nextion</text>
+  
+  <!-- Core Modules -->
+  <g>
+    <rect x="380" y="90" width="140" height="70" rx="5" class="module core-module"/>
+    <text x="450" y="120" class="module-text">Configuration</text>
+    <text x="450" y="140" class="module-desc">Parámetros y constantes</text>
+  </g>
+  
+  <g>
+    <rect x="180" y="180" width="140" height="70" rx="5" class="module core-module"/>
+    <text x="250" y="210" class="module-text">Hardware</text>
+    <text x="250" y="230" class="module-desc">Inicialización y control</text>
+  </g>
+  
+  <g>
+    <rect x="580" y="180" width="140" height="70" rx="5" class="module core-module"/>
+    <text x="650" y="210" class="module-text">Utils</text>
+    <text x="650" y="230" class="module-desc">Funciones auxiliares</text>
+  </g>
+  
+  <g>
+    <rect x="380" y="180" width="140" height="70" rx="5" class="module core-module"/>
+    <text x="450" y="210" class="module-text">Storage</text>
+    <text x="450" y="230" class="module-desc">Acceso EEPROM</text>
+  </g>
+  
+  <!-- Hardware Modules -->
+  <g>
+    <rect x="180" y="320" width="140" height="70" rx="5" class="module hardware-module"/>
+    <text x="250" y="350" class="module-text">Sensors</text>
+    <text x="250" y="370" class="module-desc">Temperatura y presión</text>
+  </g>
+  
+  <g>
+    <rect x="380" y="320" width="140" height="70" rx="5" class="module hardware-module"/>
+    <text x="450" y="350" class="module-text">Actuators</text>
+    <text x="450" y="370" class="module-desc">Motor, válvulas, etc.</text>
+  </g>
+  
+  <!-- Control Modules -->
+  <g>
+    <rect x="180" y="460" width="140" height="70" rx="5" class="module control-module"/>
+    <text x="250" y="490" class="module-text">UI Controller</text>
+    <text x="250" y="510" class="module-desc">Interfaz Nextion</text>
+  </g>
+  
+  <g>
+    <rect x="580" y="460" width="140" height="70" rx="5" class="module control-module"/>
+    <text x="650" y="490" class="module-text">Program Controller</text>
+    <text x="650" y="510" class="module-desc">Lógica de control</text>
+  </g>
+  
+  <!-- Dependency arrows -->
+  <!-- Config to other modules -->
+  <path d="M 420 160 L 356 180" class="dependency-line" />
+  <path d="M 450 160 L 450 180" class="dependency-line" />
+  <path d="M 480 160 L 544 180" class="dependency-line" />
+  
+  <!-- Hardware to Sensors/Actuators -->
+  <path d="M 250 250 L 250 320" class="dependency-line" />
+  <path d="M 309 230 L 380 320" class="dependency-line" />
+  
+  <!-- Utils to Program Controller -->
+  <path d="M 650 250 L 650 460" class="dependency-line" />
+  
+  <!-- Storage to Program Controller -->
+  <path d="M 485 230 L 580 460" class="dependency-line" />
+  
+  <!-- Sensors to Program Controller -->
+  <path d="M 320 355 L 580 480" class="dependency-line" />
+  
+  <!-- Actuators to Program Controller -->
+  <path d="M 520 355 L 580 490" class="dependency-line" />
+  
+  <!-- UI Controller to Program Controller -->
+  <path d="M 320 495 L 580 495" class="dependency-line" />
+  
+  <!-- Program Controller to UI Controller -->
+  <path d="M 580 475 L 320 475" class="dependency-line" />
+  
+  <!-- Legend -->
+  <rect x="700" y="580" width="180" height="120" class="legend-box" />
+  <text x="710" y="600" class="legend-title">Leyenda</text>
+  
+  <rect x="710" y="610" width="20" height="20" class="module core-module" />
+  <text x="740" y="625" class="legend-item">Módulos Fundamentales</text>
+  
+  <rect x="710" y="640" width="20" height="20" class="module hardware-module" />
+  <text x="740" y="655" class="legend-item">Módulos de Hardware</text>
+  
+  <rect x="710" y="670" width="20" height="20" class="module control-module" />
+  <text x="740" y="685" class="legend-item">Módulos de Control</text>
+  
+  <!-- Main System Flow -->
+  <rect x="20" y="580" width="180" height="120" class="legend-box" />
+  <text x="30" y="600" class="legend-title">Flujo Principal del Sistema</text>
+  <text x="30" y="620" class="legend-item">1. Inicialización de módulos</text>
+  <text x="30" y="640" class="legend-item">2. Monitoreo de sensores</text>
+  <text x="30" y="660" class="legend-item">3. Control de actuadores</text>
+  <text x="30" y="680" class="legend-item">4. Interacción con usuario</text>
+</svg>
