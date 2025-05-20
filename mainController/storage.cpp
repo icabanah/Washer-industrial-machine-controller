@@ -1,21 +1,34 @@
 // storage.cpp
 #include "storage.h"
 #include <string>
+#include <stdio.h>  // Para sprintf
 
 // Instancia global
 StorageClass Storage;
+
+// Constructor para inicializar variables
+StorageClass::StorageClass() : _initialized(false) {}
 
 // Espacio de nombres para la configuración
 #define STORAGE_NAMESPACE "washerCfg"
 
 void StorageClass::init() {
-  // Inicializar el espacio de nombres de Preferences en modo lectura/escritura
-  _preferences.begin(STORAGE_NAMESPACE, false);
-  _initialized = true;
+  // Inicializar variables internas
+  _initialized = false;
   
-  // Validar configuraciones al iniciar
-  if (!validateSettings()) {
-    resetToDefaults();
+  // Inicializar el espacio de nombres de Preferences en modo lectura/escritura
+  if (_preferences.begin(STORAGE_NAMESPACE, false)) {
+    _initialized = true;
+    
+    // Validar configuraciones al iniciar
+    if (!validateSettings()) {
+      resetToDefaults();
+    }
+  } else {
+    // Si falla la inicialización, intentar una vez más
+    if (_preferences.begin(STORAGE_NAMESPACE, false)) {
+      _initialized = true;
+    }
   }
 }
 
@@ -68,8 +81,8 @@ void StorageClass::loadTimer(uint8_t &minutes, uint8_t &seconds) {
 }
 
 const char* StorageClass::_getWaterLevelKey(uint8_t program, uint8_t phase) {
-  static char key[16];
-  sprintf(key, "nivel_%u_%u", program, phase);
+  static char key[20]; // Buffer más grande para mayor seguridad
+  snprintf(key, sizeof(key), "nivel_%u_%u", program, phase); // Uso de snprintf más seguro
   return key;
 }
 
@@ -84,8 +97,8 @@ uint8_t StorageClass::loadWaterLevel(uint8_t program, uint8_t phase) {
 }
 
 const char* StorageClass::_getTemperatureKey(uint8_t program, uint8_t phase) {
-  static char key[16];
-  sprintf(key, "temp_%u_%u", program, phase);
+  static char key[20]; // Buffer más grande para mayor seguridad
+  snprintf(key, sizeof(key), "temp_%u_%u", program, phase); // Uso de snprintf más seguro
   return key;
 }
 
@@ -100,8 +113,8 @@ uint8_t StorageClass::loadTemperature(uint8_t program, uint8_t phase) {
 }
 
 const char* StorageClass::_getTimeKey(uint8_t program, uint8_t phase) {
-  static char key[16];
-  sprintf(key, "tiempo_%u_%u", program, phase);
+  static char key[20]; // Buffer más grande para mayor seguridad
+  snprintf(key, sizeof(key), "tiempo_%u_%u", program, phase); // Uso de snprintf más seguro
   return key;
 }
 
@@ -116,8 +129,8 @@ uint8_t StorageClass::loadTime(uint8_t program, uint8_t phase) {
 }
 
 const char* StorageClass::_getRotationKey(uint8_t program, uint8_t phase) {
-  static char key[16];
-  sprintf(key, "rotacion_%u_%u", program, phase);
+  static char key[20]; // Buffer más grande para mayor seguridad
+  snprintf(key, sizeof(key), "rotacion_%u_%u", program, phase); // Uso de snprintf más seguro
   return key;
 }
 
@@ -192,4 +205,44 @@ void StorageClass::resetToDefaults() {
       saveRotation(p, f, defaultRotations[p][f]);
     }
   }
+}
+
+bool StorageClass::loadAllProgramSettings(uint8_t program, uint8_t (&waterLevels)[NUM_FASES],
+                                   uint8_t (&temperatures)[NUM_FASES],
+                                   uint8_t (&times)[NUM_FASES],
+                                   uint8_t (&rotations)[NUM_FASES]) {
+  // Verificar que el programa sea válido
+  if (program >= NUM_PROGRAMAS) {
+    return false;
+  }
+  
+  // Cargar todas las configuraciones para el programa especificado
+  for (uint8_t fase = 0; fase < NUM_FASES; fase++) {
+    waterLevels[fase] = loadWaterLevel(program, fase);
+    temperatures[fase] = loadTemperature(program, fase);
+    times[fase] = loadTime(program, fase);
+    rotations[fase] = loadRotation(program, fase);
+  }
+  
+  return true;
+}
+
+bool StorageClass::saveAllProgramSettings(uint8_t program, const uint8_t (&waterLevels)[NUM_FASES],
+                                   const uint8_t (&temperatures)[NUM_FASES],
+                                   const uint8_t (&times)[NUM_FASES],
+                                   const uint8_t (&rotations)[NUM_FASES]) {
+  // Verificar que el programa sea válido
+  if (program >= NUM_PROGRAMAS) {
+    return false;
+  }
+  
+  // Guardar todas las configuraciones para el programa especificado
+  for (uint8_t fase = 0; fase < NUM_FASES; fase++) {
+    saveWaterLevel(program, fase, waterLevels[fase]);
+    saveTemperature(program, fase, temperatures[fase]);
+    saveTime(program, fase, times[fase]);
+    saveRotation(program, fase, rotations[fase]);
+  }
+  
+  return true;
 }

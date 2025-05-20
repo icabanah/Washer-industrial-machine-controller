@@ -18,6 +18,13 @@ struct TimedTask {
   int id;                      // Identificador único de la tarea
 };
 
+// Estructura para registros de callbacks del temporizador principal
+struct TimerCallbackEntry {
+  TaskCallback callback;
+  int id;
+  bool active;
+};
+
 class UtilsClass {
 public:
   // Inicialización
@@ -65,6 +72,22 @@ public:
    */
   void updateTasks();
   
+  /**
+   * Registra una función callback para ser notificada en intervalos regulares
+   * desde el temporizador principal. Es una forma de evitar múltiples temporizadores
+   * desincronizados en el sistema.
+   * @param callback Función a ejecutar
+   * @return ID del registro o -1 si falló
+   */
+  int registerTimerCallback(TaskCallback callback);
+  
+  /**
+   * Elimina un callback previamente registrado
+   * @param callbackId ID del callback a eliminar
+   * @return true si se eliminó correctamente, false si no se encontró
+   */
+  bool unregisterTimerCallback(int callbackId);
+  
   // Manejo y conversión de tiempo
   void updateTimers();
   void formatTime(uint8_t minutes, uint8_t seconds, char* buffer, size_t bufferSize);
@@ -89,6 +112,11 @@ private:
   TimedTask _tasks[MAX_ASYNC_TASKS];
   uint8_t _taskCount;
   int _nextTaskId;
+  
+  // Array para temporizadores callbacks
+  TimerCallbackEntry _timerCallbacks[MAX_ASYNC_TASKS];
+  uint8_t _timerCallbackCount;
+  int _nextTimerCallbackId;
   
   // Métodos internos
   void _setupMainTimer();

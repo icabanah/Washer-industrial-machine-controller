@@ -8,6 +8,9 @@
 
 class StorageClass {
 public:
+  // Constructor
+  StorageClass();
+  
   // Inicialización
   void init();
   
@@ -34,6 +37,17 @@ public:
   uint8_t loadTime(uint8_t program, uint8_t phase);
   void saveRotation(uint8_t program, uint8_t phase, uint8_t rotation);
   uint8_t loadRotation(uint8_t program, uint8_t phase);
+  
+  // Métodos adicionales para integración con módulos
+  bool loadAllProgramSettings(uint8_t program, uint8_t (&waterLevels)[NUM_FASES], 
+                             uint8_t (&temperatures)[NUM_FASES], 
+                             uint8_t (&times)[NUM_FASES], 
+                             uint8_t (&rotations)[NUM_FASES]);
+  
+  bool saveAllProgramSettings(uint8_t program, const uint8_t (&waterLevels)[NUM_FASES], 
+                             const uint8_t (&temperatures)[NUM_FASES], 
+                             const uint8_t (&times)[NUM_FASES], 
+                             const uint8_t (&rotations)[NUM_FASES]);
   
   // Validación de datos
   bool validateSettings();

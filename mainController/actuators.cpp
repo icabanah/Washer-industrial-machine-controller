@@ -240,15 +240,27 @@ bool ActuatorsClass::isAutoRotationActive() {
 }
 
 void ActuatorsClass::updateTimers() {
-  // Esta función se llama periódicamente desde el temporizador principal
-  // a través de Utils.updateTimers()
+  // Esta función es llamada periódicamente desde Utils.updateTasks()
+  // a través del temporizador principal
   
-  // Ya no necesitamos incrementar _motorSeconds aquí, porque ahora
-  // se maneja a través del temporizador recurrente creado en startAutoRotation
-  
-  // En este método podríamos agregar funcionalidades adicionales
-  // que necesiten actualizarse periódicamente pero que no requieran
-  // un temporizador independiente
+  // Verificar si hay rotación automática activa
+  if (_autoRotationActive && _currentRotationLevel > 0) {
+    // En lugar de actualizar directamente el motor aquí,
+    // esto ahora se maneja a través del temporizador recurrente
+    // creado en startAutoRotation
+    
+    // Lógica adicional para control de actuadores basado en tiempo
+    // que no requiera un temporizador independiente
+    
+    // Ejemplo: Log de estado cada cierto tiempo
+    static unsigned long lastLogTime = 0;
+    if (millis() - lastLogTime > 10000) { // Cada 10 segundos
+      lastLogTime = millis();
+      Utils.debug("Estado motor: " + String(_motorState) + 
+                  " / Rotación: " + String(_currentRotationLevel) +
+                  " / Segundos: " + String(_motorSeconds));
+    }
+  }
 }
 
 // Método público para incrementar segundos del motor

@@ -1,6 +1,7 @@
 // utils.cpp
 #include "utils.h"
 #include "actuators.h"
+#include "program_controller.h"
 
 // Instancia global
 UtilsClass Utils;
@@ -19,10 +20,71 @@ void UtilsClass::init() {
     _tasks[i].id = 0;
   }
   
+  // Inicializar array de callbacks del temporizador principal
+  for (uint8_t i = 0; i < MAX_ASYNC_TASKS; i++) {
+    _timerCallbacks[i].active = false;
+    _timerCallbacks[i].callback = nullptr;
+    _timerCallbacks[i].id = 0;
+  }
+  _timerCallbackCount = 0;
+  _nextTimerCallbackId = 1;
+  
   // Configurar temporizador principal
   _setupMainTimer();
   
   debug("Sistema de utils inicializado sin dependencias externas");
+}
+
+int UtilsClass::registerTimerCallback(TaskCallback callback) {
+  if (callback == nullptr) {
+    debug("Error: Intento de registrar callback nulo para temporizador principal");
+    return -1;
+  }
+  
+  // Buscar un slot libre
+  int freeSlot = -1;
+  for (uint8_t i = 0; i < MAX_ASYNC_TASKS; i++) {
+    if (i < _timerCallbackCount) {
+      if (!_timerCallbacks[i].active) {
+        freeSlot = i;
+        break;
+      }
+    } else {
+      freeSlot = i;
+      break;
+    }
+  }
+  
+  if (freeSlot < 0) {
+    debug("Error: No se puede registrar más callbacks para el temporizador principal");
+    return -1;
+  }
+  
+  // Registrar callback
+  _timerCallbacks[freeSlot].callback = callback;
+  _timerCallbacks[freeSlot].id = _nextTimerCallbackId++;
+  _timerCallbacks[freeSlot].active = true;
+  
+  // Incrementar contador si es necesario
+  if (freeSlot == _timerCallbackCount) {
+    _timerCallbackCount++;
+  }
+  
+  debug("Nuevo callback registrado para temporizador principal con ID " + String(_timerCallbacks[freeSlot].id));
+  return _timerCallbacks[freeSlot].id;
+}
+
+bool UtilsClass::unregisterTimerCallback(int callbackId) {
+  for (uint8_t i = 0; i < _timerCallbackCount; i++) {
+    if (_timerCallbacks[i].active && _timerCallbacks[i].id == callbackId) {
+      _timerCallbacks[i].active = false;
+      debug("Callback con ID " + String(callbackId) + " eliminado del temporizador principal");
+      return true;
+    }
+  }
+  
+  debug("Error: Intento de eliminar callback inexistente con ID " + String(callbackId));
+  return false;
 }
 
 /** 
@@ -217,9 +279,6 @@ void UtilsClass::updateTasks() {
       
       // También actualizamos los temporizadores de otros módulos
       Actuators.updateTimers();
-      // Cuando estén implementados:
-      // ProgramController.updateTimers();
-      // Sensors.updateTimers();
     }
   }
   
@@ -278,13 +337,65 @@ void UtilsClass::updateTasks() {
       _taskCount = newIndex;
       debug("Array de tareas compactado. Tareas activas: " + String(_taskCount));
     }
+    
+    // También compactar los callbacks del temporizador principal
+    if (_timerCallbackCount > 0) {
+      int inactiveCallbacks = 0;
+      for (uint8_t i = 0; i < _timerCallbackCount; i++) {
+        if (!_timerCallbacks[i].active) {
+          inactiveCallbacks++;
+        }
+      }
+      
+      if (inactiveCallbacks > 3) {
+        uint8_t newIndex = 0;
+        
+        // Mover todos los callbacks activos al principio del array
+        for (uint8_t i = 0; i < _timerCallbackCount; i++) {
+          if (_timerCallbacks[i].active) {
+            if (i != newIndex) {
+              _timerCallbacks[newIndex] = _timerCallbacks[i];
+            }
+            newIndex++;
+          }
+        }
+        
+        // Actualizar el contador
+        _timerCallbackCount = newIndex;
+        debug("Array de callbacks compactado. Callbacks activos: " + String(_timerCallbackCount));
+      }
+    }
   }
 }
 
 void UtilsClass::updateTimers() {
-  // Esta función será llamada por el temporizador principal
-  // En la implementación final, actualizará los contadores y 
-  // estados del sistema
+  // Esta función es llamada por el temporizador principal
+  // y actualiza los contadores y estados del sistema
+  
+  // Actualizar los temporizadores de otros módulos
+  static unsigned long lastGlobalUpdate = 0;
+  unsigned long currentTime = millis();
+  
+  // Actualización global cada 1000 ms (1 segundo)
+  if (currentTime - lastGlobalUpdate >= 1000) {
+    lastGlobalUpdate = currentTime;
+    
+    // Aquí actualizamos los temporizadores del sistema
+    // Ejecutamos todos los callbacks registrados
+    for (uint8_t i = 0; i < _timerCallbackCount; i++) {
+      if (_timerCallbacks[i].active && _timerCallbacks[i].callback != nullptr) {
+        _timerCallbacks[i].callback();
+      }
+    }
+    
+    // Actualizar temporizador del programa (si está en ejecución)
+    if (ProgramController.getState() == ESTADO_EJECUCION) {
+      ProgramController.updateTimers();
+    }
+    
+    // Registrar tiempo de actualización
+    debug("Actualizando temporizadores globales - " + String(currentTime));
+  }
 }
 
 void UtilsClass::formatTime(uint8_t minutes, uint8_t seconds, char* buffer, size_t bufferSize) {

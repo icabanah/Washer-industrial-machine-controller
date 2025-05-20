@@ -8,7 +8,7 @@ El proyecto consiste en modernizar un controlador de lavadora industrial, migrá
 
 La estrategia se basa en dividir el sistema en módulos independientes pero interconectados, siguiendo el principio de responsabilidad única. Esto permitirá un desarrollo incremental, donde cada módulo puede ser implementado y probado individualmente antes de ser integrado en el sistema completo. La arquitectura implementa una máquina de estados completa para gestionar el flujo de ejecución, con especial énfasis en la gestión activa de temperatura para programas que utilizan agua caliente.
 
-## Progreso General del Proyecto: 40%
+## Progreso General del Proyecto: 45%
 
 ## Etapas de Implementación
 
@@ -38,7 +38,7 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Comprobar la comunicación básica con el hardware
    - Establecer mecanismos de depuración inicial
 
-### Etapa 2: Implementación de Módulos Fundamentales (3 semanas) - 45% completado
+### Etapa 2: Implementación de Módulos Fundamentales (3 semanas) - 70% completado
 
 1. **Módulo de Hardware (5 días)** - 100% completado
    - Implementar interfaz con hardware físico (ESP32, Nextion, botón emergencia)
@@ -48,26 +48,32 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Verificar comunicación con todos los componentes hardware
    - Integrar métodos específicos para control de válvulas de agua caliente y fría
 
-2. **Módulo de Utilidades (4 días)** - 80% completado
-   - Desarrollar funciones auxiliares y herramientas genéricas
-   - Implementar gestión de temporizadores con AsyncTaskLib para operaciones asíncronas
-   - Crear funciones para manejo y conversión de tiempo
-   - Implementar utilidades para depuración con niveles de detalle configurables
-   - Implementar sistema de callbacks para temporizadores
-   - Pendiente: Realizar pruebas de carga para evaluar rendimiento con múltiples tareas
+2. **Módulo de Utilidades (4 días)** - 100% completado
+   - Desarrollar funciones auxiliares y herramientas genéricas ✓
+   - Implementar gestión de temporizadores para operaciones asíncronas ✓
+   - Crear funciones para manejo y conversión de tiempo ✓
+   - Implementar utilidades para depuración con niveles de detalle configurables ✓
+   - Implementar sistema de callbacks para temporizadores ✓
+   - Implementar sistema centralizado de registro de callbacks para comunicación entre módulos ✓
+   - Realizar pruebas de carga para evaluar rendimiento con múltiples tareas ✓
 
-3. **Módulo de Almacenamiento (4 días)** - 40% completado
-   - Implementar acceso a Preferences (ESP32) para persistencia de datos
-   - Desarrollar estructura para almacenar configuraciones específicas de programas
-   - Crear estructura de datos para gestión de múltiples tandas (Programa 24)
-   - Implementar almacenamiento de parámetros de temperatura y tipo de agua
-   - Pendiente: Implementar validación de datos y recuperación de errores
+3. **Módulo de Almacenamiento (4 días)** - 80% completado
+   - Implementar acceso a Preferences (ESP32) para persistencia de datos ✓
+   - Desarrollar estructura para almacenar configuraciones específicas de programas ✓
+   - Crear estructura de datos para gestión de múltiples tandas (Programa 24) ✓
+   - Implementar almacenamiento de parámetros de temperatura y tipo de agua ✓
+   - Implementar métodos de carga/guardado masivo de configuraciones ✓
+   - Implementar validación de datos básica ✓
+   - Pendiente: Implementar recuperación de errores avanzada
    - Pendiente: Crear sistema de respaldo para configuraciones críticas
 
-4. **Integración de Módulos Fundamentales (2 días)** - 0% completado
-   - Conectar módulos Hardware, Utilidades y Almacenamiento
-   - Verificar interacción correcta entre los módulos
-   - Realizar pruebas de integración básicas
+4. **Integración de Módulos Fundamentales (2 días)** - 100% completado
+   - Conectar módulos Hardware, Utilidades y Almacenamiento ✓
+   - Implementar sistema de registro de callbacks para centralizar temporizadores ✓
+   - Mejorar gestión de eventos desde la pantalla Nextion ✓
+   - Crear métodos para facilitar la comunicación entre módulos ✓
+   - Verificar interacción correcta entre los módulos ✓
+   - Realizar pruebas de integración básicas ✓
 
 ### Etapa 3: Implementación de Módulos Físicos (2 semanas) - 30% completado
 
@@ -123,11 +129,13 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Verificar respuesta de la interfaz ante cambios de estado
    - Probar interacciones del usuario y efectos en el sistema
 
-### Etapa 5: Integración y Pruebas Finales (2 semanas) - 10% completado
+### Etapa 5: Integración y Pruebas Finales (2 semanas) - 15% completado
 
-1. **Integración Completa de Módulos (5 días)** - 20% completado
-   - Desarrollar flujo de mensajes entre todos los módulos
-   - Implementar ciclo completo para los tres programas
+1. **Integración Completa de Módulos (5 días)** - 30% completado
+   - Desarrollar flujo de mensajes entre todos los módulos ✓
+   - Implementar el sistema central de gestión de tiempo ✓
+   - Establecer canales de comunicación entre módulos ✓
+   - Implementar ciclo completo para los tres programas (en proceso)
    - Crear lógica de gestión especial para programa 24 (multitanda)
    - Integrar control de temperatura para programas con agua caliente
    - Pendiente: Implementar flujo de emergencia que atraviese todos los módulos
@@ -223,15 +231,17 @@ if (Hardware.isEmergencyButtonPressed()) {
 
 ## Dependencias Entre Módulos
 
-Para asegurar una implementación adecuada, es importante entender las dependencias entre módulos:
+Para asegurar una implementación adecuada, es importante entender las dependencias entre módulos y cómo se han integrado:
 
 1. **Hardware**: No depende de otros módulos
-2. **Utils**: No depende de otros módulos
-3. **Storage**: Depende de Program Controller para acceder a los datos
-4. **Sensors**: Depende de Actuators para control basado en lecturas
-5. **Actuators**: Depende de Hardware para control de pines
+2. **Utils**: Depende minimalmente de otros módulos para callbacks específicos
+3. **Storage**: Implementa métodos para trabajar con los datos del Program Controller 
+4. **Sensors**: Ahora se integra con Utils para los temporizadores y notificaciones
+5. **Actuators**: Utiliza Hardware para control de pines y Utils para temporizadores
 6. **UI Controller**: Depende de Hardware y Program Controller
 7. **Program Controller**: Depende de Sensors, Actuators, Storage y Utils
+
+La integración ahora utiliza un enfoque centralizado de temporizadores donde Utils.updateTasks() gestiona todos los eventos temporizados del sistema. Esto permite una mejor sincronización y evita problemas de timing entre módulos.
 
 ## Recomendaciones Adicionales
 
