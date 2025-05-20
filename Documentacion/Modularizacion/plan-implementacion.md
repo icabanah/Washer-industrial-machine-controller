@@ -2,13 +2,13 @@
 
 ## Resumen Contextual
 
-El proyecto consiste en modernizar un controlador de lavadora industrial, migrándolo de una implementación monolítica basada en Arduino y LCD a una arquitectura modular utilizando ESP32-WROOM y pantalla táctil Nextion. 
+El proyecto consiste en modernizar un controlador de lavadora industrial, migrándolo de una implementación monolítica basada en Arduino y LCD a una arquitectura modular utilizando ESP32-WROOM y pantalla táctil Nextion. El sistema debe soportar tres programas de lavado específicos (22: Agua Caliente, 23: Agua Fría, y 24: Multitanda) con sus respectivas configuraciones y comportamientos.
 
 ## Enfoque de Modularización
 
-La estrategia se basa en dividir el sistema en módulos independientes pero interconectados, siguiendo el principio de responsabilidad única. Esto permitirá un desarrollo incremental, donde cada módulo puede ser implementado y probado individualmente antes de ser integrado en el sistema completo.
+La estrategia se basa en dividir el sistema en módulos independientes pero interconectados, siguiendo el principio de responsabilidad única. Esto permitirá un desarrollo incremental, donde cada módulo puede ser implementado y probado individualmente antes de ser integrado en el sistema completo. La arquitectura implementa una máquina de estados completa para gestionar el flujo de ejecución, con especial énfasis en la gestión activa de temperatura para programas que utilizan agua caliente.
 
-## Progreso General del Proyecto: 35%
+## Progreso General del Proyecto: 40%
 
 ## Etapas de Implementación
 
@@ -38,89 +38,100 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Comprobar la comunicación básica con el hardware
    - Establecer mecanismos de depuración inicial
 
-### Etapa 2: Implementación de Módulos Fundamentales (3 semanas) - 30% completado
+### Etapa 2: Implementación de Módulos Fundamentales (3 semanas) - 45% completado
 
-1. **Módulo de Hardware (5 días)** - 70% completado
+1. **Módulo de Hardware (5 días)** - 100% completado
    - Implementar interfaz con hardware físico (ESP32, Nextion, botón emergencia)
    - Crear métodos para controlar pines de entrada/salida
    - Implementar comunicación serial con pantalla Nextion
    - Desarrollar sistema de detección y antirrebote para botón de emergencia
-   - Pendiente: Probar la comunicación básica con todos los componentes hardware
+   - Verificar comunicación con todos los componentes hardware
+   - Integrar métodos específicos para control de válvulas de agua caliente y fría
 
-2. **Módulo de Utilidades (4 días)** - 0% completado
+2. **Módulo de Utilidades (4 días)** - 80% completado
    - Desarrollar funciones auxiliares y herramientas genéricas
-   - Implementar gestión de temporizadores con AsyncTaskLib
+   - Implementar gestión de temporizadores con AsyncTaskLib para operaciones asíncronas
    - Crear funciones para manejo y conversión de tiempo
-   - Implementar utilidades para depuración
-   - Probar funcionalidades básicas de forma aislada
+   - Implementar utilidades para depuración con niveles de detalle configurables
+   - Implementar sistema de callbacks para temporizadores
+   - Pendiente: Realizar pruebas de carga para evaluar rendimiento con múltiples tareas
 
-3. **Módulo de Almacenamiento (4 días)** - 0% completado
-   - Implementar acceso a EEPROM para persistencia de datos
-   - Desarrollar métodos para guardar y recuperar configuraciones
-   - Crear funciones de validación para datos almacenados
-   - Establecer estructura de datos para programas y configuraciones
-   - Verificar integridad de datos en operaciones de lectura/escritura
+3. **Módulo de Almacenamiento (4 días)** - 40% completado
+   - Implementar acceso a Preferences (ESP32) para persistencia de datos
+   - Desarrollar estructura para almacenar configuraciones específicas de programas
+   - Crear estructura de datos para gestión de múltiples tandas (Programa 24)
+   - Implementar almacenamiento de parámetros de temperatura y tipo de agua
+   - Pendiente: Implementar validación de datos y recuperación de errores
+   - Pendiente: Crear sistema de respaldo para configuraciones críticas
 
 4. **Integración de Módulos Fundamentales (2 días)** - 0% completado
    - Conectar módulos Hardware, Utilidades y Almacenamiento
    - Verificar interacción correcta entre los módulos
    - Realizar pruebas de integración básicas
 
-### Etapa 3: Implementación de Módulos Físicos (2 semanas) - 0% completado
+### Etapa 3: Implementación de Módulos Físicos (2 semanas) - 30% completado
 
-1. **Módulo de Sensores (5 días)** - 0% completado
+1. **Módulo de Sensores (5 días)** - 50% completado
    - Implementar interfaz para sensor de temperatura (OneWire/DallasTemperature)
    - Desarrollar interfaz para sensor de presión/nivel de agua (HX710B)
-   - Crear métodos para iniciar/detener monitorización
-   - Implementar funciones para procesar y convertir lecturas
-   - Añadir lógica para determinar cuándo se alcanzan niveles objetivo
-   - Probar cada sensor individualmente y en conjunto
+   - Crear sistema de calibración para sensor de presión
+   - Implementar lógica de conversión de valores brutos a unidades prácticas
+   - Implementar monitoreo continuo y asincrónico de sensores
+   - Desarrollar métodos para gestión de temperaturas en programas de agua caliente
+   - Pendiente: Completar algoritmos de estabilización de lecturas
+   - Pendiente: Implementar detección de anomalías en sensores
 
-2. **Módulo de Actuadores (5 días)** - 0% completado
-   - Implementar control del motor bidireccional
-   - Desarrollar gestión de válvulas (agua, desagüe, vapor)
-   - Crear manejo del mecanismo de seguridad de puerta
-   - Implementar control del zumbador para alertas
-   - Establecer estados de seguridad para cada actuador
-   - Probar cada actuador individualmente y en conjunto
+2. **Módulo de Actuadores (5 días)** - 40% completado
+   - Implementar control del motor bidireccional con patrones de rotación configurables
+   - Desarrollar gestión diferenciada de válvulas (agua fría, agua caliente, desagüe, vapor)
+   - Crear manejo del mecanismo de seguridad de puerta con verificación
+   - Implementar control de centrifugado variable
+   - Desarrollar sistema de gestión de temperatura para programas con agua caliente
+   - Pendiente: Implementar secuencias de drenaje parcial para ajuste de temperatura
+   - Pendiente: Completar algoritmos de control de centrifugado
 
 3. **Integración de Módulos Físicos (2 días)** - 0% completado
    - Conectar módulos de sensores y actuadores
    - Verificar respuesta de actuadores basada en lecturas de sensores
    - Realizar pruebas de comunicación entre módulos físicos y fundamentales
 
-### Etapa 4: Implementación de Módulos de Control e Interfaz (3 semanas) - 20% completado
+### Etapa 4: Implementación de Módulos de Control e Interfaz (3 semanas) - 35% completado
 
-1. **Módulo de UI Controller (7 días)** - 40% completado
-   - Estructura de la clase implementada
-   - Definición de métodos para distintas pantallas
-   - Pendiente: Implementación completa de las funciones
-   - Pendiente: Comunicación con la pantalla Nextion
-   - Pendiente: Procesamiento de eventos táctiles
-   - Pendiente: Sistema de mensajes y retroalimentación
-   - Pendiente: Pruebas de pantallas y transiciones
+1. **Módulo de UI Controller (7 días)** - 60% completado
+   - Estructura de la clase implementada con enfoque a máquina de estados
+   - Definición de métodos específicos para distintas pantallas (selección, configuración, ejecución)
+   - Implementación de pantallas específicas para programas 22, 23 y 24
+   - Desarrollo de interfaz para configuración de programas con múltiples tandas
+   - Implementación de pantallas para mostrar información de temperatura y presión
+   - Pendiente: Completar procesamiento de eventos táctiles para todas las pantallas
+   - Pendiente: Implementar sistema de mensajes y alertas de emergencia
+   - Pendiente: Desarrollar pantallas para configuración de tipo de agua y niveles
 
-2. **Módulo de Program Controller (7 días)** - 0% completado
-   - Implementar lógica central del sistema
-   - Desarrollar máquina de estados para controlar el flujo del programa
-   - Crear gestión de programas y fases de lavado
-   - Implementar manejo de temporizadores para fases y rotaciones
-   - Desarrollar procesamiento de eventos de usuario
-   - Añadir sistema de manejo de emergencias
-   - Probar cada estado y transición individualmente
+2. **Módulo de Program Controller (7 días)** - 40% completado
+   - Implementar máquina de estados principal del sistema con 7 estados
+   - Desarrollar lógica para los tres programas específicos (22, 23, 24)
+   - Implementar flujo específico para control de temperatura en agua caliente
+   - Crear gestión especial para programa de múltiples tandas
+   - Desarrollar cálculo dinámico de tiempos según configuración
+   - Implementar sistema de manejo de fases para cada programa
+   - Pendiente: Completar manejo detallado de centrifugado
+   - Pendiente: Implementar manejo completo de emergencias
+   - Pendiente: Desarrollar algoritmos específicos para cada programa
 
 3. **Integración de Módulos de Control e Interfaz (3 días)** - 0% completado
    - Conectar UI Controller con Program Controller
    - Verificar respuesta de la interfaz ante cambios de estado
    - Probar interacciones del usuario y efectos en el sistema
 
-### Etapa 5: Integración y Pruebas Finales (2 semanas) - 0% completado
+### Etapa 5: Integración y Pruebas Finales (2 semanas) - 10% completado
 
-1. **Integración Completa de Módulos (5 días)** - 0% completado
-   - Conectar todos los módulos según la arquitectura diseñada
-   - Implementar interacciones entre todos los componentes
-   - Verificar flujo de información a través del sistema completo
-   - Resolver dependencias circulares si existen
+1. **Integración Completa de Módulos (5 días)** - 20% completado
+   - Desarrollar flujo de mensajes entre todos los módulos
+   - Implementar ciclo completo para los tres programas
+   - Crear lógica de gestión especial para programa 24 (multitanda)
+   - Integrar control de temperatura para programas con agua caliente
+   - Pendiente: Implementar flujo de emergencia que atraviese todos los módulos
+   - Pendiente: Integrar sistema de gestión de errores a nivel global
 
 2. **Optimización (3 días)** - 0% completado
    - Revisar uso de memoria y optimizar si es necesario
@@ -129,17 +140,19 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Reducir redundancias en el código
 
 3. **Pruebas del Sistema Completo (5 días)** - 0% completado
-   - Realizar pruebas de todas las funcionalidades
-   - Verificar todos los programas y fases de lavado
-   - Probar situaciones de error y recuperación
-   - Comprobar respuesta ante situaciones de emergencia
+   - Probar ciclo completo para programa 22 (agua caliente)
+   - Probar ciclo completo para programa 23 (agua fría)
+   - Probar ciclo completo para programa 24 con múltiples tandas
+   - Verificar control activo de temperatura en programas con agua caliente
+   - Comprobar comportamiento ante emergencias
    - Realizar pruebas de larga duración para verificar estabilidad
 
-4. **Documentación Final (2 días)** - 0% completado
-   - Completar documentación de todos los módulos
-   - Crear diagrama final de interacción entre módulos
-   - Documentar protocolo de comunicación con Nextion
-   - Preparar manual técnico del sistema
+4. **Documentación Final (2 días)** - 20% completado
+   - Diagramas de flujo completados
+   - Descripción técnica de programas y fases completada
+   - Pendiente: Consolidar documentación de todos los módulos
+   - Pendiente: Preparar manual técnico detallado
+   - Pendiente: Desarrollar diagramas adicionales para tecnicos de mantenimiento
 
 ## Consideraciones Técnicas Específicas
 
