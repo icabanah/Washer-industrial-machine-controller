@@ -13,7 +13,7 @@ Este módulo funciona como el sistema muscular de un organismo, que recibe órde
 El módulo de Actuadores se divide en:
 
 - **actuators.h**: Define la interfaz pública del módulo
-- **actuators.cpp**: Implementa la funcionalidad interna
+- **actuators.cpp**: Implementa la funcionalidad interna y los comandos a los dispositivos
 
 ### Interfaz (actuators.h)
 
@@ -24,6 +24,7 @@ El módulo de Actuadores se divide en:
 
 #include "config.h"
 #include "hardware.h"
+#include "utils.h"
 
 class ActuatorsClass {
 public:
@@ -31,41 +32,86 @@ public:
   void init();
   
   // Control de motor
-  void startMotor();
+  void startMotor(uint8_t rotationLevel = 1);
   void stopMotor();
+  void pauseMotor();
+  void resumeMotor();
   void reverseMotor();
   bool isMotorRunning();
   
   // Control de centrifugado
-  void activateCentrifuge(bool activate);
+  void startCentrifuge(uint8_t intensity = 2);
+  void stopCentrifuge();
   bool isCentrifugeActive();
   
-  // Control de válvulas
-  void openWaterValve(bool open);
-  void openDrainValve(bool open);
+  // Control de válvulas de agua
+  void openHotWaterValve();
+  void openColdWaterValve();
+  void closeHotWaterValve();
+  void closeColdWaterValve();
+  void closeWaterValve();  // Cierra ambas
+  bool isHotWaterValveOpen();
+  bool isColdWaterValveOpen();
+  
+  // Establecer tipo de agua según programa
+  void setWaterType(const String& type);  // "Caliente" o "Fría"
+  
+  // Control de drenaje
+  void openDrainValve();
+  void closeDrainValve();
+  bool isDrainValveOpen();
+  
+  // Control de vapor para temperatura
   void activateSteam(bool activate);
+  bool isSteamActive();
   
   // Control de seguridad
-  void lockDoor(bool lock);
-  
-  // Control avanzado
-  void setMotorRotationTime(uint8_t rotationLevel, uint8_t timeRotation, uint8_t timePause);
-  
-  // Estado actual
-  bool isWaterValveOpen();
-  bool isDrainValveOpen();
-  bool isSteamActive();
+  void lockDoor();
+  void unlockDoor();
   bool isDoorLocked();
+  
+  // Gestión de temperatura
+  void manageTemperature(float currentTemp, float targetTemp, float tolerance);
+  
+  // Control para patrones de rotación
+  void configureRotationPattern(uint8_t level, uint16_t dirATime, uint16_t pauseTime, uint16_t dirBTime);
+  void updateMotorPattern();
+  
+  // Operaciones de emergencia
+  void emergencyStop();
+  void stopAllSystems();
+  
+  // Señales acústicas (beep)
+  void beep(uint8_t count = 1);
 
 private:
   // Estados actuales
   bool _motorRunning;
-  bool _motorDirection;  // true = dirA, false = dirB
-  bool _centrifugadoActive;
-  bool _waterValveOpen;
+  bool _motorPaused;
+  uint8_t _motorDirection;  // 0=detenido, 1=dirA, 2=dirB
+  uint8_t _rotationLevel;
+  bool _centrifugeActive;
+  uint8_t _centrifugeIntensity;
+  bool _hotWaterValveOpen;
+  bool _coldWaterValveOpen;
   bool _drainValveOpen;
   bool _steamActive;
   bool _doorLocked;
+  
+  // Patrones de rotación
+  struct RotationPattern {
+    uint16_t dirATime;
+    uint16_t pauseTime;
+    uint16_t dirBTime;
+  };
+  
+  RotationPattern _rotationPatterns[3];  // Para los 3 niveles de rotación
+  uint32_t _lastMotorChange;
+  uint8_t _motorState;  // 0=dirA, 1=pausa, 2=dirB, 3=pausa
+  
+  // Métodos internos
+  void _executeMotorPattern(uint8_t state);
+  void _configureCentrifugeIntensity(uint8_t intensity);
 };
 
 // Instancia global
@@ -86,130 +132,233 @@ ActuatorsClass Actuators;
 void ActuatorsClass::init() {
   // Inicializar todos los actuadores en estado seguro/apagado
   _motorRunning = false;
-  _motorDirection = true;  // dirA por defecto
-  _centrifugadoActive = false;
-  _waterValveOpen = false;
+  _motorPaused = false;
+  _motorDirection = 0;
+  _rotationLevel = 1;
+  _centrifugeActive = false;
+  _centrifugeIntensity = 2;
+  _hotWaterValveOpen = false;
+  _coldWaterValveOpen = false;
   _drainValveOpen = false;
   _steamActive = false;
   _doorLocked = false;
+  _lastMotorChange = 0;
+  _motorState = 0;
+  
+  // Configurar patrones de rotación predeterminados
+  // Nivel 1 (suave)
+  _rotationPatterns[0].dirATime = 5000;  // 5 segundos
+  _rotationPatterns[0].pauseTime = 3000; // 3 segundos
+  _rotationPatterns[0].dirBTime = 5000;  // 5 segundos
+  
+  // Nivel 2 (medio)
+  _rotationPatterns[1].dirATime = 10000;  // 10 segundos
+  _rotationPatterns[1].pauseTime = 2000;  // 2 segundos
+  _rotationPatterns[1].dirBTime = 10000;  // 10 segundos
+  
+  // Nivel 3 (intenso)
+  _rotationPatterns[2].dirATime = 15000;  // 15 segundos
+  _rotationPatterns[2].pauseTime = 1000;  // 1 segundo
+  _rotationPatterns[2].dirBTime = 15000;  // 15 segundos
   
   // Aplicar estados iniciales al hardware
   Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
   Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
   Hardware.digitalWrite(PIN_CENTRIFUGADO, LOW);
-  Hardware.digitalWrite(PIN_VALVULA_AGUA, LOW);
+  Hardware.digitalWrite(PIN_VALVUL_AGUA, LOW);
   Hardware.digitalWrite(PIN_ELECTROV_VAPOR, LOW);
-  Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, LOW);
+  Hardware.digitalWrite(PIN_VALVUL_DESFOGUE, LOW);
   Hardware.digitalWrite(PIN_MAGNET_PUERTA, LOW);
+  
+  Utils.debug("Actuadores inicializados correctamente");
 }
 
-void ActuatorsClass::startMotor() {
+// Métodos para control del motor con 3 niveles de rotación
+void ActuatorsClass::startMotor(uint8_t rotationLevel) {
   if (!_motorRunning) {
-    _motorRunning = true;
+    if (rotationLevel < 1) rotationLevel = 1;
+    if (rotationLevel > 3) rotationLevel = 3;
     
-    // Por defecto, iniciar en dirección A
+    _rotationLevel = rotationLevel;
+    _motorRunning = true;
+    _motorPaused = false;
+    _motorState = 0;
+    _motorDirection = 1;
+    _lastMotorChange = millis();
+    
+    // Iniciar en dirección A
     Hardware.digitalWrite(PIN_MOTOR_DIR_A, HIGH);
     Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
-    _motorDirection = true;
+    
+    Utils.debug("Motor iniciado con nivel de rotación: " + String(_rotationLevel));
   }
 }
 
-void ActuatorsClass::stopMotor() {
-  if (_motorRunning) {
-    _motorRunning = false;
+void ActuatorsClass::pauseMotor() {
+  if (_motorRunning && !_motorPaused) {
+    _motorPaused = true;
     Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
     Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
+    Utils.debug("Motor pausado");
   }
 }
 
-void ActuatorsClass::reverseMotor() {
-  if (_motorRunning) {
-    if (_motorDirection) {
-      // Cambiar de dirA a dirB
-      Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
-      Hardware.digitalWrite(PIN_MOTOR_DIR_B, HIGH);
-      _motorDirection = false;
-    } else {
-      // Cambiar de dirB a dirA
+void ActuatorsClass::resumeMotor() {
+  if (_motorRunning && _motorPaused) {
+    _motorPaused = false;
+    
+    // Reanudar en la dirección anterior
+    if (_motorDirection == 1) {
       Hardware.digitalWrite(PIN_MOTOR_DIR_A, HIGH);
       Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
-      _motorDirection = true;
+    } else if (_motorDirection == 2) {
+      Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
+      Hardware.digitalWrite(PIN_MOTOR_DIR_B, HIGH);
     }
-  } else {
-    // Si el motor no está en marcha, iniciarlo en dirección alternativa
-    startMotor();
-    reverseMotor();
+    
+    Utils.debug("Motor reanudado");
   }
 }
 
-bool ActuatorsClass::isMotorRunning() {
-  return _motorRunning;
+// Control de válvulas de agua específicas para diferentes programas
+void ActuatorsClass::openHotWaterValve() {
+  _hotWaterValveOpen = true;
+  _coldWaterValveOpen = false;
+  Hardware.digitalWrite(PIN_VALVUL_AGUA, HIGH);
+  Utils.debug("Válvula de agua caliente abierta");
 }
 
-void ActuatorsClass::activateCentrifuge(bool activate) {
-  _centrifugadoActive = activate;
-  Hardware.digitalWrite(PIN_CENTRIFUGADO, activate ? HIGH : LOW);
+void ActuatorsClass::openColdWaterValve() {
+  _coldWaterValveOpen = true;
+  _hotWaterValveOpen = false;
+  Hardware.digitalWrite(PIN_VALVUL_AGUA, HIGH);
+  Utils.debug("Válvula de agua fría abierta");
 }
 
-void ActuatorsClass::openWaterValve(bool open) {
-  _waterValveOpen = open;
-  Hardware.digitalWrite(PIN_VALVULA_AGUA, open ? HIGH : LOW);
+void ActuatorsClass::setWaterType(const String& type) {
+  if (type == "Caliente") {
+    Utils.debug("Configurado para usar agua caliente");
+  } else {
+    Utils.debug("Configurado para usar agua fría");
+  }
 }
 
-void ActuatorsClass::openDrainValve(bool open) {
-  _drainValveOpen = open;
-  Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, open ? HIGH : LOW);
+// Gestión de temperatura para programas con agua caliente
+void ActuatorsClass::manageTemperature(float currentTemp, float targetTemp, float tolerance) {
+  // Para Programa 22 (Agua Caliente) y Programa 24 con agua caliente
+  if (currentTemp < (targetTemp - tolerance)) {
+    // Temperatura por debajo del objetivo, activar calentador
+    activateSteam(true);
+    Utils.debug("Vapor activado: temperatura " + String(currentTemp) + "°C inferior al objetivo");
+  } else if (currentTemp > (targetTemp + tolerance)) {
+    // Temperatura por encima del objetivo, desactivar calentador
+    activateSteam(false);
+    Utils.debug("Vapor desactivado: temperatura " + String(currentTemp) + "°C superior al objetivo");
+  }
 }
 
-void ActuatorsClass::activateSteam(bool activate) {
-  _steamActive = activate;
-  Hardware.digitalWrite(PIN_ELECTROV_VAPOR, activate ? HIGH : LOW);
+// Operaciones de emergencia
+void ActuatorsClass::emergencyStop() {
+  Utils.debug("¡PARADA DE EMERGENCIA ACTIVADA!");
+  
+  // Detener motor inmediatamente
+  stopMotor();
+  
+  // Detener centrifugado
+  stopCentrifuge();
+  
+  // Cerrar válvulas de entrada de agua
+  closeWaterValve();
+  
+  // Desactivar vapor
+  activateSteam(false);
+  
+  // Abrir válvula de drenaje para vaciar
+  openDrainValve();
+  
+  // La puerta se desbloquea después de un tiempo prudencial (mediante callback)
+  Utils.createTimeout(EMERGENCY_DOOR_UNLOCK_DELAY, []() {
+    Actuators.unlockDoor();
+  });
 }
 
-void ActuatorsClass::lockDoor(bool lock) {
-  _doorLocked = lock;
-  Hardware.digitalWrite(PIN_MAGNET_PUERTA, lock ? HIGH : LOW);
-}
-
-bool ActuatorsClass::isWaterValveOpen() {
-  return _waterValveOpen;
-}
-
-bool ActuatorsClass::isDrainValveOpen() {
-  return _drainValveOpen;
-}
-
-bool ActuatorsClass::isSteamActive() {
-  return _steamActive;
-}
-
-bool ActuatorsClass::isDoorLocked() {
-  return _doorLocked;
-}
-
-bool ActuatorsClass::isCentrifugeActive() {
-  return _centrifugadoActive;
+void ActuatorsClass::stopAllSystems() {
+  stopMotor();
+  stopCentrifuge();
+  closeWaterValve();
+  activateSteam(false);
+  Utils.debug("Todos los sistemas detenidos");
 }
 ```
 
 ## Responsabilidades
 
-El módulo de Actuadores tiene las siguientes responsabilidades:
+El módulo de Actuadores tiene las siguientes responsabilidades adaptadas para los tres programas específicos:
 
-1. **Control de Motor**: Iniciar, detener y cambiar la dirección del motor del tambor.
-2. **Control de Válvulas**: Manejar las válvulas de agua, desagüe y vapor.
-3. **Seguridad**: Controlar el mecanismo de bloqueo de la puerta.
-4. **Alertas**: Gestionar el zumbador para notificaciones audibles.
-5. **Estado**: Mantener y proporcionar información sobre el estado actual de cada actuador.
-6. **Abstracción**: Ocultar los detalles específicos de cómo se controla cada dispositivo.
+1. **Control Diferenciado de Agua**: 
+   - Manejo separado de válvulas de agua fría y caliente para los diferentes programas.
+   - Programa 22: Exclusivamente agua caliente
+   - Programa 23: Exclusivamente agua fría
+   - Programa 24: Configurable según selección de usuario
 
-## Ventajas de este Enfoque
+2. **Gestión de Temperatura**: 
+   - Control activo del vapor para mantener la temperatura dentro del rango objetivo ±2°C
+   - Participación en el ciclo de ajuste de temperatura para programas con agua caliente
 
-1. **Seguridad**: Centraliza el control de dispositivos críticos, facilitando la implementación de protecciones.
-2. **Encapsulamiento**: Mantiene todos los detalles de control de hardware en un solo lugar.
-3. **Legibilidad**: Proporciona métodos con nombres significativos que describen acciones concretas.
-4. **Mantenibilidad**: Facilita cambios en el control de hardware sin afectar la lógica de negocio.
-5. **Coherencia**: Asegura que los actuadores se controlen de manera consistente en toda la aplicación.
-6. **Depuración**: Simplifica la identificación de problemas relacionados con los actuadores.
+3. **Patrones de Rotación Configurables**:
+   - Tres niveles diferentes de intensidad de rotación (suave, medio, intenso)
+   - Tiempos de giro y pausa específicos para cada nivel
+   - Control asíncrono de la rotación sin usar delay()
 
-Al separar el control de los actuadores en un módulo dedicado, se logra una clara separación entre qué se quiere hacer (lógica de negocio en el controlador de programas) y cómo se hace físicamente (detalles de implementación en el módulo de actuadores). Esto mejora significativamente la mantenibilidad y comprensibilidad del sistema como un todo.
+4. **Control de Centrifugado**:
+   - Fase opcional para todos los programas
+   - Intensidad configurable
+   - Verificación de seguridad antes de iniciar
+
+5. **Operaciones de Emergencia**:
+   - Procedimiento de detención segura con secuencia específica
+   - Desbloqueo de puerta con retardo de seguridad
+
+6. **Manejo de Puerta Seguro**:
+   - Bloqueo durante todas las fases de operación
+   - Desbloqueo controlado al finalizar o en emergencias
+
+7. **Integración con Notificaciones**:
+   - Alertas sonoras para eventos importantes
+   - Mensajes de depuración del estado de cada actuador
+
+## Ventajas de esta Implementación
+
+1. **Especialización para Programas**: Métodos dedicados para las necesidades específicas de los tres programas de lavado.
+
+2. **Mayor Seguridad**: Control robusto de situaciones de emergencia con secuencias de detención segura.
+
+3. **Rotación Avanzada**: Sistema de rotación con patrones complejos para simular el comportamiento de lavadoras profesionales.
+
+4. **Operación No Bloqueante**: Implementación asíncrona para mantener el sistema responsivo en todo momento.
+
+5. **Gestión de Estado Detallada**: Seguimiento preciso del estado de cada actuador para diagnóstico y depuración.
+
+6. **Modularidad Mejorada**: Separación clara de responsabilidades que facilita la extensión para nuevos programas o funcionalidades.
+
+7. **Depuración Mejorada**: Mensajes detallados sobre cada operación que facilitan el seguimiento del sistema.
+
+## Soporte para Programas Específicos
+
+Esta implementación del módulo de Actuadores ha sido diseñada específicamente para soportar los requisitos de los tres programas de lavado:
+
+### Para Programa 22 (Agua Caliente):
+- Control exclusivo de válvula de agua caliente
+- Gestión activa de temperatura mediante vapor
+- Participación en ciclos de ajuste de temperatura (drenaje parcial y nuevo llenado)
+
+### Para Programa 23 (Agua Fría):
+- Control exclusivo de válvula de agua fría
+- Sin activación de sistemas de calentamiento
+
+### Para Programa 24 (Multitanda):
+- Flexibilidad para gestionar agua fría o caliente según configuración
+- Control de ciclos múltiples con transiciones suaves entre tandas
+- Capacidad para alternar configuraciones entre tandas si es necesario
+
+Al implementar estas capacidades específicas, el módulo de Actuadores proporciona los "músculos" necesarios para que el controlador de programas pueda ejecutar eficazmente los tres programas de lavado, con especial atención a los requerimientos de gestión de temperatura para programas con agua caliente.

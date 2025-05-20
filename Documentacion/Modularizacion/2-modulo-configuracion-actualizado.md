@@ -2,11 +2,11 @@
 
 ## Descripción
 
-El módulo de configuración centraliza todas las constantes, definiciones de pines, parámetros y configuraciones globales del sistema. Actúa como un repositorio central de valores que pueden necesitar ajustes o adaptaciones.
+El módulo de configuración centraliza todas las constantes, definiciones de pines, parámetros y configuraciones globales del sistema. Actúa como un repositorio central de valores para los tres programas específicos de lavado (22: Agua Caliente, 23: Agua Fría, y 24: Multitanda), así como para la máquina de estados y todos los subsistemas hardware.
 
-## Analogía: Plano Arquitectónico
+## Analogía: Partitura Maestra de la Orquesta
 
-Este módulo es como el plano arquitectónico de un edificio, que define las dimensiones, materiales y especificaciones sin entrar en los detalles de construcción. Cualquier modificación en el diseño se refleja primero en estos planos, antes de realizar cambios en la construcción real.
+Este módulo es como la partitura maestra que usa el director de una orquesta. Contiene todas las notaciones, tempos, intensidades y entradas para cada instrumento. Así como la partitura define cuándo y cómo debe intervenir cada músico, el archivo de configuración define cómo debe funcionar cada pin, sensor y actuador. Para los tres programas específicos, contiene las "claves musicales" que determinan sus características únicas: el Programa 22 (Agua Caliente) requiere notas más cálidas, el Programa 23 (Agua Fría) necesita tonos más ligeros, y el Programa 24 (Multitanda) tiene una estructura compleja que combina varios movimientos.
 
 ## Estructura del Módulo
 
@@ -122,27 +122,63 @@ El módulo de configuración consiste en un único archivo de cabecera (`.h`) qu
 
 ## Responsabilidades
 
-El módulo de configuración tiene las siguientes responsabilidades:
+El módulo de configuración tiene las siguientes responsabilidades orientadas a los tres programas específicos:
 
-1. **Centralización**: Mantener todos los valores configurables en un solo lugar.
-2. **Documentación**: Proporcionar descripciones claras para cada constante.
-3. **Organización**: Agrupar lógicamente los parámetros relacionados.
-4. **Abstracción**: Permitir referirse a los pines y constantes por nombres significativos.
+1. **Definición de Parámetros de Programa**:
+   - Valores por defecto para cada programa (22, 23, 24)
+   - Umbrales específicos para agua caliente y fría
+   - Constantes para configuración de tandas en Programa 24
 
-## Ventajas de este Enfoque
+2. **Configuración de Control de Temperatura**:
+   - Rangos de temperatura para Programa 22 (agua caliente)
+   - Tolerancias para el control de temperatura (±2°C)
+   - Tiempos para ciclos de ajuste de temperatura
 
-1. **Mantenibilidad**: Facilita cambios en la configuración sin necesidad de buscar en todo el código.
-2. **Adaptabilidad**: Permite adaptar el sistema a diferentes hardware modificando solo este archivo.
-3. **Legibilidad**: Mejora la comprensión del código al usar nombres descriptivos en lugar de valores literales.
-4. **Consistencia**: Evita duplicación de valores y posibles inconsistencias.
+3. **Configuración de Patrones de Rotación**:
+   - Definición de tres niveles de intensidad (suave, medio, intenso)
+   - Tiempos específicos para cada patrón de rotación
+   - Parámetros para pausa entre cambios de dirección
 
-## Adaptaciones para el Nuevo Hardware
+4. **Soporte para Máquina de Estados**:
+   - Definición de los siete estados del sistema
+   - Constantes para control de transiciones
+   - Tiempos específicos para cada estado
 
-La configuración ha sido actualizada para reflejar el cambio de hardware:
+5. **Configuración de Interfaz de Usuario**:
+   - Definiciones para pantallas específicas de cada programa
+   - Componentes para mostrar información de temperatura y nivel
+   - Retroalimentación visual para cada programa
 
-1. **ESP32-WROOM**: Se han eliminado definiciones específicas de Arduino y se han adaptado para ESP32.
-2. **Pantalla Nextion**: Se han añadido parámetros para comunicación serial con la pantalla Nextion.
-3. **Botones**: Se ha simplificado a un único botón de emergencia con antirrebote.
-4. **Nuevos Estados**: Se ha añadido un estado específico para manejar situaciones de emergencia.
+## Ventajas de esta Implementación
 
-Al centralizar todas las constantes y definiciones, el módulo de configuración facilita la adaptación del sistema a diferentes entornos y requerimientos sin necesidad de modificar la lógica principal.
+1. **Centralización Total**: Todas las constantes específicas para los tres programas están definidas en un solo lugar, facilitando ajustes y calibraciones.
+
+2. **Configuración Rica en Contexto**: Los comentarios explicativos ayudan a entender la función de cada constante y su relación con los diferentes programas.
+
+3. **Adaptabilidad Mejorada**: Permite ajustar fácilmente parámetros críticos como temperaturas, umbrales y tiempos sin modificar la lógica del programa.
+
+4. **Organización Lógica**: Agrupación de constantes por categorías relacionadas con las necesidades de los programas específicos.
+
+5. **Documentación Integrada**: Los comentarios sirven como documentación técnica, explicando el propósito y uso de cada constante.
+
+6. **Flexibilidad para Calibración**: Facilita la calibración de sensores y actuadores sin necesidad de modificar el código principal.
+
+7. **Soporte para Depuración**: Incluye definiciones para control de verbosidad de los mensajes de depuración según necesidades.
+
+## Soporte Específico para los Tres Programas
+
+### Para Programa 22 (Agua Caliente):
+- Temperatura objetivo más alta predeterminada (60°C)
+- Límite inferior de temperatura para agua caliente (40°C)
+- Constantes para control activo de temperatura
+
+### Para Programa 23 (Agua Fría):
+- Temperatura informativa predeterminada (25°C)
+- Optimización para operación sin control activo de temperatura
+
+### Para Programa 24 (Multitanda):
+- Parámetros para controlar número de tandas (4 por defecto)
+- Constantes de tiempo para transiciones entre tandas
+- Flexibilidad para configurar tipo de agua
+
+La configuración también provee soporte para aspectos críticos de seguridad, como los tiempos de seguridad para desbloqueo de puerta en condiciones normales y de emergencia, proporcionando una operación segura para todos los programas.

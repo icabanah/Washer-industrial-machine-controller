@@ -2,11 +2,11 @@
 
 ## Descripción
 
-El módulo Controlador de Programas gestiona la lógica central del sistema, incluyendo la selección, edición y ejecución de programas de lavado. Este módulo coordina las transiciones entre estados, maneja los parámetros de los programas y controla el flujo general de la aplicación. Desarrollado para el contexto específico de una lavadora industrial en Arequipa, Perú, utiliza el ESP32-WROOM como controlador principal.
+El módulo Controlador de Programas gestiona la lógica central del sistema, implementando una máquina de estados completa que controla la selección, configuración y ejecución de los tres programas específicos de lavado (22: Agua Caliente, 23: Agua Fría, y 24: Multitanda). Este módulo coordina las interacciones entre sensores, actuadores e interfaz de usuario, y maneja situaciones de emergencia. Desarrollado para el contexto específico de una lavadora industrial en Arequipa, Perú, utiliza el ESP32-WROOM como controlador principal.
 
-## Analogía: Director de Orquesta
+## Analogía: Director de Orquesta y Compositor
 
-Este módulo funciona como el director de una orquesta, quien coordina a todos los músicos (módulos) para que toquen la sinfonía (programa de lavado) correctamente. El director decide cuándo inicia cada sección, a qué ritmo tocan, y cómo transicionan entre las diferentes partes de la pieza musical. No toca ningún instrumento directamente, pero es quien determina cómo y cuándo actúa cada sección de la orquesta.
+Este módulo funciona como un director de orquesta que además es compositor. Como director, coordina a todos los músicos (módulos) para interpretar correctamente la partitura. Como compositor, define la estructura de la obra musical (máquina de estados) y crea las diferentes composiciones (programas 22, 23 y 24), cada una con su propio estilo y complejidad. Determina cuándo y cómo se ejecuta cada movimiento (fase), en qué momento entra cada sección de instrumentos (actuadores), y cómo responder ante interrupciones o imprevistos (emergencias).
 
 ## Estructura del Módulo
 
@@ -14,6 +14,33 @@ El módulo de Controlador de Programas se divide en:
 
 - **program_controller.h**: Define la interfaz pública del módulo
 - **program_controller.cpp**: Implementa la funcionalidad interna
+
+### Máquina de Estados
+
+El controlador implementa una máquina de estados completa con siete estados principales:
+
+```cpp
+// Definición de estados del sistema
+#define ESTADO_INICIO      0  // Inicialización del sistema
+#define ESTADO_SELECCION   1  // Selección de programa
+#define ESTADO_ESPERA      2  // Esperando confirmación de inicio
+#define ESTADO_EJECUCION   3  // Programa en ejecución
+#define ESTADO_PAUSA       4  // Programa en pausa
+#define ESTADO_FINALIZACION 5  // Completado y finalización
+#define ESTADO_ERROR       6  // Error detectado
+#define ESTADO_EMERGENCIA  7  // Emergencia activada
+```
+
+### Programas Específicos
+
+El controlador está diseñado para gestionar tres programas específicos:
+
+```cpp
+// Configuración de programas
+#define PROGRAMA_22  0  // Agua Caliente
+#define PROGRAMA_23  1  // Agua Fría
+#define PROGRAMA_24  2  // Multitanda (4 tandas)
+```
 
 ### Interfaz (program_controller.h)
 
@@ -34,41 +61,37 @@ public:
   // Actualización general (llamada desde loop)
   void update();
   
+  // Gestión de máquina de estados
+  void setState(uint8_t newState);
+  uint8_t getCurrentState();
+  
   // Control de programas
-  void selectProgram(uint8_t programa);
+  void selectProgram(uint8_t programId);
   void startProgram();
   void pauseProgram();
   void resumeProgram();
   void stopProgram();
-  void resetProgram();
+  void completeProgram();
   
   // Modo edición
   void enterEditMode();
   void exitEditMode();
-  void editVariable(uint8_t numeroVariable, uint8_t valor);
+  void updateParameter(const String& paramName, int value);
   
   // Control de fase
-  void nextPhase();
-  void setPhase(uint8_t fase);
+  void moveToNextPhase();
+  void setupPhase(uint8_t phase);
   
   // Acceso a parámetros
   uint8_t getCurrentProgram();
   uint8_t getCurrentPhase();
-  bool isSystemBlocked();
-  uint8_t getVariable(uint8_t numeroVariable);
+  uint8_t getCurrentCycle(); // Solo para Programa 24
+  
+  // Gestión de temperatura
+  void manageTemperature();
   
   // Control de tiempo
   void updateTimers();
-  
-  // Acceso a datos
-  uint8_t (*getNivelAguaData())[4];
-  uint8_t (*getRotacionData())[4];
-  uint8_t (*getTemperaturaData())[4];
-  uint8_t (*getTemporizadorData())[4];
-  
-  // Control de agua
-  void increaseWater();
-  void decreaseWater();
   
   // Manejo de acciones de usuario desde la pantalla
   void handleUserAction(const String& action);
@@ -80,40 +103,44 @@ public:
 private:
   // Variables de estado
   uint8_t _currentState;
+  uint8_t _previousState;
   uint8_t _currentProgram;
   uint8_t _currentPhase;
-  uint8_t _currentVariable;
-  uint8_t _editLevel;
+  uint8_t _currentCycle;     // Para Programa 24
+  uint8_t _numberOfCycles;   // Para Programa 24
   bool _programFinished;
   bool _programPaused;
   bool _emergencyActive;
-  bool _editingProgram;
-  uint16_t _blockCounter;
+  
+  // Parámetros de ejecución
+  bool _useHotWater;
+  bool _enableTemperatureControl;
+  bool _centrifugeEnabled;
+  uint8_t _centrifugeLevel;
+  bool _temperatureAdjustmentInProgress;
   
   // Temporizadores
-  int16_t _timerSeconds;
-  int16_t _motorSeconds;
-  uint8_t _betweenPhaseSeconds;
+  int16_t _phaseTimer;
+  int16_t _motorTimer;
+  int16_t _cycleTimer;       // Para Programa 24
   
-  // Parámetros de programas
-  uint8_t _nivelAgua[3][4];
-  uint8_t _rotacionTam[3][4];
-  uint8_t _temperaturaLim[3][4];
-  uint8_t _temporizadorLim[3][4];
-  uint8_t _tiempoRotacion[3][2];
-  uint8_t _tiempoEntreFase[3][4];
-  
-  // Control de motor
-  uint8_t _motorDirection;
-  bool _motorPause;
+  // Valores objetivo
+  float _targetTemperature;
+  int _targetWaterLevel;
+  int _rotationLevel;
   
   // Métodos internos
-  void _initializeTimers();
-  void _checkTimers();
-  void _startPhase();
-  void _updateVariableValue();
-  void _parseUserAction(const String& action);
-  void _getVariableValue();
+  void _initializeProgram();
+  void _startCurrentPhase();
+  void _executePhase();
+  void _executeFilling();
+  void _executeWashing();
+  void _executeDraining();
+  void _executeCentrifuge();
+  void _monitorAndControlTemperature();
+  void _manageLowTemperature();
+  void _checkPhaseCompletion();
+  void _manageCycles();      // Para Programa 24
   void _shutdownAllSystems();
 };
 

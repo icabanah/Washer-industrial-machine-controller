@@ -2,11 +2,11 @@
 
 ## Descripción
 
-El archivo principal actúa como punto de entrada y coordinador del sistema. Su función es inicializar todos los componentes y dirigir el flujo principal del programa sin implementar directamente la lógica específica de cada subsistema.
+El archivo principal actúa como punto de entrada y coordinador del sistema. Su función es inicializar todos los componentes y dirigir el flujo principal del programa sin implementar directamente la lógica específica de cada subsistema. Gestiona un sistema de control para tres programas de lavado específicos (22: Agua Caliente, 23: Agua Fría, y 24: Multitanda) mediante una máquina de estados que incluye siete estados principales.
 
 ## Analogía: Director de Orquesta
 
-Este archivo es como el director de una orquesta, que no toca ningún instrumento específico pero coordina a todos los músicos para que toquen en armonía. El director marca el tiempo, indica entradas y salidas, pero son los músicos quienes realmente producen la música.
+Este archivo es como el director de una orquesta, que no toca ningún instrumento específico pero coordina a todos los músicos para que toquen en armonía. El director marca el tiempo, indica entradas y salidas, y selecciona qué composición interpretar (programas 22, 23 o 24). La máquina de estados representa la estructura global de la composición: desde la apertura hasta el final, pasando por los distintos movimientos, incluyendo cómo responder ante una interrupción o emergencia.
 
 ## Estructura del Archivo
 

@@ -2,18 +2,18 @@
 
 ## Descripción
 
-El módulo de Sensores se encarga de gestionar la lectura, interpretación y monitorización de los sensores físicos del sistema, específicamente el sensor de temperatura y el sensor de presión. Proporciona una capa de abstracción que traduce las lecturas de hardware en información útil para el sistema de control.
+El módulo de Sensores se encarga de gestionar la lectura, interpretación y monitorización de los sensores físicos del sistema, específicamente el sensor de temperatura (OneWire Dallas) y el sensor de presión (HX710B). Este módulo es crucial para los tres programas específicos de lavado (22: Agua Caliente, 23: Agua Fría, y 24: Multitanda), ya que proporciona información esencial sobre las condiciones de temperatura y nivel de agua, permitiendo el control preciso de cada fase del proceso de lavado.
 
-## Analogía: Sistema Sensorial
+## Analogía: Sistema Sensorial Especializado
 
-Este módulo funciona como el sistema sensorial de un organismo vivo, que continuamente recoge información del entorno (temperatura, presión, etc.) y la procesa para proporcionar datos significativos al sistema nervioso central (controlador de programas). No toma decisiones sobre cómo responder a estos estímulos, pero es crucial para percibir el estado del entorno e informar al cerebro para que pueda tomar decisiones adecuadas.
+Este módulo funciona como el sistema sensorial de un organismo vivo avanzado, capaz de distinguir diferentes "sabores" de información del entorno. Para los programas que utilizan agua caliente (22 y posiblemente 24), actúa como un termómetro de alta precisión que continuamente monitorea si la temperatura está dentro del rango ideal. Para todos los programas, funciona como un barómetro que detecta con exactitud el nivel de agua en el tambor. Al igual que los sentidos humanos, no toma decisiones sobre cómo responder a estos estímulos, pero proporciona información crucial para que el "cerebro" (ProgramController) pueda tomar decisiones adecuadas según el programa seleccionado.
 
 ## Estructura del Módulo
 
 El módulo de Sensores se divide en:
 
 - **sensors.h**: Define la interfaz pública del módulo
-- **sensors.cpp**: Implementa la funcionalidad interna
+- **sensors.cpp**: Implementa la funcionalidad interna y algoritmos de monitoreo
 
 ### Interfaz (sensors.h)
 
@@ -32,15 +32,19 @@ public:
   // Inicialización
   void init();
   
+  // Actualización general (llamada desde loop)
+  void update();
+  
   // Iniciar monitoreo periódico de sensores
   void startMonitoring();
   
   // Control del sensor de temperatura
-  void startTemperatureMonitoring(uint8_t targetTemperature);
+  void startTemperatureMonitoring(float targetTemperature);
   void stopTemperatureMonitoring();
-  uint8_t getCurrentTemperature();
+  float getCurrentTemperature();
   bool isTemperatureReached();
-  void updateTemperature();
+  bool isTemperatureStable();
+  bool isTemperatureLow();  // Detecta temperatura bajo el umbral objetivo-2°C
   
   // Control del sensor de presión/nivel
   void startPressureMonitoring(uint8_t targetLevel);
@@ -48,11 +52,13 @@ public:
   uint8_t getCurrentWaterLevel();
   uint16_t getCurrentPressure();
   bool isWaterLevelReached();
-  void updatePressure();
   
   // Métodos de configuración
-  void setTemperatureRange(uint8_t range);
+  void setTemperatureThresholds(float target, float tolerance);
   void setPressureLevelThresholds(uint16_t level1, uint16_t level2, uint16_t level3, uint16_t level4);
+  
+  // Utilidades
+  bool readSensorData();  // Lee todos los sensores, devuelve true si la lectura fue exitosa
 
 private:
   // Objetos para sensores
@@ -63,16 +69,18 @@ private:
   // Variables para sensor de temperatura
   DeviceAddress _temperatureAddress;
   uint8_t _temperatureResolution;
-  uint8_t _currentTemperature;
-  uint8_t _targetTemperature;
-  uint8_t _temperatureRange;
+  float _currentTemperature;
+  float _targetTemperature;
+  float _temperatureTolerance;
+  uint8_t _temperatureReadErrorCount;
   bool _monitoringTemperature;
   
   // Variables para sensor de presión
   uint16_t _currentPressure;
+  uint16_t _previousPressure;
   uint8_t _currentWaterLevel;
   uint8_t _targetWaterLevel;
-  uint8_t _levelCounter;
+  uint8_t _levelStableCounter;
   bool _monitoringPressure;
   
   // Umbrales de presión para niveles de agua
@@ -81,7 +89,8 @@ private:
   uint16_t _pressureLevel3;
   uint16_t _pressureLevel4;
   
-  // Métodos internos
+  // Método para filtrar lecturas
+  bool _isReadingValid(float newTemp, uint16_t newPressure);
   uint8_t _calculateWaterLevel(uint16_t pressure);
 };
 
@@ -92,6 +101,8 @@ extern SensorsClass Sensors;
 ```
 
 ### Implementación (sensors.cpp)
+
+A continuación se muestra un fragmento de la implementación que destaca las funciones clave para la gestión de temperatura en programas con agua caliente:
 
 ```cpp
 // sensors.cpp
@@ -114,18 +125,20 @@ void SensorsClass::init() {
   memcpy(_temperatureAddress, addr, 8);
   
   _temperatureResolution = TEMP_RESOLUTION;
-  _temperatureSensor.setResolution(_temperatureResolution);
-  _temperatureRange = TEMP_RANGE;
-  _currentTemperature = 0;
-  _targetTemperature = 0;
+  _temperatureSensor.setResolution(_temperatureAddress, _temperatureResolution);
+  _currentTemperature = 0.0;
+  _targetTemperature = DEFAULT_TEMPERATURE;
+  _temperatureTolerance = DEFAULT_TEMP_TOLERANCE;
+  _temperatureReadErrorCount = 0;
   _monitoringTemperature = false;
   
   // Inicializar sensor de presión
   _pressureSensor.begin(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
   _currentPressure = 0;
+  _previousPressure = 0;
   _currentWaterLevel = 0;
   _targetWaterLevel = 0;
-  _levelCounter = 0;
+  _levelStableCounter = 0;
   _monitoringPressure = false;
   
   // Configurar umbrales de presión para niveles de agua
@@ -133,137 +146,182 @@ void SensorsClass::init() {
   _pressureLevel2 = NIVEL_PRESION_2;
   _pressureLevel3 = NIVEL_PRESION_3;
   _pressureLevel4 = NIVEL_PRESION_4;
+  
+  Utils.debug("Sensores inicializados correctamente");
+}
+
+void SensorsClass::update() {
+  if (!readSensorData()) {
+    Utils.debug("Error al leer datos de sensores");
+    return;
+  }
+  
+  // Actualizamos las variables internas
+  _previousPressure = _currentPressure;
+  
+  // Verificar nivel de agua alcanzado
+  if (_monitoringPressure && isWaterLevelReached()) {
+    Utils.debug("Nivel de agua alcanzado: " + String(_currentWaterLevel) + " (objetivo: " + String(_targetWaterLevel) + ")");
+  }
+  
+  // Verificar temperatura para programas con agua caliente
+  if (_monitoringTemperature) {
+    if (isTemperatureLow()) {
+      Utils.debug("Temperatura baja detectada: " + String(_currentTemperature) + 
+                  "°C (objetivo: " + String(_targetTemperature) + "°C)");
+    }
+  }
 }
 
 void SensorsClass::startMonitoring() {
   // Iniciar monitoreo periódico de sensores usando AsyncTask
-  Utils.createPeriodicTask(1000, [this]() {
-    this->updateTemperature();
-    this->updatePressure();
+  Utils.createPeriodicTask(SENSOR_UPDATE_INTERVAL, [this]() {
+    this->update();
   });
+  Utils.debug("Monitoreo periódico de sensores iniciado");
 }
 
-void SensorsClass::startTemperatureMonitoring(uint8_t targetTemperature) {
+bool SensorsClass::readSensorData() {
+  bool success = true;
+  
+  // Leer temperatura
+  _temperatureSensor.requestTemperaturesByAddress(_temperatureAddress);
+  float newTemp = _temperatureSensor.getTempC(_temperatureAddress);
+  
+  // Verificar lectura de temperatura válida
+  if (newTemp == DEVICE_DISCONNECTED_C || newTemp < -10.0 || newTemp > 100.0) {
+    _temperatureReadErrorCount++;
+    Utils.debug("Error en lectura de temperatura: " + String(newTemp));
+    if (_temperatureReadErrorCount > MAX_TEMP_READ_ERRORS) {
+      success = false;
+    }
+  } else {
+    _currentTemperature = newTemp;
+    _temperatureReadErrorCount = 0;
+  }
+  
+  // Leer presión si el sensor está listo
+  if (_pressureSensor.is_ready()) {
+    uint16_t newPressure = _pressureSensor.pascal();
+    
+    // Verificar lectura de presión válida
+    if (_isReadingValid(newTemp, newPressure)) {
+      _currentPressure = newPressure;
+      _currentWaterLevel = _calculateWaterLevel(newPressure);
+    } else {
+      success = false;
+    }
+  } else {
+    Utils.debug("Sensor de presión no está listo");
+    success = false;
+  }
+  
+  return success;
+}
+
+void SensorsClass::startTemperatureMonitoring(float targetTemperature) {
   _targetTemperature = targetTemperature;
   _monitoringTemperature = true;
+  Utils.debug("Iniciando monitoreo de temperatura con objetivo: " + String(_targetTemperature) + "°C");
 }
 
-void SensorsClass::stopTemperatureMonitoring() {
-  _monitoringTemperature = false;
+bool SensorsClass::isTemperatureLow() {
+  // Función clave para programas con agua caliente (22 y posiblemente 24)
+  // Detecta si la temperatura está por debajo del umbral objetivo-tolerancia
+  return (_currentTemperature < (_targetTemperature - _temperatureTolerance));
 }
 
-uint8_t SensorsClass::getCurrentTemperature() {
-  return _currentTemperature;
-}
-
-bool SensorsClass::isTemperatureReached() {
-  return (_currentTemperature >= _targetTemperature);
-}
-
-void SensorsClass::updateTemperature() {
-  // Leer temperatura actual
-  _temperatureSensor.requestTemperatures();
-  _currentTemperature = round(_temperatureSensor.getTempCByIndex(0));
-  
-  // Si estamos monitoreando, controlar la válvula de vapor
-  if (_monitoringTemperature) {
-    if (_currentTemperature >= (_targetTemperature + _temperatureRange)) {
-      // Temperatura por encima del objetivo + rango, apagar vapor
-      Actuators.activateSteam(false);
-    } else if (_currentTemperature <= (_targetTemperature - _temperatureRange)) {
-      // Temperatura por debajo del objetivo - rango, encender vapor
-      Actuators.activateSteam(true);
-    }
-  }
+bool SensorsClass::isTemperatureStable() {
+  // Verifica si la temperatura está dentro del rango de tolerancia
+  return (abs(_currentTemperature - _targetTemperature) <= _temperatureTolerance);
 }
 
 void SensorsClass::startPressureMonitoring(uint8_t targetLevel) {
   _targetWaterLevel = targetLevel;
-  _levelCounter = 0;
+  _levelStableCounter = 0;
   _monitoringPressure = true;
-}
-
-void SensorsClass::stopPressureMonitoring() {
-  _monitoringPressure = false;
-}
-
-uint8_t SensorsClass::getCurrentWaterLevel() {
-  return _currentWaterLevel;
-}
-
-uint16_t SensorsClass::getCurrentPressure() {
-  return _currentPressure;
+  Utils.debug("Iniciando monitoreo de nivel de agua con objetivo: " + String(_targetWaterLevel));
 }
 
 bool SensorsClass::isWaterLevelReached() {
-  return (_currentWaterLevel >= _targetWaterLevel && _levelCounter >= 5);
-}
-
-void SensorsClass::updatePressure() {
-  if (_pressureSensor.is_ready()) {
-    _currentPressure = _pressureSensor.pascal();
-    _currentWaterLevel = _calculateWaterLevel(_currentPressure);
-    
-    // Si estamos monitoreando, controlar la válvula de agua
-    if (_monitoringPressure) {
-      if (_currentWaterLevel >= _targetWaterLevel + 1) {
-        _levelCounter++;  // Evitar falsos positivos
-      } else {
-        _levelCounter = 0;
-      }
-      
-      if (_currentWaterLevel >= _targetWaterLevel + 1 && _levelCounter >= 5) {
-        // Nivel alcanzado, cerrar válvula de agua
-        Actuators.openWaterValve(false);
-        _monitoringPressure = false;
-      }
-    }
+  if (_currentWaterLevel >= _targetWaterLevel) {
+    _levelStableCounter++;
+    // Requerir lecturas estables consecutivas para confirmar nivel
+    return (_levelStableCounter >= LEVEL_STABILITY_THRESHOLD);
+  } else {
+    _levelStableCounter = 0;
+    return false;
   }
 }
 
 uint8_t SensorsClass::_calculateWaterLevel(uint16_t pressure) {
-  if (pressure <= _pressureLevel1) {
-    return 1;
-  } else if (pressure > _pressureLevel1 && pressure <= _pressureLevel2) {
-    return 2;
-  } else if (pressure > _pressureLevel2 && pressure <= _pressureLevel3) {
-    return 3;
-  } else if (pressure > _pressureLevel3) {
-    return 4;
+  // Algoritmo mejorado para calcular nivel de agua basado en umbrales
+  if (pressure < _pressureLevel1) {
+    return 0; // Sin agua o nivel muy bajo
+  } else if (pressure < _pressureLevel2) {
+    return 1; // Nivel bajo
+  } else if (pressure < _pressureLevel3) {
+    return 2; // Nivel medio-bajo
+  } else if (pressure < _pressureLevel4) {
+    return 3; // Nivel medio-alto
+  } else {
+    return 4; // Nivel alto
   }
-  return 0;  // En caso de error o lectura inválida
-}
-
-void SensorsClass::setTemperatureRange(uint8_t range) {
-  _temperatureRange = range;
-}
-
-void SensorsClass::setPressureLevelThresholds(uint16_t level1, uint16_t level2, uint16_t level3, uint16_t level4) {
-  _pressureLevel1 = level1;
-  _pressureLevel2 = level2;
-  _pressureLevel3 = level3;
-  _pressureLevel4 = level4;
 }
 ```
 
 ## Responsabilidades
 
-El módulo de Sensores tiene las siguientes responsabilidades:
+El módulo de Sensores tiene las siguientes responsabilidades adaptadas para los tres programas específicos:
 
-1. **Inicialización de Sensores**: Configurar los sensores físicos (temperatura y presión) para su funcionamiento.
-2. **Lectura de Datos**: Obtener lecturas periódicas de los sensores.
-3. **Interpretación**: Traducir valores brutos (ej. pascales) a valores significativos (niveles de agua, temperatura en grados).
-4. **Monitorización**: Vigilar continuamente si los valores alcanzan los objetivos establecidos.
-5. **Control Simple**: Activar o desactivar actuadores básicos según las lecturas (ej. apagar la válvula de vapor si la temperatura es excesiva).
-6. **Configuración**: Permitir ajustar los parámetros de los sensores (rangos, umbrales, etc.).
+1. **Inicialización y Configuración**: Configurar los sensores de temperatura (OneWire Dallas) y presión (HX710B) con los parámetros adecuados.
 
-## Ventajas de este Enfoque
+2. **Monitoreo de Temperatura**: 
+   - Para Programa 22 (Agua Caliente): Monitoreo constante para garantizar que la temperatura se mantenga dentro del rango objetivo ±2°C.
+   - Para Programa 23 (Agua Fría): Monitoreo informativo sin control activo.
+   - Para Programa 24 (Multitanda): Monitoreo activo o informativo según configuración de tipo de agua.
 
-1. **Abstracción**: Oculta los detalles específicos de la comunicación con los sensores.
-2. **Modularidad**: Permite cambiar el hardware de los sensores sin afectar al resto del sistema.
-3. **Robustez**: Implementa mecanismos para evitar falsos positivos (ej. contador de nivel).
-4. **Flexibilidad**: Permite configurar parámetros como umbrales y rangos según las necesidades.
-5. **Encapsulamiento**: Mantiene todas las variables relacionadas con los sensores en un solo lugar.
-6. **Mantenibilidad**: Facilita la depuración y ajuste de la lógica de los sensores sin afectar otras partes.
+3. **Detección de Temperatura Baja**: Detectar cuando la temperatura cae por debajo del umbral (objetivo-2°C), crucial para iniciar el proceso de ajuste de temperatura en programas con agua caliente.
 
-Al separar la gestión de sensores en un módulo dedicado, se logra una clara separación de responsabilidades que facilita el mantenimiento y extensión del sistema. Este módulo proporciona una interfaz clara y consistente para acceder a los datos de los sensores, independientemente de los detalles específicos de implementación o del hardware utilizado.
+4. **Monitoreo de Nivel de Agua**: Monitorear el nivel de agua en el tambor para todos los programas, asociando mediciones de presión con niveles de agua (1-4).
+
+5. **Validación de Lecturas**: Verificar que las lecturas de sensores sean válidas y estables antes de reportarlas, aumentando la fiabilidad del sistema.
+
+6. **Filtrado de Ruido**: Implementar mecanismos para filtrar lecturas erráticas o ruidosas, especialmente importantes para el control preciso de temperatura en agua caliente.
+
+7. **Interfaz Hacia Controladores**: Proporcionar una API clara para que ProgramController pueda verificar condiciones de temperatura y nivel de agua según el programa activo.
+
+## Ventajas de esta Implementación
+
+1. **Precisión Mejorada**: El uso de variables de tipo float para temperatura permite un control más preciso para programas con agua caliente.
+
+2. **Detección Robusta**: Los algoritmos de verificación de estabilidad (contadores de lecturas consecutivas) evitan falsos positivos en la detección de niveles.
+
+3. **Gestión de Errores**: Implementación de contadores de errores y validación de lecturas para detectar y manejar fallos en los sensores.
+
+4. **Independencia de Hardware**: Abstracción que permite cambiar los sensores físicos sin afectar la lógica de los programas de lavado.
+
+5. **Adaptabilidad**: Interfaces específicas (`isTemperatureLow()`, `isWaterLevelReached()`) que simplifican la integración con la lógica de los tres programas.
+
+6. **Monitoreo No Bloqueante**: Implementa lecturas periódicas mediante temporizadores asíncronos, manteniendo el sistema responsivo.
+
+7. **Depuración Mejorada**: Mensajes de depuración detallados para monitorear el funcionamiento de los sensores en tiempo real.
+
+## Soporte para Programas Específicos
+
+Esta implementación del módulo de Sensores ha sido diseñada específicamente para soportar los requisitos de los tres programas de lavado:
+
+### Para Programa 22 (Agua Caliente):
+- Monitoreo activo de temperatura con tolerancia de ±2°C
+- Detección inmediata cuando la temperatura cae por debajo del umbral
+- Mayor precisión en lecturas de temperatura para el control de agua caliente
+
+### Para Programa 23 (Agua Fría):
+- Monitoreo de temperatura solo con fines informativos
+- Enfoque en precisión para el monitoreo de nivel de agua
+
+### Para Programa 24 (Multitanda):
+- Flexibilidad para alternar entre monitoreo activo (agua caliente) e informativo (agua fría)
+- Soporte para múltiples ciclos con verificación consistente del llenado al inicio de cada tanda
+
+Al implementar estas mejoras, el módulo de Sensores proporciona la base sensorial robusta necesaria para que los tres programas específicos funcionen correctamente y de manera confiable en el entorno industrial.

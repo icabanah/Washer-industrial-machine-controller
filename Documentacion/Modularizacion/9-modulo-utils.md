@@ -2,11 +2,11 @@
 
 ## Descripción
 
-El módulo de Utilidades proporciona funciones y herramientas auxiliares que pueden ser utilizadas por cualquier parte del sistema. Contiene funcionalidades genéricas que no pertenecen a un dominio específico, pero que son útiles para diferentes módulos.
+El módulo de Utilidades proporciona funciones y herramientas auxiliares que son esenciales para la implementación no bloqueante de los tres programas específicos (22: Agua Caliente, 23: Agua Fría, y 24: Multitanda). Este módulo centraliza la gestión de tareas temporizadas asíncronas, el manejo de mensajes de depuración, y otras funciones auxiliares utilizadas por los diferentes componentes del sistema.
 
-## Analogía: Caja de Herramientas y Sistema de Programación
+## Analogía: Sistema de Orquestación Temporal y Kit de Herramientas Universal
 
-Este módulo es como una combinación de una caja de herramientas y un sistema de programación de tareas en un taller. La caja de herramientas contiene instrumentos genéricos útiles para diferentes trabajos (funciones de validación, conversión de tiempo, etc.), mientras que el sistema de programación coordina cuándo se deben realizar ciertas tareas sin bloquear el trabajo principal. Este sistema permite que múltiples trabajos progresen simultáneamente, similar a cómo un equipo de trabajo puede realizar varias tareas en paralelo, cada una según su propio cronograma, sin tener que esperar a que una tarea se complete antes de comenzar otra.
+Este módulo puede visualizarse como una combinación de un sistema sofisticado de orquestación temporal y un kit de herramientas universal. El sistema de orquestación (con temporizadores asíncronos) funciona como un director musical asistente que mantiene el tiempo para los diferentes instrumentos sin interrumpir al director principal. Esto permite que cada sección de la orquesta (cada módulo) sepa exactamente cuándo debe intervenir, sin tener que esperar inactivamente a que llegue su turno. Por otro lado, el kit de herramientas universal contiene instrumentos precisos y versátiles que facilitan tareas comunes en cualquier parte del sistema, desde medir con exactitud hasta comunicar mensajes de diagnóstico.
 
 ## Estructura del Módulo
 
@@ -64,13 +64,21 @@ extern UtilsClass Utils;
 ```cpp
 // utils.cpp
 #include "utils.h"
-#include <vector>
+#include "program_controller.h"
 
 // Definición de la instancia global
 UtilsClass Utils;
 
+// Niveles de depuración
+#define DEBUG_LEVEL_ERROR 1
+#define DEBUG_LEVEL_WARN  2
+#define DEBUG_LEVEL_INFO  3
+#define DEBUG_LEVEL_DEBUG 4
+#define DEBUG_LEVEL_TRACE 5
+
 void UtilsClass::init() {
   _mainTimer = nullptr;
+  _debugLevel = DEBUG_LEVEL_INFO; // Nivel predeterminado
   
   // Eliminar cualquier tarea previa
   for (auto task : _asyncTasks) {
@@ -80,6 +88,8 @@ void UtilsClass::init() {
     }
   }
   _asyncTasks.clear();
+  
+  debug("Módulo Utils inicializado");
 }
 
 void UtilsClass::startMainTimer() {
@@ -92,6 +102,7 @@ void UtilsClass::startMainTimer() {
   });
   
   _mainTimer->Start();
+  debug("Temporizador principal iniciado");
 }
 
 void UtilsClass::createTimeout(unsigned long ms, std::function<void()> callback) {
@@ -99,18 +110,15 @@ void UtilsClass::createTimeout(unsigned long ms, std::function<void()> callback)
   AsyncTask* task = new AsyncTask(ms, false, [this, callback]() {
     callback(); // Ejecutar la función de callback
     
-    // Buscar la tarea actual en el vector y eliminarla
-    for (size_t i = 0; i < _asyncTasks.size(); i++) {
-      if (_asyncTasks[i] && !_asyncTasks[i]->IsRunning()) {
-        delete _asyncTasks[i];
-        _asyncTasks[i] = nullptr;
-        break;
-      }
-    }
+    // La tarea se elimina automáticamente en updateTasks()
   });
   
   task->Start();
   _asyncTasks.push_back(task);
+  
+  if (_debugLevel >= DEBUG_LEVEL_DEBUG) {
+    debug("Timeout creado: " + String(ms) + "ms");
+  }
 }
 
 void UtilsClass::createPeriodicTask(unsigned long interval, std::function<void()> callback) {
@@ -118,14 +126,17 @@ void UtilsClass::createPeriodicTask(unsigned long interval, std::function<void()
   AsyncTask* task = new AsyncTask(interval, true, callback);
   task->Start();
   _asyncTasks.push_back(task);
+  
+  debug("Tarea periódica creada: " + String(interval) + "ms");
 }
 
 void UtilsClass::updateTasks() {
-  // Actualizar todas las tareas asíncronas
+  // Actualizar el temporizador principal
   if (_mainTimer) {
     _mainTimer->Update();
   }
   
+  // Actualizar todas las tareas asíncronas
   for (auto task : _asyncTasks) {
     if (task && task->IsRunning()) {
       task->Update();
@@ -133,9 +144,20 @@ void UtilsClass::updateTasks() {
   }
   
   // Limpiar tareas finalizadas
+  _cleanupTasks();
+}
+
+void UtilsClass::_cleanupTasks() {
   auto it = _asyncTasks.begin();
   while (it != _asyncTasks.end()) {
     if (*it == nullptr || !(*it)->IsRunning()) {
+      // Solo imprimir debug si se elimina una tarea real
+      if (*it != nullptr) {
+        if (_debugLevel >= DEBUG_LEVEL_TRACE) {
+          debug("Tarea finalizada eliminada");
+        }
+      }
+      
       delete *it;
       it = _asyncTasks.erase(it);
     } else {
@@ -144,58 +166,186 @@ void UtilsClass::updateTasks() {
   }
 }
 
-void UtilsClass::splitTime(unsigned long seconds, uint8_t &minutes, uint8_t &secs) {
-  minutes = seconds / 60;
-  secs = seconds % 60;
+int UtilsClass::getRunningTasksCount() {
+  int count = 0;
+  for (auto task : _asyncTasks) {
+    if (task && task->IsRunning()) {
+      count++;
+    }
+  }
+  return count;
 }
 
-unsigned long UtilsClass::combineTime(uint8_t minutes, uint8_t seconds) {
-  return (minutes * 60) + seconds;
+// Temporizadores específicos para programas de lavado
+void UtilsClass::createRotationTimer(uint8_t rotationLevel, std::function<void(uint8_t)> callback) {
+  // Configurar tiempos según el nivel de rotación
+  unsigned long dirTime = 0;
+  unsigned long pauseTime = 0;
+  
+  switch(rotationLevel) {
+    case 1: // Suave
+      dirTime = ROTATION_LEVEL1_TIME;
+      pauseTime = ROTATION_LEVEL1_PAUSE;
+      break;
+    case 2: // Medio
+      dirTime = ROTATION_LEVEL2_TIME;
+      pauseTime = ROTATION_LEVEL2_PAUSE;
+      break;
+    case 3: // Intenso
+      dirTime = ROTATION_LEVEL3_TIME;
+      pauseTime = ROTATION_LEVEL3_PAUSE;
+      break;
+    default:
+      dirTime = ROTATION_LEVEL2_TIME;
+      pauseTime = ROTATION_LEVEL2_PAUSE;
+  }
+  
+  // Estado inicial: dirección A
+  uint8_t currentState = 0;
+  callback(currentState);
+  
+  // Crear temporizador periódico
+  createPeriodicTask(dirTime, [=]() mutable {
+    // Cambiar al siguiente estado
+    currentState = (currentState + 1) % 4;
+    
+    // Ajustar intervalo según el estado actual
+    unsigned long nextInterval = (currentState % 2 == 0) ? dirTime : pauseTime;
+    
+    // Enviar estado a la función callback
+    callback(currentState);
+  });
+  
+  debug("Temporizador de rotación creado con nivel: " + String(rotationLevel));
 }
 
-uint8_t UtilsClass::constrainValue(uint8_t value, uint8_t min, uint8_t max) {
+void UtilsClass::createTemperatureCheckTimer(std::function<void()> callback) {
+  // Para programas con agua caliente (22 y potencialmente 24)
+  createPeriodicTask(TEMPERATURE_CHECK_INTERVAL, callback);
+  debug("Temporizador de verificación de temperatura creado");
+}
+
+// Funciones de tiempo
+String UtilsClass::formatTime(unsigned long seconds) {
+  uint8_t mins, secs;
+  splitTime(seconds, mins, secs);
+  
+  String result = "";
+  if (mins < 10) result += "0";
+  result += String(mins) + ":";
+  if (secs < 10) result += "0";
+  result += String(secs);
+  
+  return result;
+}
+
+// Sistema de mensajes de depuración mejorado
+void UtilsClass::debug(const String& message) {
+#ifdef DEBUG_MODE
+  Serial.println(_getDebugPrefix() + message);
+#endif
+}
+
+void UtilsClass::debugValue(const String& label, float value, int decimals) {
+#ifdef DEBUG_MODE
+  Serial.print(_getDebugPrefix() + label + ": ");
+  Serial.println(value, decimals);
+#endif
+}
+
+String UtilsClass::_getDebugPrefix() {
+  unsigned long now = millis();
+  unsigned long seconds = now / 1000;
+  unsigned long ms = now % 1000;
+  
+  String prefix = "[";
+  prefix += String(seconds);
+  prefix += ".";
+  if (ms < 100) prefix += "0";
+  if (ms < 10) prefix += "0";
+  prefix += String(ms);
+  prefix += "] ";
+  
+  return prefix;
+}
+
+void UtilsClass::setDebugLevel(uint8_t level) {
+  _debugLevel = level;
+  debug("Nivel de depuración establecido a: " + String(_debugLevel));
+}
+
+// Funciones auxiliares
+bool UtilsClass::isInRange(float value, float target, float range) {
+  return (value >= (target - range) && value <= (target + range));
+}
+
+float UtilsClass::constrainFloat(float value, float min, float max) {
   if (value < min) return min;
   if (value > max) return max;
   return value;
 }
-
-bool UtilsClass::isInRange(uint8_t value, uint8_t target, uint8_t range) {
-  return (value >= (target - range) && value <= (target + range));
-}
-
-void UtilsClass::debugPrint(const char* message) {
-#ifdef DEBUG_MODE
-  Serial.println(message);
-#endif
-}
-
-void UtilsClass::debugPrintValue(const char* label, int value) {
-#ifdef DEBUG_MODE
-  Serial.print(label);
-  Serial.print(": ");
-  Serial.println(value);
-#endif
-}
+```
 ```
 
 ## Responsabilidades
 
-El módulo de Utilidades tiene las siguientes responsabilidades:
+El módulo de Utilidades tiene las siguientes responsabilidades adaptadas para los tres programas específicos:
 
-1. **Gestión de Tareas Asíncronas**: Proporcionar un sistema no bloqueante para programar tareas temporizadas y periódicas, eliminando la necesidad de usar delay().
-2. **Gestión de Tiempo**: Proporcionar herramientas para manejar y convertir unidades de tiempo.
-3. **Validación**: Proporcionar funciones para validar y restringir valores dentro de rangos específicos.
-4. **Depuración**: Facilitar la impresión de mensajes de depuración de manera controlada.
-5. **Operaciones Comunes**: Implementar operaciones de uso general que pueden ser necesarias en diferentes partes del sistema.
+1. **Gestión de Tareas Asíncronas Avanzada**:
+   - Implementación de sistema no bloqueante para programar tareas temporizadas
+   - Temporizadores específicos para patrones de rotación, control de temperatura y centrifugado
+   - Manejo de múltiples tareas concurrentes con priorización adecuada
 
-## Ventajas de este Enfoque
+2. **Soporte para Programas Específicos**:
+   - Temporizadores de rotación con tres niveles de intensidad (suave, medio, intenso)
+   - Verificación periódica de temperatura para Programa 22 y Programa 24 con agua caliente
+   - Manejo de ciclos de tiempo para las múltiples tandas del Programa 24
 
-1. **Reutilización**: Evita la duplicación de código al centralizar funciones comunes.
-2. **Consistencia**: Garantiza que las operaciones comunes se realicen de la misma manera en todo el sistema.
-3. **Mantenibilidad**: Facilita la corrección y mejora de funcionalidades genéricas en un solo lugar.
-4. **Modularidad**: Permite a otros módulos centrarse en su lógica específica, delegando operaciones auxiliares.
-5. **Depuración**: Proporciona mecanismos centralizados para la depuración y el registro de actividades.
-6. **Flexibilidad**: Las funciones de utilidad se pueden adaptar fácilmente a diferentes contextos y necesidades.
-7. **No Bloqueante**: Elimina la necesidad de usar delay() que bloquea la ejecución, permitiendo que el sistema responda a eventos mientras se ejecutan tareas temporizadas.
+3. **Sistema de Depuración Mejorado**:
+   - Mensajes con timestamps para rastreo preciso de eventos
+   - Niveles de depuración configurables (error, warn, info, debug, trace)
+   - Formateo de valores numéricos con precisión decimal ajustable
 
-Al separar estas funciones genéricas en un módulo dedicado, se promueve la reutilización de código y se reduce la redundancia, lo que a su vez mejora la mantenibilidad y la consistencia del sistema como un todo. El módulo de Utilidades actúa como un conjunto de bloques de construcción básicos que pueden combinarse de diferentes maneras para resolver problemas específicos en cualquier parte del sistema.
+4. **Funciones Matemáticas y de Conversión**:
+   - Manejo preciso de valores de punto flotante para temperaturas
+   - Verificación de rangos con tolerancias para el control de temperatura
+   - Formateo de tiempo para retroalimentación visual
+
+5. **Optimización de Recursos**:
+   - Limpieza automática de tareas finalizadas para prevenir fugas de memoria
+   - Monitoreo de cantidad de tareas activas para diagnóstico
+   - Procesamiento eficiente de callbacks con lambdas y std::function
+
+## Ventajas de esta Implementación
+
+1. **Operación Completamente No Bloqueante**: Eliminación total de delay(), garantizando que el sistema responda inmediatamente a eventos como emergencias durante cualquier operación temporizada.
+
+2. **Mayor Flexibilidad para Programas Específicos**: Temporizadores dedicados para las necesidades específicas de cada programa, particularmente para el control preciso de temperatura en agua caliente.
+
+3. **Depuración Avanzada**: Sistema de registro con timestamps que facilita la identificación de problemas de sincronización y comportamiento temporal del sistema.
+
+4. **Gestión Eficiente de Memoria**: Limpieza automática de tareas completadas, previniendo fugas de memoria en ejecuciones prolongadas del sistema.
+
+5. **Retroalimentación Mejorada**: Funciones de formateo que facilitan presentar información temporal y numérica de manera clara en la interfaz de usuario.
+
+6. **Mantenibilidad Superior**: Centralización de toda lógica de temporización, eliminando implementaciones duplicadas o inconsistentes en otros módulos.
+
+7. **Escalabilidad**: Capacidad para añadir nuevos tipos de temporizadores específicos para futuras funciones sin modificar la arquitectura base.
+
+## Soporte para Programas Específicos
+
+### Para Programa 22 (Agua Caliente):
+- Temporizadores precisos para verificación de temperatura
+- Callbacks específicos para gestión de calentamiento por vapor
+- Funciones de rango flotante para control de temperatura con tolerancia ±2°C
+
+### Para Programa 23 (Agua Fría):
+- Temporizadores simples para rotación y fases
+- Optimización para minimizar tiempos de cambio de fase
+
+### Para Programa 24 (Multitanda):
+- Sistema de temporizadores jerárquicos para gestionar tandas y fases
+- Adaptación dinámica según configuración de agua caliente/fría
+- Mecanismos para transición suave entre tandas
+
+Al implementar estas capacidades específicas, el módulo de Utilidades proporciona la infraestructura temporal necesaria para que los tres programas específicos funcionen de manera eficiente y responsiva, manteniendo siempre el sistema capaz de responder a eventos como el botón de emergencia.
