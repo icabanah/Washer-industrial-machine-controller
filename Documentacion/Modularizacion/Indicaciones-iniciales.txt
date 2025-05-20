@@ -1,0 +1,29 @@
+Según estas indicaciones: 
+
+En el programa 22 (primer programa):
+
+* Centrifugado y demás parámetros configurable.
+
+* 3 fases: llenado, lavado, drenaje.
+
+* 1 fase: centrifugado (opcional).
+
+* En el programa solo ingresa agua caliente hasta cierto nivel, luego, según la temperatura (que tiene una tolerancia superior de 2 grados de la temperatura del agua) se debe mantener la temperatura del agua. Se mantiene la temperatura drenando el agua y dejando ingresar más agua caliente hasta alcanzar la temperatura requerida. El agua fría no ingresa. 
+
+En el programa 23 (segundo programa):
+
+* Centrifugado y demás parámetros configurable.
+
+* 3 fases: llenado, lavado, drenaje.
+
+ 1 fase: centrifugado (opcional). En este programa, el agua que ingresa es fría. Aquí el sensor de temperatura solo cumple una función informativa.
+
+En el programa 24 (tercer programa):
+
+* Centrifugado, tipo de agua (caliente frío) y demás parámetros configurable.
+
+* 4 tandas de 3 fases (similar al de los programas anteriores) cada una.
+
+* Si se elige agua caliente, la gestión de la temperatura del agua es como el programa 22 (con drenaje y ingreso del agua caliente).
+
+* Si se elige agua fría, no hay gestión de temperatura del agua. El funcionamiento es similar al programa 23. 

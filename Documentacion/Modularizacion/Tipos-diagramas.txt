@@ -1,0 +1,27 @@
+Genera los siguientes diagramas en formato .svg:
+
+Diagramas:
+
+- Diagrama de módulos del sistema.
+
+- Diagrama de máquina de estados.
+
+- Diagrama de secuencia de inicio de programa.
+
+- Diagrama de flujo de ejecución de fase.
+
+- Diagrama de componentes de Hardware.
+
+- Diagrama de secuencia de manejo de emergencia.
+
+- Diagrama de interacción de módulos.
+
+- Diagrama de flujo de la función temporizadora.
+
+- Diagrama de estructura de datos.
+
+- Diagrama de ciclo de vida de una operación de lavado.
+
+- Diagrama de conexiones físicas del esp32
+
+- Diagrama de pantalla nextion.

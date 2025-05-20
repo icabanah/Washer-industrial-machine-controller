@@ -2,7 +2,28 @@
 
 ## Introducción
 
-Este documento detalla la configuración completa de la pantalla táctil Nextion para el sistema de control de lavadora industrial. La interfaz se compone de 6 pantallas principales que permiten al usuario interactuar con el sistema para seleccionar, configurar, monitorear y controlar los diferentes programas de lavado.
+Este documento detalla la configuración completa de la pantalla táctil Nextion para el sistema de control de lavadora industrial con soporte para los tres programas específicos (22: Agua Caliente, 23: Agua Fría, y 24: Multitanda). La interfaz está diseñada para interactuar con la máquina de estados del controlador, proporcionando una experiencia de usuario intuitiva y una visualización clara del proceso de lavado en cada una de sus fases.
+
+## Analogía: Panel de Control Sinfonía Orquestal
+
+La pantalla Nextion funciona como un panel de control avanzado que permite al "director de orquesta" (el usuario) seleccionar qué "pieza musical" (programa de lavado) desea interpretar. Para el Programa 22 (Agua Caliente), la interfaz destaca los indicadores de temperatura con colores cálidos; para el Programa 23 (Agua Fría), enfatiza los indicadores de nivel de agua con tonos frescos; y para el Programa 24 (Multitanda), muestra una visualización de progreso de múltiples movimientos con información sobre la tanda actual. Cada sección de la interfaz está cuidadosamente diseñada para reflejar la naturaleza específica de cada programa, permitiendo al usuario "dirigir la orquesta" de manera eficiente.
+
+## Integración con la Máquina de Estados
+
+La pantalla Nextion interactúa directamente con la máquina de estados del controlador, reflejando y permitiendo transiciones entre los siete estados principales del sistema:
+
+| Estado del Sistema | Pantalla Nextion | Interacción Usuario |
+|--------------------|------------------|---------------------|
+| ESTADO_INICIO      | Welcome          | Solo visualización (sistema inicializándose) |
+| ESTADO_SELECCION   | Selection        | Selección entre programas 22, 23 y 24 |
+| ESTADO_ESPERA      | Ready            | Confirmación para iniciar programa |
+| ESTADO_EJECUCION   | Execution        | Monitoreo del progreso de ejecución |
+| ESTADO_PAUSA       | Pause            | Decisión de continuar o detener |
+| ESTADO_FINALIZACION| Completion       | Visualización de resumen y volver a selección |
+| ESTADO_ERROR       | Error            | Confirmación de error |
+| ESTADO_EMERGENCIA  | Emergency        | Información de parada de emergencia |
+
+Cada transición de estado en el controlador se refleja en un cambio correspondiente en la pantalla Nextion, manteniendo una sincronización constante entre el estado interno del sistema y lo que se muestra al usuario.
 
 ## Parámetros de Conexión
 
@@ -11,23 +32,25 @@ Este documento detalla la configuración completa de la pantalla táctil Nextion
 | Puerto Serial   | Serial2 (ESP32) |
 | Baudios         | 115200 bps      |
 | Configuración   | 8N1 (8 bits, sin paridad, 1 bit de parada) |
-| RX (ESP32)      | Pin 25          |
-| TX (ESP32)      | Pin 27          |
+| RX (ESP32)      | Pin 16          |
+| TX (ESP32)      | Pin 17          |
 
-## Estructura de Pantallas
+## Estructura de Pantallas para los Tres Programas
 
-El sistema utiliza 6 páginas (pantallas) para toda la interacción con el usuario:
+El sistema utiliza 8 pantallas (páginas) para toda la interacción con el usuario, cada una diseñada para soportar las características específicas de los tres programas:
 
-| ID | Nombre      | Función                                    |
-|----|-------------|--------------------------------------------|
-| 0 | Welcome     | Pantalla de bienvenida al iniciar el sistema |
-| 1 | Selection   | Selección de programa de lavado            |
-| 2 | Execution   | Visualización del programa en ejecución    |
-| 3 | Edit        | Edición de parámetros de los programas     |
-| 4 | Error       | Visualización de errores del sistema |
-| 5 | Emergency   | Pantalla de parada de emergencia |
+| ID | Nombre      | Función                                    | Soporte de Programas |
+|----|-------------|--------------------------------------------|----------------------|
+| 0 | Welcome     | Pantalla de bienvenida al iniciar el sistema | Universal |
+| 1 | Selection   | Selección entre los programas 22, 23 y 24  | Muestra características diferenciadoras |
+| 2 | Ready       | Verificación de seguridad y confirmación de inicio | Universal |
+| 3 | Execution   | Monitoreo de programa con visualización específica | Adapta según el programa en ejecución |
+| 4 | Pause       | Pantalla de programa en pausa | Universal |
+| 5 | Completion  | Resumen al finalizar el programa | Adapta según programa finalizado |
+| 6 | Error       | Visualización de errores del sistema | Universal |
+| 7 | Emergency   | Pantalla de parada de emergencia | Universal |
 
-## Detalle de Pantallas y Componentes
+## Detalle de Pantallas y Componentes Específicos para los Tres Programas
 
 ### Pantalla 0: Welcome (Bienvenida)
 
@@ -38,66 +61,136 @@ El sistema utiliza 6 páginas (pantallas) para toda la interacción con el usuar
 | Nombre         | Tipo        | Propiedades            | Descripción             |
 |----------------|-------------|------------------------|-------------------------|
 | `txtTitulo`    | Text        | Font: 2, Align: Center | Título "RH Electronics" |
-| `txtContacto`  | Text        | Font: 1, Align: Center | Contacto "958970967" |
-| `anim`         | Animation   | en: 1                  | Animación de inicio |
-| `imgLogo`      | Picture     | -                      | Logo de la empresa (opcional) |
+| `txtSubtitulo` | Text        | Font: 1, Align: Center | "Sistema de Lavadora Industrial" |
+| `txtVersion`   | Text        | Font: 0, Align: Center | "v3.0 - Soporte para Programas 22, 23 y 24" |
+| `txtCarga`     | Text        | Font: 0, Align: Center | "Inicializando..." |
+| `prgCarga`     | Progress Bar| min: 0, max: 100       | Barra de progreso de inicialización |
 
-**Apariencia recomendada**:
-- Fondo azul oscuro o gris claro profesional
-- Logo centrado en la parte superior
-- Texto de título centrado y grande
-- Información de contacto en la parte inferior
+**Comportamiento**:
+- Se muestra automáticamente al encender el sistema
+- Barra de progreso se incrementa mientras el sistema se inicializa
+- Transición automática a pantalla Selection al completarse la inicialización (ESTADO_SELECCION)
 
 ### Pantalla 1: Selection (Selección de Programa)
 
-**Objetivo**: Permitir al usuario seleccionar el programa de lavado y ver sus características.
+**Objetivo**: Permitir al usuario seleccionar entre los programas 22, 23 y 24, destacando sus características específicas.
 
-**Componentes**:
+**Componentes Comunes**:
 
 | Nombre         | Tipo                  | Propiedades            | Descripción |
 |----------------|-----------------------|------------------------|-------------|
-| `btnPrograma1` | Dual State Button     | val: 0, Font: 1        | Botón para Programa 1 |
-| `btnPrograma2` | Dual State Button     | val: 0, Font: 1        | Botón para Programa 2 |
-| `btnPrograma3` | Dual State Button     | val: 0, Font: 1        | Botón para Programa 3 |
+| `btnPrograma22` | Dual State Button     | val: 0, Font: 1        | "P22: Agua Caliente" |
+| `btnPrograma23` | Dual State Button     | val: 0, Font: 1        | "P23: Agua Fría" |
+| `btnPrograma24` | Dual State Button     | val: 0, Font: 1        | "P24: Multitanda" |
 | `btnComenzar`  | Button                | Font: 1                | Botón para iniciar programa |
-| `btnEditar`    | Button                | Font: 1     | Botón para editar programa |
-| `txtNumPrograma` | Text | Font: 2 | Muestra "P1", "P2", etc. |
-| `txtNivel`     | Text | Font: 1 | Nivel de agua del programa |
-| `txtTemperatura` | Text | Font: 1 | Temperatura del programa |
-| `txtTiempoFase` | Text | Font: 1 | Duración de la fase |
-| `txtVelocidad` | Text | Font: 1 | Velocidad de rotación |
-| `txtFasesInfo` | Text | Font: 0 | Información detallada de las fases |
+| `btnEditar`    | Button                | Font: 1                | Botón para editar parámetros |
+| `txtProgSelec` | Text                  | Font: 2                | Muestra programa seleccionado |
 
-**Apariencia recomendada**:
-- Botones de programa alineados horizontalmente en la parte superior
-- Información del programa seleccionado en panel central
-- Botones de acción (Comenzar, Editar) en la parte inferior
+**Componentes Específicos por Programa**:
 
-### Pantalla 2: Execution (Ejecución)
+Para Programa 22 (Agua Caliente):
+- `iconoTemp` (Picture): Icono de termómetro/vapor
+- `txtTempInfo` (Text): "Temperatura: 60°C"
+- `txtTipoAgua` (Text, color: Rojo): "Agua Caliente"
+- `bgBox` (Variable): Color de fondo rojo suave
 
-**Objetivo**: Mostrar el progreso y estado actual del programa en ejecución.
+Para Programa 23 (Agua Fría):
+- `iconoAgua` (Picture): Icono de gota de agua
+- `txtTempInfo` (Text): "Temperatura: Ambiente"
+- `txtTipoAgua` (Text, color: Azul): "Agua Fría"
+- `bgBox` (Variable): Color de fondo azul suave
+
+Para Programa 24 (Multitanda):
+- `iconoCiclos` (Picture): Icono de múltiples ciclos
+- `txtTandas` (Text): "4 Tandas"
+- `txtTipoAgua` (Text, color: Variable): "Tipo de Agua Configurable"
+- `btnTipoAgua` (Dual State Button): Selector Agua Fría/Caliente
+- `bgBox` (Variable): Color de fondo verde suave
+
+**Comportamiento**:
+- Los botones de programa son mutuamente excluyentes (solo uno seleccionado)
+- La interfaz se adapta para mostrar información específica del programa seleccionado
+- Presionar Comenzar cambia al ESTADO_ESPERA
+
+### Pantalla 2: Ready (Preparación)
+
+**Objetivo**: Verificar condiciones de seguridad y obtener confirmación final antes de iniciar el programa.
 
 **Componentes**:
 
 | Nombre         | Tipo        | Propiedades | Descripción |
 |----------------|-------------|-------------|-------------|
-| `txtPrograma`  | Text        | Font: 2     | Muestra el programa actual |
-| `txtFase`      | Text        | Font: 1     | Muestra la fase actual |
+| `txtPrograma`  | Text        | Font: 2     | Muestra programa seleccionado |
+| `txtMensaje`   | Text        | Font: 1     | "¿Confirma iniciar este programa?" |
+| `txtVerificar` | Text        | Font: 1     | "Verifique que la puerta esté cerrada" |
+| `btnConfirmar` | Button      | Font: 1     | "Iniciar Ahora" |
+| `btnRegresar`  | Button      | Font: 1     | "Regresar" |
+| `imgDoor`      | Picture     | -           | Icono de puerta |
+
+**Componentes Específicos por Programa**:
+- Para P22: Indicación de temperatura objetivo y tiempo estimado
+- Para P23: Indicación de nivel de agua objetivo y tiempo estimado
+- Para P24: Indicación de número de tandas y tiempo total estimado
+
+**Comportamiento**:
+- Verificación del cierre de puerta antes de permitir continuar
+- Confirmación final del usuario para iniciar el programa
+- Presionar Confirmar cambia al ESTADO_EJECUCION
+
+### Pantalla 3: Execution (Ejecución)
+
+**Objetivo**: Mostrar el progreso detallado del programa en ejecución con visualización adaptada a cada programa específico.
+
+**Componentes Comunes**:
+
+| Nombre         | Tipo        | Propiedades | Descripción |
+|----------------|-------------|-------------|-------------|
+| `txtPrograma`  | Text        | Font: 2     | Muestra "P22", "P23" o "P24" |
+| `txtFase`      | Text        | Font: 1     | Fase actual (Llenado/Lavado/Drenaje/Centrifugado) |
+| `txtTiempo`    | Text        | Font: 2     | Tiempo restante (mm:ss) |
+| `barraProgreso` | Progress Bar | min: 0, max: 100 | Progreso general del programa |
+| `btnPausa`     | Button      | Font: 1     | Botón para pausar programa |
+| `btnEmergencia` | Dual State Button | color: RED | Botón para emergencia (simulación) |
+
+**Visualización para Programa 22 (Agua Caliente)**:
+
+| Nombre         | Tipo        | Propiedades | Descripción |
+|----------------|-------------|-------------|-------------|
+| `gaugeTemp`    | Gauge       | min: 0, max: 100, color: RED | Indicador de temperatura prominente |
+| `txtTemp`      | Text        | Font: 2, color: RED | Temperatura actual en °C |
+| `txtTempObj`   | Text        | Font: 1     | Temperatura objetivo |
+| `icTemp`       | Variable    | -           | Icono animado de calentamiento cuando activo |
+| `txtEstadoTemp` | Text       | Font: 1     | "Calentando", "Temperatura Estable", etc. |
+| `gaugePresion` | Gauge       | min: 0, max: 100 | Indicador de nivel de agua secundario |
+
+**Visualización para Programa 23 (Agua Fría)**:
+
+| Nombre         | Tipo        | Propiedades | Descripción |
+|----------------|-------------|-------------|-------------|
+| `gaugePresion` | Gauge       | min: 0, max: 100, color: BLUE | Indicador de nivel de agua prominente |
+| `txtPresion`   | Text        | Font: 2, color: BLUE | Nivel de agua actual |
+| `txtPresionObj` | Text       | Font: 1     | Nivel de agua objetivo |
+| `icAgua`       | Variable    | -           | Icono animado de llenado cuando activo |
+| `txtEstadoAgua` | Text       | Font: 1     | "Llenando", "Nivel Correcto", etc. |
+| `txtTemp`      | Text        | Font: 1     | Temperatura actual (informativo, menos prominente) |
+
+**Visualización para Programa 24 (Multitanda)**:
+
+| Nombre         | Tipo        | Propiedades | Descripción |
+|----------------|-------------|-------------|-------------|
+| `txtTanda`     | Text        | Font: 2     | "Tanda X de 4" |
+| `progresoCiclos` | Progress Bar | min: 0, max: 4 | Progreso de tandas completadas |
+| `txtTipoAgua`  | Text        | Font: 1     | "Agua Caliente" o "Agua Fría" |
+| `gaugeTemp`    | Gauge       | min: 0, max: 100, color: variable | Indicador de temperatura (color según tipo) |
+| `gaugePresion` | Gauge       | min: 0, max: 100, color: variable | Indicador de nivel de agua |
 | `txtTemp`      | Text        | Font: 1     | Temperatura actual |
 | `txtPresion`   | Text        | Font: 1     | Nivel de agua actual |
-| `txtTiempo`    | Text        | Font: 2     | Tiempo restante (mm:ss) |
-| `txtRotacion`  | Text        | Font: 1     | Velocidad de rotación actual |
-| `gaugeTemp`    | Gauge       | min: 0, max: 100 | Indicador visual de temperatura |
-| `gaugePresion` | Gauge       | min: 0, max: 100 | Indicador visual de nivel de agua |
-| `barraProgreso` | Progress Bar | min: 0, max: 100 | Progreso general del programa |
-| `btnParar`     | Button      | Font: 1, Color: RED | Botón para detener el programa |
-| `motor`        | Variable    | val: 0-3    | Indicador visual del motor (opcional) |
+| `icTandas`     | Variable    | -           | Icono animado de ciclos |
 
-**Apariencia recomendada**:
-- Distribución en cuadrantes para fácil lectura
-- Medidores gráficos para temperatura y nivel
-- Tiempo restante grande y visible
-- Botón de parada destacado en rojo
+**Comportamiento**:
+- Actualización en tiempo real de parámetros (temperatura, presión, tiempo)
+- Indicaciones visuales específicas según la fase actual y tipo de programa
+- Presionar Pausa cambia al ESTADO_PAUSA
 
 ### Pantalla 3: Edit (Edición)
 
@@ -202,92 +295,299 @@ El sistema utiliza 6 páginas (pantallas) para toda la interacción con el usuar
 
 ## Manejo de Eventos y Comunicación
 
-### 1. Eventos de Componentes
+## Integración Específica con los Tres Programas
 
-Todos los botones deben configurarse para enviar eventos al ser presionados. Los eventos en Nextion se configuran de la siguiente manera:
+### Programa 22 (Agua Caliente)
 
-```
-// Para un botón como btnPrograma1
-cName=btnPrograma1
-Touch Press Event:
-  printh 65 01 01 FF FF FF
+**Elementos Destacados**:
+- Indicador de temperatura grande y prominente (rojo)
+- Visualización constante del estado de calentamiento
+- Alertas visuales cuando se ajusta la temperatura
+
+**Interacciones Específicas**:
+- Indicación visual cuando se activa la válvula de vapor
+- Indicación visual durante el proceso de ajuste de temperatura (drenaje parcial/rellenado)
+- Información detallada sobre temperatura objetivo y actual
+
+**Ejemplo de Código para ESP32**:
+```cpp
+// Actualizar pantalla para Programa 22 (Agua Caliente)
+void UIController::updateProgram22Screen(float currentTemp, float targetTemp, bool heatingActive) {
+  // Actualizar valores de temperatura
+  Hardware.nextionSendCommand("txtTemp.txt=\"" + String(currentTemp, 1) + "\"");
+  Hardware.nextionSendCommand("txtTempObj.txt=\"" + String(targetTemp, 1) + "\"");
+  Hardware.nextionSendCommand("gaugeTemp.val=" + String(int(currentTemp)));
   
-Touch Release Event:
-  printh 65 01 01 FF FF FF
+  // Indicar estado de calentamiento
+  if (heatingActive) {
+    Hardware.nextionSendCommand("txtEstadoTemp.txt=\"Calentando\"");
+    Hardware.nextionSendCommand("icTemp.picc=1"); // Icono activo
+  } else {
+    Hardware.nextionSendCommand("txtEstadoTemp.txt=\"Temperatura Estable\"");
+    Hardware.nextionSendCommand("icTemp.picc=0"); // Icono inactivo
+  }
+}
 ```
 
-Donde:
-- 65: Código para evento de botón
-- 01: ID del componente
-- 01: ID de la página
+### Programa 23 (Agua Fría)
 
-### 2. Código HMI para Componentes Clave
+**Elementos Destacados**:
+- Indicador de nivel de agua grande y prominente (azul)
+- Temperatura mostrada solo como información secundaria
+- Indicación clara de fase actual
 
-**Ejemplo para `btnPrograma1`**:
-```
-// Propiedades del botón Programa 1
-cName=btnPrograma1
-x=50
-y=100
-w=120
-h=50
-id=1
-val=0
-txt="Programa 1"
-font=1
-colors=65535,63488
-```
+**Interacciones Específicas**:
+- Indicación visual al abrir/cerrar válvula de agua
+- Indicación visual durante el llenado/drenaje
+- Indicación secundaria de temperatura (informativa)
 
-**Ejemplo para `gaugeTemp`**:
-```
-// Propiedades del medidor de temperatura
-cName=gaugeTemp
-x=250
-y=120
-w=150
-h=150
-id=20
-val=0
-minval=0
-maxval=100
-bgcolor=65535
-color=2016
+**Ejemplo de Código para ESP32**:
+```cpp
+// Actualizar pantalla para Programa 23 (Agua Fría)
+void UIController::updateProgram23Screen(uint8_t waterLevel, float currentTemp, bool fillingActive) {
+  // Actualizar valores de nivel y temperatura
+  Hardware.nextionSendCommand("txtPresion.txt=\"" + String(waterLevel) + "\"");
+  Hardware.nextionSendCommand("txtTemp.txt=\"" + String(currentTemp, 1) + "\"");
+  Hardware.nextionSendCommand("gaugePresion.val=" + String(waterLevel * 25)); // Convertir nivel 0-4 a 0-100
+  
+  // Indicar estado de llenado
+  if (fillingActive) {
+    Hardware.nextionSendCommand("txtEstadoAgua.txt=\"Llenando\"");
+    Hardware.nextionSendCommand("icAgua.picc=1"); // Icono activo
+  } else {
+    Hardware.nextionSendCommand("txtEstadoAgua.txt=\"Nivel Correcto\"");
+    Hardware.nextionSendCommand("icAgua.picc=0"); // Icono inactivo
+  }
+}
 ```
 
-## Consideraciones Adicionales
+### Programa 24 (Multitanda)
+
+**Elementos Destacados**:
+- Visualización clara de la tanda actual y total
+- Indicación del tipo de agua seleccionado
+- Adaptación dinámica según configuración
+
+**Interacciones Específicas**:
+- Transición visual entre tandas
+- Actualización de barra de progreso de tandas
+- Visualización de tiempo total y tiempo de tanda actual
+
+**Ejemplo de Código para ESP32**:
+```cpp
+// Actualizar pantalla para Programa 24 (Multitanda)
+void UIController::updateProgram24Screen(uint8_t currentCycle, uint8_t totalCycles, 
+                                         bool isHotWater, float temp, uint8_t waterLevel) {
+  // Actualizar información de tanda
+  Hardware.nextionSendCommand("txtTanda.txt=\"" + String(currentCycle) + "/" + String(totalCycles) + "\"");
+  Hardware.nextionSendCommand("progresoCiclos.val=" + String(currentCycle));
+  
+  // Actualizar tipo de agua y sensores
+  if (isHotWater) {
+    Hardware.nextionSendCommand("txtTipoAgua.txt=\"Agua Caliente\"");
+    Hardware.nextionSendCommand("txtTipoAgua.pco=63488"); // Color rojo
+    Hardware.nextionSendCommand("gaugeTemp.pco=63488"); // Color rojo para temperatura
+  } else {
+    Hardware.nextionSendCommand("txtTipoAgua.txt=\"Agua Fría\"");
+    Hardware.nextionSendCommand("txtTipoAgua.pco=31999"); // Color azul
+    Hardware.nextionSendCommand("gaugeTemp.pco=31999"); // Color azul para temperatura
+  }
+  
+  // Actualizar valores de sensores
+  Hardware.nextionSendCommand("txtTemp.txt=\"" + String(temp, 1) + "\"");
+  Hardware.nextionSendCommand("txtPresion.txt=\"" + String(waterLevel) + "\"");
+  Hardware.nextionSendCommand("gaugeTemp.val=" + String(int(temp)));
+  Hardware.nextionSendCommand("gaugePresion.val=" + String(waterLevel * 25));
+}
+```
+
+## Protocolo de Comunicación Bidireccional
+
+### Eventos desde Nextion hacia ESP32
+
+La pantalla Nextion debe enviar los siguientes eventos al ESP32:
+
+| Evento | Formato | Descripción |
+|--------|---------|-------------|
+| Botón Programa 22 | `65 01 22` | Selección de programa 22 (Agua Caliente) |
+| Botón Programa 23 | `65 01 23` | Selección de programa 23 (Agua Fría) |
+| Botón Programa 24 | `65 01 24` | Selección de programa 24 (Multitanda) |
+| Botón Comenzar | `65 02 00` | Iniciar programa seleccionado |
+| Botón Pausa | `65 03 00` | Pausar programa en ejecución |
+| Botón Reanudar | `65 04 00` | Reanudar programa pausado |
+| Botón Detener | `65 05 00` | Detener programa (desde pausa) |
+| Botón Editar | `65 06 00` | Editar parámetros del programa |
+| Selección Agua P24 | `65 07 [00/01]` | Tipo de agua para P24 (00=Fría, 01=Caliente) |
+
+### Comandos desde ESP32 hacia Nextion
+
+El ESP32 debe enviar los siguientes comandos a la pantalla Nextion:
+
+| Comando | Descripción |
+|---------|-------------|
+| `page X` | Cambiar a página X (según estado) |
+| `txtTemp.txt="XX.X"` | Actualizar valor de temperatura |
+| `txtPresion.txt="X"` | Actualizar valor de nivel de agua |
+| `txtTiempo.txt="MM:SS"` | Actualizar tiempo restante |
+| `txtFase.txt="XXXX"` | Actualizar nombre de fase actual |
+| `barraProgreso.val=XX` | Actualizar progreso general (0-100) |
+| `txtMensaje.txt="XXXX"` | Mostrar mensaje temporal |
+| `vis txtMensaje,1` | Mostrar componente |
+| `vis txtMensaje,0` | Ocultar componente |
+
+## Consideraciones de Implementación
 
 ### 1. Optimización de Rendimiento
 
-- Limitar el uso de imágenes de alta resolución
-- Usar componentes simples cuando sea posible
-- Evitar demasiados componentes en una sola pantalla
+- **Actualización Selectiva**: Solo actualizar componentes que han cambiado
+- **Priorización**: Priorizar actualizaciones críticas (temperatura para P22, nivel para P23)
+- **Frecuencia**: Temperatura y nivel cada segundo, otros componentes según necesidad
 
-### 2. Pruebas y Validación
+### 2. Pruebas por Programa
 
-Antes de implementar la configuración completa:
+**Programa 22 (Agua Caliente)**:
+1. Verificar que la visualización de temperatura sea fácilmente visible
+2. Comprobar que las alertas de ajuste de temperatura sean claras
+3. Probar la transición entre fases con sus indicadores correspondientes
 
-1. Crear una pantalla de prueba con un botón y un texto
-2. Verificar la comunicación con el ESP32
-3. Asegurar que los eventos se envían y reciben correctamente
-4. Probar la actualización de componentes desde el ESP32
+**Programa 23 (Agua Fría)**:
+1. Verificar que la visualización de nivel de agua sea fácilmente visible
+2. Comprobar que la temperatura se muestre como información secundaria
+3. Probar las indicaciones de llenado y drenaje
 
-### 3. Depuración
+**Programa 24 (Multitanda)**:
+1. Verificar la visualización correcta de tandas y progreso
+2. Comprobar la adaptación según tipo de agua seleccionado
+3. Probar transiciones entre tandas
 
-Para facilitar la depuración, considerar añadir una pantalla oculta con:
-- Estado de la comunicación
-- Valores en bruto de sensores
-- Registro de últimos eventos
+### 3. Integración con la Máquina de Estados
 
-## Ejemplo de Flujo de Interacción
+Cada transición de estado del sistema debe reflejarse en la interfaz:
 
-1. Al encender: Pantalla Welcome → Después de 3 segundos → Pantalla Selection
-2. En Selection: Seleccionar programa → Presionar Comenzar → Pantalla Execution
-3. En Execution: Mostrar progreso → Al finalizar → Pantalla Selection
-4. Si error: Cualquier pantalla → Pantalla Error
-5. Si emergencia: Cualquier pantalla → Pantalla Emergency
+- **ESTADO_INICIO → ESTADO_SELECCION**: 
+  ```cpp
+  // En ProgramController al cambiar a ESTADO_SELECCION
+  UIController::showSelectionScreen();
+  ```
+
+- **ESTADO_EJECUCION (con emergencia)**:
+  ```cpp
+  // En ProgramController::handleEmergency()
+  UIController::showEmergencyScreen();
+  ```
 
 ## Conclusión
 
-Esta configuración proporciona una interfaz completa y funcional para el control de la lavadora industrial. El diseño prioriza la usabilidad, claridad de información y compatibilidad con el código de control implementado en el ESP32.
+Esta configuración de Nextion proporciona una interfaz completa y adaptada específicamente para soportar los tres programas de lavado. El diseño diferenciado para cada programa (22: Agua Caliente, 23: Agua Fría, y 24: Multitanda) mejora la experiencia del usuario al destacar visualmente los aspectos más relevantes de cada programa, a la vez que mantiene una coherencia visual y funcional con la máquina de estados implementada en el controlador.
 
-Al implementar esta configuración, asegúrate de mantener la coherencia en los nombres de componentes según lo definido en el archivo `config.h` para garantizar una comunicación correcta entre la pantalla Nextion y el controlador ESP32.
+La implementación de pantallas específicas para cada estado del sistema asegura que el usuario siempre tenga la información adecuada y las opciones de control correspondientes a la fase actual del proceso de lavado, creando así una experiencia más intuitiva y eficiente.
+
+## Sincronización con Programas Específicos y Máquina de Estados
+
+Para garantizar un funcionamiento cohesivo entre la pantalla Nextion y el controlador ESP32, se ha implementado un sistema de sincronización bidireccional que refleja el estado actual del sistema y se adapta a las características específicas de cada programa.
+
+### Mapeo de Estados a Pantallas
+
+Cada estado de la máquina de estados tiene su correspondiente pantalla en Nextion:
+
+```
+ESTADO_INICIO       → página 0 (Welcome)
+ESTADO_SELECCION    → página 1 (Selection)
+ESTADO_ESPERA       → página 2 (Ready)
+ESTADO_EJECUCION    → página 3 (Execution)
+ESTADO_PAUSA        → página 4 (Pause)
+ESTADO_FINALIZACION → página 5 (Completion)
+ESTADO_ERROR        → página 6 (Error)
+ESTADO_EMERGENCIA   → página 7 (Emergency)
+```
+
+### Implementación de la Comunicación Bidireccional
+
+El siguiente fragmento de código muestra cómo el UIController maneja los eventos recibidos desde la pantalla Nextion y los comunica al ProgramController:
+
+```cpp
+void UIControllerClass::processNextionEvent(uint8_t *event) {
+  // Procesar eventos de la pantalla Nextion
+  if (event[0] == 65) {  // Código para evento de botón
+    switch (event[1]) {
+      case 1:  // Selección de programa
+        uint8_t progId = event[2];
+        ProgramController.selectProgram(progId);
+        break;
+        
+      case 2:  // Iniciar programa
+        ProgramController.setState(ESTADO_ESPERA);
+        break;
+        
+      case 3:  // Pausar programa
+        ProgramController.setState(ESTADO_PAUSA);
+        break;
+        
+      case 4:  // Reanudar programa
+        ProgramController.setState(ESTADO_EJECUCION);
+        break;
+        
+      case 5:  // Detener programa
+        ProgramController.setState(ESTADO_FINALIZACION);
+        break;
+        
+      case 6:  // Editar programa
+        showEditScreen(ProgramController.getCurrentProgram());
+        break;
+        
+      case 7:  // Seleccionar tipo de agua (P24)
+        bool useHotWater = (event[2] == 1);
+        Storage.saveWaterTypeSelection(useHotWater);
+        updateProgram24Info(useHotWater);
+        break;
+    }
+  }
+}
+```
+
+### Adaptación Dinámica para los Tres Programas
+
+El UIController adapta la interfaz según el programa activo mediante una estructura condicional:
+
+```cpp
+void UIControllerClass::updateExecutionScreen() {
+  uint8_t currentProgram = ProgramController.getCurrentProgram();
+  
+  // Actualizar componentes comunes
+  Hardware.nextionSendCommand("txtPrograma.txt=\"P" + String(currentProgram + 22) + "\"");
+  Hardware.nextionSendCommand("txtFase.txt=\"" + getFaseText(ProgramController.getCurrentPhase()) + "\"");
+  Hardware.nextionSendCommand("txtTiempo.txt=\"" + formatTime(ProgramController.getRemainingTime()) + "\"");
+  Hardware.nextionSendCommand("barraProgreso.val=" + String(ProgramController.getProgress()));
+  
+  // Actualizar componentes específicos según programa
+  switch (currentProgram) {
+    case PROGRAMA_22:  // Agua Caliente
+      updateProgram22Screen(
+        Sensors.getCurrentTemperature(),
+        ProgramController.getTargetTemperature(),
+        ProgramController.isHeatingActive()
+      );
+      break;
+      
+    case PROGRAMA_23:  // Agua Fría
+      updateProgram23Screen(
+        Sensors.getCurrentWaterLevel(),
+        Sensors.getCurrentTemperature(),
+        ProgramController.isFillingActive()
+      );
+      break;
+      
+    case PROGRAMA_24:  // Multitanda
+      updateProgram24Screen(
+        ProgramController.getCurrentCycle(),
+        ProgramController.getNumberOfCycles(),
+        Storage.getWaterTypeSelection(),
+        Sensors.getCurrentTemperature(),
+        Sensors.getCurrentWaterLevel()
+      );
+      break;
+  }
+}
+```
+
+Esta implementación garantiza que la interfaz se adapte dinámicamente a las necesidades específicas de cada programa, ofreciendo al usuario la información más relevante según el contexto actual.
