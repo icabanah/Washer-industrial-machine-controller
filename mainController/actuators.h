@@ -31,6 +31,11 @@ public:
   uint8_t getMotorState();
   void setRotationLevel(uint8_t level);
   
+  // Control de centrifugado
+  void startCentrifuge();
+  void stopCentrifuge();
+  bool isCentrifugeRunning();
+  
   // Control de válvulas
   void openWaterValve();
   void closeWaterValve();
@@ -48,11 +53,6 @@ public:
   void lockDoor();
   void unlockDoor();
   bool isDoorLocked();
-  
-  // Control del zumbador
-  void startBuzzer(unsigned long duration = 0);
-  void stopBuzzer();
-  bool isBuzzerActive();
   
   // Control de rotación automática
   void startAutoRotation(uint8_t level);
@@ -77,8 +77,8 @@ private:
   bool _steamValveOpen;
   bool _drainValveOpen;
   bool _doorLocked;
-  bool _buzzerActive;
   bool _autoRotationActive;
+  bool _centrifugeActive;
   
   // Variables para control de rotación
   uint32_t _motorSeconds;
@@ -89,7 +89,6 @@ private:
   uint16_t _pauseTime;
   
   // IDs de tareas temporizadas
-  int _buzzerTaskId;      // ID de la tarea del zumbador
   int _rotationTaskId;    // ID de la tarea de rotación
   
   // Tiempo para control manual de temporizadores

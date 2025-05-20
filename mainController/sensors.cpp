@@ -18,8 +18,8 @@ void temperatureReadCallback() {
 
 void SensorsClass::init() {
   _currentTemperature = 0.0;
-  // _currentPressureRaw = 0;
-  // _currentPressurePascal = 0.0;
+  _currentPressureRaw = 0;
+  _currentPressurePascal = 0.0;
   _currentWaterLevel = 0;
   _monitoring = false;
   _monitoringTaskId = 0;
@@ -28,7 +28,7 @@ void SensorsClass::init() {
   _pressureSensorCalibrated = false;
   
   _setupTemperatureSensor();
-  // _setupPressureSensor();
+  _setupPressureSensor();
   _setupMonitoring();
   
   Utils.debug("Sensores inicializados");
@@ -45,8 +45,8 @@ void SensorsClass::_setupTemperatureSensor() {
   // Configurar para lecturas asíncronas (no bloqueantes)
   _tempSensors.setWaitForConversion(false);
   
-  // Establecer resolución
-  _tempSensors.setResolution(TEMP_RESOLUTION);
+  // Establecer resolución específica para el sensor con dirección conocida
+  _tempSensors.setResolution(_tempSensorAddress, TEMP_RESOLUTION);
   
   // Verificar si el sensor está conectado
   if (_tempSensors.getDeviceCount() == 0) {
@@ -102,7 +102,7 @@ void SensorsClass::readTemperatureCallback() {
 }
 
 void SensorsClass::_readTemperature() {
-  float temp = _tempSensors.getTempCByIndex(0);
+  float temp = _tempSensors.getTempC(_tempSensorAddress);
   
   // Verificar si la lectura es válida
   if (temp != DEVICE_DISCONNECTED_C) {

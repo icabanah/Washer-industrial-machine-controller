@@ -4,27 +4,30 @@
 
 // === DEFINICIÓN DE PINES ===
 // Entrada de Emergencia
-#define PIN_BTN_EMERGENCIA 2  // Pin para botón de emergencia con antirrebote
+#define PIN_BTN_EMERGENCIA 15  // Pin para botón de emergencia con antirrebote
 
-// Salidas
-#define PIN_MOTOR_DIR_A 12
-#define PIN_MOTOR_DIR_B 11
-#define PIN_VALVULA_AGUA 10
-#define PIN_ELECTROV_VAPOR 9
-#define PIN_VALVULA_DESFOGUE 8
-#define PIN_MAGNET_PUERTA 7
-#define PIN_BUZZER 34
+// Salidas (Actuadores)
+#define PIN_MOTOR_DIR_A 12     // Control dirección derecha del motor
+#define PIN_MOTOR_DIR_B 14     // Control dirección izquierda del motor
+#define PIN_CENTRIFUGADO 27    // Control centrifugado del motor
+#define PIN_VALVULA_AGUA 26    // Control de la válvula de entrada de agua
+#define PIN_ELECTROV_VAPOR 33  // Control de la electroválvula de vapor para calentar
+#define PIN_VALVULA_DESFOGUE 13// Control de la válvula de drenaje
+#define PIN_MAGNET_PUERTA 25   // Control del bloqueo electromagnético de la puerta
 
 // Comunicación Serial para Nextion
 #define NEXTION_SERIAL Serial2
 #define NEXTION_BAUD_RATE 115200
-#define NEXTION_RX_PIN 25  // ESP32 U2_RXD pin conectado al TX de Nextion
-#define NEXTION_TX_PIN 27  // ESP32 U2_TXD pin conectado al RX de Nextion
+#define NEXTION_RX_PIN 16      // ESP32 U2_RXD pin conectado al TX de Nextion
+#define NEXTION_TX_PIN 17      // ESP32 U2_TXD pin conectado al RX de Nextion
 
 // Pines para sensores
-#define PIN_TEMP_SENSOR 33  // Cambiado para evitar conflicto con U2_RXD (pin 25)
-#define PIN_PRESION_DOUT 42
-#define PIN_PRESION_SCLK 40
+// Sensor de Presión (HX710B)
+#define PIN_PRESION_DOUT 5     // Pin DOUT del sensor de presión
+#define PIN_PRESION_SCLK 4     // Pin SCLK del sensor de presión
+
+// Sensor de Temperatura (OneWire Dallas)
+#define PIN_TEMP_SENSOR 23     // Pin de datos para sensor de temperatura
 
 // === PARÁMETROS DEL SISTEMA ===
 // Límites y configuraciones
@@ -39,6 +42,9 @@
 #define TEMP_RESOLUTION 9
 #define TEMP_RANGE 2
 
+// Dirección del sensor de temperatura (OneWire Dallas)
+#define TEMP_SENSOR_ADDR {0x28, 0xFF, 0x7, 0x3, 0x93, 0x16, 0x4, 0x7A}
+
 // Configuración de presión
 #define NIVEL_PRESION_1 601
 #define NIVEL_PRESION_2 628
@@ -47,7 +53,6 @@
 
 // Configuración de tiempos
 #define TIEMPO_BIENVENIDA 3000
-#define TIEMPO_BUZZER 2000
 #define INTERVALO_TEMPORIZADOR 800
 
 // Configuración de tareas asíncronas

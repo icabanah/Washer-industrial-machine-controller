@@ -33,20 +33,20 @@ void HardwareClass::_initOutputs() {
   // Configurar pines de salida
   pinMode(PIN_MOTOR_DIR_A, OUTPUT);
   pinMode(PIN_MOTOR_DIR_B, OUTPUT);
+  pinMode(PIN_CENTRIFUGADO, OUTPUT);
   pinMode(PIN_VALVULA_AGUA, OUTPUT);
   pinMode(PIN_ELECTROV_VAPOR, OUTPUT);
   pinMode(PIN_VALVULA_DESFOGUE, OUTPUT);
   pinMode(PIN_MAGNET_PUERTA, OUTPUT);
-  pinMode(PIN_BUZZER, OUTPUT);
   
   // Inicializar todas las salidas en LOW
   digitalWrite(PIN_MOTOR_DIR_A, LOW);
   digitalWrite(PIN_MOTOR_DIR_B, LOW);
+  digitalWrite(PIN_CENTRIFUGADO, LOW);
   digitalWrite(PIN_VALVULA_AGUA, LOW);
   digitalWrite(PIN_ELECTROV_VAPOR, LOW);
   digitalWrite(PIN_VALVULA_DESFOGUE, LOW);
   digitalWrite(PIN_MAGNET_PUERTA, LOW);
-  digitalWrite(PIN_BUZZER, LOW);
 }
 
 void HardwareClass::_initNextion() {

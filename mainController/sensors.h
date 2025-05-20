@@ -42,6 +42,7 @@ private:
   // Variables para sensores
   OneWire _oneWire;
   DallasTemperature _tempSensors;
+  DeviceAddress _tempSensorAddress = TEMP_SENSOR_ADDR;
   HX710B _pressureSensor;
   
   // Variables para almacenar lecturas

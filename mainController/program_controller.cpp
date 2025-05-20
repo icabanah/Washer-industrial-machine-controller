@@ -293,9 +293,6 @@ void ProgramControllerClass::_completeProgram() {
   // Incrementar contador de uso
   Storage.incrementUsageCounter();
   
-  // Reproducir señal de finalización
-  Actuators.startBuzzer(TIEMPO_BUZZER);
-  
   // Volver a la pantalla de selección
   setState(ESTADO_SELECCION);
 }

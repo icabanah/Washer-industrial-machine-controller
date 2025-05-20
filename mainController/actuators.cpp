@@ -6,10 +6,6 @@
 ActuatorsClass Actuators;
 
 // Callbacks para las tareas temporizadas
-void buzzerTimerCallback() {
-  Actuators.stopBuzzer();
-}
-
 void rotationTimerCallback() {
   Actuators.incrementMotorSeconds();
   Actuators.updateMotorDirection();
@@ -17,11 +13,6 @@ void rotationTimerCallback() {
 
 ActuatorsClass::~ActuatorsClass() {
   // Detener cualquier tarea activa
-  if (_buzzerTaskId > 0) {
-    Utils.stopTask(_buzzerTaskId);
-    _buzzerTaskId = 0;
-  }
-  
   if (_rotationTaskId > 0) {
     Utils.stopTask(_rotationTaskId);
     _rotationTaskId = 0;
@@ -35,8 +26,8 @@ void ActuatorsClass::init() {
   _steamValveOpen = false;
   _drainValveOpen = false;
   _doorLocked = false;
-  _buzzerActive = false;
   _autoRotationActive = false;
+  _centrifugeActive = false;
   
   // Inicializar variables de rotación
   _motorSeconds = 0;
@@ -47,17 +38,16 @@ void ActuatorsClass::init() {
   _pauseTime = 0;
   
   // Inicializar IDs de tareas
-  _buzzerTaskId = 0;
   _rotationTaskId = 0;
   _lastRotationUpdate = 0;
   
   // Asegurar que todos los actuadores estén en estado seguro
   stopMotor();
+  stopCentrifuge();
   closeWaterValve();
   closeSteamValve();
   openDrainValve(); // Por seguridad, la válvula de drenaje se abre al iniciar
   unlockDoor();
-  stopBuzzer();
   
   Utils.debug("Actuadores inicializados");
 }
@@ -121,6 +111,24 @@ void ActuatorsClass::_configureRotationTiming(uint8_t level) {
       _pauseTime = 1;
       break;
   }
+}
+
+void ActuatorsClass::startCentrifuge() {
+  // Iniciar el centrifugado
+  Hardware.digitalWrite(PIN_CENTRIFUGADO, HIGH);
+  _centrifugeActive = true;
+  Utils.debug("Centrifugado iniciado");
+}
+
+void ActuatorsClass::stopCentrifuge() {
+  // Detener el centrifugado
+  Hardware.digitalWrite(PIN_CENTRIFUGADO, LOW);
+  _centrifugeActive = false;
+  Utils.debug("Centrifugado detenido");
+}
+
+bool ActuatorsClass::isCentrifugeRunning() {
+  return _centrifugeActive;
 }
 
 void ActuatorsClass::openWaterValve() {
@@ -187,43 +195,7 @@ bool ActuatorsClass::isDoorLocked() {
   return _doorLocked;
 }
 
-void ActuatorsClass::startBuzzer(unsigned long duration) {
-  Hardware.digitalWrite(PIN_BUZZER, HIGH);
-  _buzzerActive = true;
-  
-  // Si se especifica una duración, configurar el temporizador
-  if (duration > 0) {
-    // Detener el temporizador anterior si existe
-    if (_buzzerTaskId > 0) {
-      Utils.stopTask(_buzzerTaskId);
-      _buzzerTaskId = 0;
-    }
-    
-    // Crear un nuevo temporizador de un solo uso
-    _buzzerTaskId = Utils.createTimeout(duration, buzzerTimerCallback);
-    
-    Utils.debug("Zumbador activado por " + String(duration) + " ms");
-  } else {
-    Utils.debug("Zumbador activado indefinidamente");
-  }
-}
 
-void ActuatorsClass::stopBuzzer() {
-  Hardware.digitalWrite(PIN_BUZZER, LOW);
-  _buzzerActive = false;
-  
-  // Detener el temporizador si está activo
-  if (_buzzerTaskId > 0) {
-    Utils.stopTask(_buzzerTaskId);
-    _buzzerTaskId = 0;
-  }
-  
-  Utils.debug("Zumbador desactivado");
-}
-
-bool ActuatorsClass::isBuzzerActive() {
-  return _buzzerActive;
-}
 
 void ActuatorsClass::startAutoRotation(uint8_t level) {
   if (level > 0 && level <= MAX_NIVEL_ROTACION) {
@@ -322,20 +294,16 @@ void ActuatorsClass::_updateMotorDirection() {
 void ActuatorsClass::emergencyStop() {
   // Detener todos los actuadores y llevar el sistema a un estado seguro
   stopMotor();
+  stopCentrifuge();
   closeWaterValve();
   closeSteamValve();
   openDrainValve();
   unlockDoor();
-  
-  // Activar el zumbador por un tiempo determinado
-  startBuzzer(TIEMPO_BUZZER);
   
   Utils.debug("PARADA DE EMERGENCIA ACTIVADA");
 }
 
 void ActuatorsClass::emergencyReset() {
   // Restablecer el sistema después de una emergencia
-  stopBuzzer();
-  
   Utils.debug("Sistema restablecido después de emergencia");
 }
