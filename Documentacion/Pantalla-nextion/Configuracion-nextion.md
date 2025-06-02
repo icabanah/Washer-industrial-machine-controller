@@ -68,11 +68,21 @@ El sistema utiliza 9 pantallas (páginas) para toda la interacción con el usuar
 | `txtVersion`   | Text        | Font: 0, Align: Center | "v3.0 - Soporte para Programas 22, 23 y 24" |
 | `txtCarga`     | Text        | Font: 0, Align: Center | "Inicializando..." |
 | `prgCarga`     | Progress Bar| min: 0, max: 100       | Barra de progreso de inicialización |
+| `msgGlobal`    | Text        | x:10, y:200, w:460, h:40, vis:0, z:999 | Componente global de mensajes |
+| `txtEstado`    | Text        | Font: 0, Align: Center | Estado actual de inicialización |
+
+**Secuencia de Inicialización**:
+- **0-25%**: "Inicializando hardware..."
+- **25-50%**: "Configurando sensores..."
+- **50-75%**: "Estableciendo comunicación..."
+- **75-100%**: "Sistema listo"
 
 **Comportamiento**:
 - Se muestra automáticamente al encender el sistema
 - Barra de progreso se incrementa mientras el sistema se inicializa
+- Mensajes de estado específicos durante cada fase
 - Transición automática a pantalla Selection al completarse la inicialización (ESTADO_SELECCION)
+- Posible mostrar errores críticos si falla la inicialización
 
 ### Pantalla 1: Selection (Selección de Programa)
 
@@ -88,6 +98,10 @@ El sistema utiliza 9 pantallas (páginas) para toda la interacción con el usuar
 | `btnComenzar`  | Button                | Font: 1                | Botón para iniciar programa |
 | `btnEditar`    | Button                | Font: 1                | Botón para editar parámetros |
 | `txtProgSelec` | Text                  | Font: 2                | Muestra programa seleccionado |
+| `msgGlobal`    | Text                  | x:10, y:200, w:460, h:40, vis:0, z:999 | Componente global de mensajes |
+| `btnEmergencia` | Dual State Button    | Color: RED, vis: 1     | Botón de emergencia desde UI |
+| `txtTiempoEst` | Text                  | Font: 1                | Tiempo estimado del programa |
+| `txtCaracteristicas` | Text            | Font: 0                | Características del programa seleccionado |
 
 **Componentes Específicos por Programa**:
 
@@ -95,25 +109,35 @@ Para Programa 22 (Agua Caliente):
 - `iconoTemp` (Picture): Icono de termómetro/vapor
 - `txtTempInfo` (Text): "Temperatura: 60°C"
 - `txtTipoAgua` (Text, color: Rojo): "Agua Caliente"
-- `bgBox` (Variable): Color de fondo rojo suave
+- `bgBox` (Variable): Color de fondo rojo suave (#FFE6E6)
+- `txtDuracion` (Text): "Duración: ~45 min"
+- `txtFases` (Text): "Llenado → Calentamiento → Lavado → Drenaje → Centrifugado"
 
 Para Programa 23 (Agua Fría):
 - `iconoAgua` (Picture): Icono de gota de agua
 - `txtTempInfo` (Text): "Temperatura: Ambiente"
 - `txtTipoAgua` (Text, color: Azul): "Agua Fría"
-- `bgBox` (Variable): Color de fondo azul suave
+- `bgBox` (Variable): Color de fondo azul suave (#E6F3FF)
+- `txtDuracion` (Text): "Duración: ~35 min"
+- `txtFases` (Text): "Llenado → Lavado → Drenaje → Centrifugado"
 
 Para Programa 24 (Multitanda):
 - `iconoCiclos` (Picture): Icono de múltiples ciclos
 - `txtTandas` (Text): "4 Tandas"
 - `txtTipoAgua` (Text, color: Variable): "Tipo de Agua Configurable"
 - `btnTipoAgua` (Dual State Button): Selector Agua Fría/Caliente
-- `bgBox` (Variable): Color de fondo verde suave
+- `bgBox` (Variable): Color de fondo verde suave (#E6FFE6)
+- `txtDuracion` (Text): "Duración: ~2.5 horas"
+- `numTandas` (Number Input): Selector de número de tandas (1-8)
+- `txtConfiguracion` (Text): Muestra configuración actual de tandas
 
 **Comportamiento**:
 - Los botones de programa son mutuamente excluyentes (solo uno seleccionado)
 - La interfaz se adapta para mostrar información específica del programa seleccionado
 - Presionar Comenzar cambia al ESTADO_ESPERA
+- Presionar Editar permite modificar parámetros del programa seleccionado
+- Botón de emergencia disponible en todo momento
+- Validación de selección antes de permitir continuar
 
 ### Pantalla 2: Ready (Preparación)
 
@@ -129,16 +153,23 @@ Para Programa 24 (Multitanda):
 | `btnConfirmar` | Button      | Font: 1     | "Iniciar Ahora" |
 | `btnRegresar`  | Button      | Font: 1     | "Regresar" |
 | `imgDoor`      | Picture     | -           | Icono de puerta |
+| `msgGlobal`    | Text        | x:10, y:200, w:460, h:40, vis:0, z:999 | Componente global de mensajes |
+| `btnEmergencia` | Dual State Button | Color: RED, vis: 1 | Botón de emergencia desde UI |
+| `txtEstadoPuerta` | Text     | Font: 1, Color: Variable | Estado de la puerta |
+| `txtResumenPrograma` | Text  | Font: 0     | Resumen del programa a ejecutar |
+| `ledPuerta`    | Variable    | Color: Variable | Indicador LED de estado de puerta |
 
 **Componentes Específicos por Programa**:
-- Para P22: Indicación de temperatura objetivo y tiempo estimado
-- Para P23: Indicación de nivel de agua objetivo y tiempo estimado
-- Para P24: Indicación de número de tandas y tiempo total estimado
+- Para P22: `txtTempObjetivo` (Text): "Temperatura objetivo: XX°C" + `txtTiempoEst` (Text): "Tiempo estimado: XX min"
+- Para P23: `txtNivelObjetivo` (Text): "Nivel de agua objetivo: X" + `txtTiempoEst` (Text): "Tiempo estimado: XX min"  
+- Para P24: `txtTandasConfig` (Text): "Tandas configuradas: X" + `txtTiempoTotal` (Text): "Tiempo total estimado: XX min"
 
 **Comportamiento**:
-- Verificación del cierre de puerta antes de permitir continuar
+- Verificación continua del cierre de puerta (LED verde/rojo)
 - Confirmación final del usuario para iniciar el programa
-- Presionar Confirmar cambia al ESTADO_EJECUCION
+- Mostrar resumen específico según programa seleccionado
+- Presionar Confirmar cambia al ESTADO_EJECUCION solo si puerta está cerrada
+- Botón Emergencia disponible para cancelar
 
 ### Pantalla 3: Execution (Ejecución)
 
@@ -153,7 +184,10 @@ Para Programa 24 (Multitanda):
 | `txtTiempo`    | Text        | Font: 2     | Tiempo restante (mm:ss) |
 | `barraProgreso` | Progress Bar | min: 0, max: 100 | Progreso general del programa |
 | `btnPausa`     | Button      | Font: 1     | Botón para pausar programa |
-| `btnEmergencia` | Dual State Button | color: RED | Botón para emergencia (simulación) |
+| `btnEmergencia` | Dual State Button | color: RED | Botón para emergencia |
+| `msgGlobal`    | Text        | x:10, y:200, w:460, h:40, vis:0, z:999 | Componente global de mensajes |
+| `txtTiempoFase` | Text       | Font: 1     | Tiempo restante de la fase actual |
+| `progresoPasos` | Progress Bar | min: 0, max: 100 | Progreso de la fase actual |
 
 **Visualización para Programa 22 (Agua Caliente)**:
 
@@ -165,6 +199,15 @@ Para Programa 24 (Multitanda):
 | `icTemp`       | Variable    | -           | Icono animado de calentamiento cuando activo |
 | `txtEstadoTemp` | Text       | Font: 1     | "Calentando", "Temperatura Estable", etc. |
 | `gaugePresion` | Gauge       | min: 0, max: 100 | Indicador de nivel de agua secundario |
+| `txtPresion`   | Text        | Font: 1     | Nivel de agua actual |
+| `alertaTemp`   | Picture     | vis: 0      | Alerta visual para temperatura crítica |
+| `txtAjusteTemp` | Text       | Font: 0, vis: 0 | "Ajustando temperatura..." |
+
+**Comportamiento P22**:
+- Gauge de temperatura como elemento central y más grande
+- Animación de calentamiento cuando válvula de vapor está activa
+- Alerta visual si temperatura excede límites seguros
+- Indicación clara durante procesos de ajuste de temperatura (drenaje parcial)
 
 **Visualización para Programa 23 (Agua Fría)**:
 
@@ -176,70 +219,156 @@ Para Programa 24 (Multitanda):
 | `icAgua`       | Variable    | -           | Icono animado de llenado cuando activo |
 | `txtEstadoAgua` | Text       | Font: 1     | "Llenando", "Nivel Correcto", etc. |
 | `txtTemp`      | Text        | Font: 1     | Temperatura actual (informativo, menos prominente) |
+| `alertaAgua`   | Picture     | vis: 0      | Alerta visual para nivel crítico |
+| `txtFlujoAgua` | Text        | Font: 0, vis: 0 | "Llenando..." o "Drenando..." |
+| `timerLlenado` | Text        | Font: 0     | Tiempo transcurrido de llenado |
+
+**Comportamiento P23**:
+- Gauge de nivel de agua como elemento central y más grande
+- Animación de llenado cuando válvula de agua fría está activa
+- Temperatura mostrada como información secundaria
+- Alerta visual si el llenado toma más tiempo del esperado
+- Indicación clara de dirección de flujo de agua
 
 **Visualización para Programa 24 (Multitanda)**:
 
 | Nombre         | Tipo        | Propiedades | Descripción |
 |----------------|-------------|-------------|-------------|
-| `txtTanda`     | Text        | Font: 2     | "Tanda X de 4" |
-| `progresoCiclos` | Progress Bar | min: 0, max: 4 | Progreso de tandas completadas |
+| `txtTanda`     | Text        | Font: 2     | "Tanda X de Y" |
+| `progresoCiclos` | Progress Bar | min: 0, max: 8 | Progreso de tandas completadas |
 | `txtTipoAgua`  | Text        | Font: 1     | "Agua Caliente" o "Agua Fría" |
 | `gaugeTemp`    | Gauge       | min: 0, max: 100, color: variable | Indicador de temperatura (color según tipo) |
 | `gaugePresion` | Gauge       | min: 0, max: 100, color: variable | Indicador de nivel de agua |
 | `txtTemp`      | Text        | Font: 1     | Temperatura actual |
 | `txtPresion`   | Text        | Font: 1     | Nivel de agua actual |
 | `icTandas`     | Variable    | -           | Icono animado de ciclos |
+| `txtTiempoTanda` | Text       | Font: 1     | Tiempo restante tanda actual |
+| `txtTiempoTotal` | Text       | Font: 0     | Tiempo total restante |
+| `btnCambiarAgua` | Button     | Font: 0, vis: 0 | Cambiar tipo agua (si está pausado) |
+| `alertaTanda`  | Picture     | vis: 0      | Alerta de cambio de tanda |
 
-**Comportamiento**:
-- Actualización en tiempo real de parámetros (temperatura, presión, tiempo)
+**Comportamiento P24**:
+- Visualización dual de temperatura y presión según configuración
+- Colores adaptativos: rojo para agua caliente, azul para agua fría
+- Progreso visual de tandas completadas vs pendientes
+- Notificación visual al completar cada tanda
+- Opción de cambio de tipo de agua entre tandas (si se pausa)
+- Tiempo específico por tanda y tiempo total acumulado
+
+**Comportamiento General Pantalla Execution**:
+- Actualización en tiempo real de parámetros (temperatura, presión, tiempo) cada segundo
 - Indicaciones visuales específicas según la fase actual y tipo de programa
+- Sistema de alertas integrado para condiciones anómalas
 - Presionar Pausa cambia al ESTADO_PAUSA
+- Presionar Emergencia activa parada inmediata
+- Adaptación automática de colores e iconos según programa activo
+- Mensajes contextuales según fase (ej: "Calentando...", "Llenando...", "Centrifugando...")
+- Indicadores de actividad para actuadores (válvulas, motor)
+- Sistema de alertas progresivas: verde (normal), amarillo (atención), rojo (crítico)
 
-### Pantalla 3: Edit (Edición)
+### Pantalla 4: Pause (Pausa)
 
-**Objetivo**: Permitir modificar los parámetros de cada programa y fase.
-
-**Componentes**:
-
-| Nombre            | Tipo        | Propiedades | Descripción |
-|----------------   |-------------|-------------|-------------|
-| `txtProgramaFase` | Text        | Font: 2     | "P1 - F2" (Programa y Fase) |
-| `txtVariable`    | Text        | Font: 1     | Variable en edición |
-| `txtValor`       | Text        | Font: 2     | Valor actual |
-| `sliderValor`    | Slider      | minval: 0, maxval: 100 | Slider para ajustar el valor |
-| `btnGuardar`     | Button      | Font: 1, ID: 7 | Guardar cambios |
-| `btnCancelar`    | Button      | Font: 1, ID: 8 | Cancelar edición |
-| `btnMenos`       | Button      | - | Decrementar valor (opcional) |
-| `btnMas`         | Button      | - | Incrementar valor (opcional) |
-
-**Apariencia recomendada**:
-- Título claro indicando programa y fase
-- Slider grande para ajuste preciso
-- Botones de guardar/cancelar claramente distinguibles
-- Valores numéricos grandes y legibles
-
-### Pantalla 4: Error (Errores)
-
-**Objetivo**: Mostrar información clara sobre errores del sistema.
+**Objetivo**: Mostrar el estado de pausa y permitir al usuario decidir si continuar o detener el programa.
 
 **Componentes**:
 
 | Nombre         | Tipo        | Propiedades | Descripción |
 |----------------|-------------|-------------|-------------|
-| `txtCodigo`    | Text        | Font: 2, Color: RED | Código de error    |
-| `txtMensaje`   | Text        | Font: 1     | Descripción del error      |
-| `alerta`       | Variable    | en: 1       | Indicador visual de alerta |
-| `btnAceptar`   | Button      | Font: 1     | Botón para reconocer error |
+| `txtPrograma`  | Text        | Font: 2     | Programa actual pausado |
+| `txtEstadoPausa` | Text      | Font: 2, Color: YELLOW | "PROGRAMA PAUSADO" |
+| `txtFasePausada` | Text      | Font: 1     | Fase en la que se pausó |
+| `txtTiempoTranscurrido` | Text | Font: 1   | Tiempo transcurrido del programa |
+| `txtTiempoRestante` | Text   | Font: 1     | Tiempo restante estimado |
+| `btnReanudar`  | Button      | Font: 1, Color: GREEN | "Reanudar Programa" |
+| `btnDetener`   | Button      | Font: 1, Color: RED | "Detener Programa" |
+| `btnEmergencia` | Dual State Button | Color: RED | Botón de emergencia |
+| `msgGlobal`    | Text        | x:10, y:200, w:460, h:40, vis:0, z:999 | Componente global de mensajes |
+| `txtMotivoPausa` | Text      | Font: 0     | Razón de la pausa (manual/automática) |
+| `iconoPausa`   | Picture     | -           | Icono de pausa animado |
+| `txtInstrucciones` | Text    | Font: 0     | Instrucciones para el usuario |
 
-**Apariencia recomendada**:
-- Fondo que indique error (rojo suave o amarillo)
-- Icono de advertencia grande
-- Mensaje de error claramente visible
-- Instrucciones sobre cómo proceder
+**Información Específica Mostrada**:
+- Estado actual de sensores (temperatura, nivel de agua)
+- Progreso completado hasta el momento de pausa
+- Para P24: Tanda actual y tandas completadas
+- Estimación de tiempo para completar si se reanuda
+
+**Comportamiento**:
+- Mostrar claramente que el programa está pausado pero no terminado
+- Presionar Reanudar regresa al ESTADO_EJECUCION
+- Presionar Detener cambia al ESTADO_FINALIZACION
+- Timeout automático de seguridad después de 10 minutos sin acción
+- Monitoreo continuo de condiciones de seguridad (puerta, emergencia)
+
+### Pantalla 5: Completion (Finalización)
+
+**Objetivo**: Mostrar resumen del programa completado y permitir iniciar un nuevo ciclo.
+
+**Componentes**:
+
+| Nombre         | Tipo        | Propiedades | Descripción |
+|----------------|-------------|-------------|-------------|
+| `txtProgramaCompletado` | Text | Font: 2, Color: GREEN | "PROGRAMA P22 COMPLETADO" |
+| `iconoExito`   | Picture     | -           | Icono de check o éxito |
+| `txtTiempoTotal` | Text      | Font: 1     | Tiempo total transcurrido |
+| `txtResumen`   | Text        | Font: 1     | Resumen del programa ejecutado |
+| `btnNuevoPrograma` | Button  | Font: 1, Color: GREEN | "Nuevo Programa" |
+| `btnSalir`     | Button      | Font: 1     | "Salir" |
+| `msgGlobal`    | Text        | x:10, y:200, w:460, h:40, vis:0, z:999 | Componente global de mensajes |
+| `txtEstadisticas` | Text     | Font: 0     | Estadísticas del programa |
+| `alertaMantenimiento` | Text | Font: 0, vis: 0 | Recordatorio de mantenimiento |
+
+**Resumen Específico por Programa**:
+- **P22**: Temperatura alcanzada, tiempo de calentamiento, fases completadas
+- **P23**: Nivel de agua alcanzado, tiempo de llenado, fases completadas  
+- **P24**: Tandas completadas, tipo de agua usado, tiempo total por tanda
+
+**Comportamiento**:
+- Mostrar mensaje de éxito prominente
+- Resumen específico según el programa ejecutado
+- Presionar Nuevo Programa regresa al ESTADO_SELECCION
+- Mensaje de mantenimiento si se cumplen ciertos ciclos
+- Timeout automático de 2 minutos para regresar a selección
+- Posibilidad de mostrar estadísticas acumuladas
+
+### Pantalla 6: Error (Errores)
+
+**Objetivo**: Mostrar información clara sobre errores del sistema y guiar la resolución.
+
+**Componentes**:
+
+| Nombre         | Tipo        | Propiedades | Descripción |
+|----------------|-------------|-------------|-------------|
+| `txtCodigo`    | Text        | Font: 2, Color: RED | Código de error (ERR_01, ERR_02, etc.) |
+| `txtMensaje`   | Text        | Font: 1     | Descripción del error |
+| `txtDescripcion` | Text      | Font: 0     | Descripción detallada del problema |
+| `alerta`       | Variable    | en: 1       | Indicador visual de alerta parpadeante |
+| `btnAceptar`   | Button      | Font: 1     | Botón para reconocer error |
+| `btnReintentar` | Button     | Font: 1, vis: 0 | Reintentar operación (si aplica) |
+| `msgGlobal`    | Text        | x:10, y:200, w:460, h:40, vis:0, z:999 | Componente global de mensajes |
+| `iconoError`   | Picture     | -           | Icono de error grande |
+| `txtSolucion`  | Text        | Font: 0     | Sugerencia de solución |
+| `txtContacto`  | Text        | Font: 0     | Información de contacto técnico |
+
+**Códigos de Error Principales**:
+- **ERR_01**: Error sensor temperatura
+- **ERR_02**: Error sensor presión  
+- **ERR_03**: Timeout llenado
+- **ERR_04**: Puerta abierta durante operación
+- **ERR_05**: Sobrecalentamiento
+- **ERR_06**: Error comunicación Nextion
+
+**Comportamiento**:
+- Fondo rojo suave para indicar error crítico
+- Icono de advertencia parpadeante
+- Mensaje de error específico y legible
+- Instrucciones claras sobre cómo proceder
+- Opción de reintentar para errores recuperables
+- Información de contacto para errores que requieren técnico
 
 ### Pantalla 7: Emergency (Emergencia)
 
-**Objetivo**: Mostrar claramente que el sistema está en parada de emergencia.
+**Objetivo**: Mostrar claramente que el sistema está en parada de emergencia y guiar el proceso de recuperación.
 
 **Componentes**:
 
@@ -247,14 +376,65 @@ Para Programa 24 (Multitanda):
 |----------------|-------------|-------------|-------------|
 | `txtEmergencia` | Text | Font: 3, Color: RED | "PARADA DE EMERGENCIA" |
 | `txtMensajeEmerg` | Text | Font: 1 | "Sistema detenido por seguridad" |
-| `alarm` | Variable | en: 1 | Indicador visual de alarma |
+| `alarm` | Variable | en: 1 | Indicador visual de alarma parpadeante |
 | `txtInstrucciones` | Text | Font: 1 | Instrucciones para desactivar |
+| `msgGlobal`    | Text        | x:10, y:200, w:460, h:40, vis:0, z:999 | Componente global de mensajes |
+| `btnResetEmergencia` | Button | Font: 1, Color: YELLOW | "Reset Emergencia" |
+| `txtCausaEmergencia` | Text | Font: 0 | Causa de la parada de emergencia |
+| `iconoEmergencia` | Picture | - | Icono de emergencia grande parpadeante |
+| `txtEstadoSistema` | Text | Font: 0 | Estado actual de componentes críticos |
+| `txtTiempoEmergencia` | Text | Font: 0 | Tiempo transcurrido desde emergencia |
 
-**Apariencia recomendada**:
-- Fondo rojo o con marco rojo destacado
-- Texto de emergencia grande y visible
-- Símbolos de advertencia parpadeantes
-- Instrucciones claras sobre cómo desbloquear
+**Tipos de Emergencia**:
+- **MANUAL**: Botón de emergencia físico presionado
+- **SISTEMA**: Emergencia activada desde interfaz
+- **SENSOR**: Condición crítica detectada por sensores
+- **TIMEOUT**: Timeout de seguridad excedido
+
+**Comportamiento**:
+- Fondo rojo completo con marco rojo destacado
+- Texto de emergencia grande y parpadeante
+- Símbolos de advertencia animados
+- Instrucciones paso a paso para desbloquear
+- Verificación de condiciones antes de permitir reset
+- Log automático del evento de emergencia
+- Sonido de alarma continuo (si disponible)
+
+### Componentes Globales Actualizados
+
+**Analogía**: Los componentes globales son como "herramientas universales" que cada pantalla debe tener disponibles, similar a cómo un coche tiene pedales de freno en todas las versiones, sin importar el modelo.
+
+**Elementos presentes en TODAS las pantallas**:
+
+| Nombre         | Tipo        | Propiedades | Descripción |
+|----------------|-------------|-------------|-------------|
+| `msgGlobal`    | Text        | x:10, y:200, w:460, h:40, vis:0, z:999 | Sistema de mensajes universal |
+| `btnEmergencia` | Dual State Button | Color: RED, x:400, y:10, vis: 1 | Botón emergencia (excepto Welcome) |
+| `audio`        | Variable    | val: 0-3    | Control de sonidos del sistema |
+| `statusBar`    | Rectangle   | x:0, y:270, w:480, h:20 | Barra de estado del sistema |
+| `txtEstadoSistema` | Text    | Font: 0, x:5, y:275 | Estado actual del sistema |
+| `txtHora`      | Text        | Font: 0, x:400, y:275 | Hora actual del sistema |
+
+**Configuración del Sistema de Mensajes Global**:
+```
+msgGlobal configuración:
+- Background color (bco): Variable según tipo de mensaje
+  - 2016 (Verde): Mensajes informativos
+  - 65504 (Amarillo): Mensajes de advertencia  
+  - 63488 (Rojo): Mensajes de error
+- Font color (pco): 0 (Negro) para todos los tipos
+- Border: 1 pixel, color negro
+- Visibility: 0 por defecto, se activa según necesidad
+```
+
+**Gestión de Visibilidad por Pantalla**:
+- **Welcome**: Solo msgGlobal y statusBar
+- **Selection/Ready**: Todos los componentes globales
+- **Execution**: Todos los componentes globales con btnEmergencia destacado
+- **Pause**: Todos excepto btnEmergencia (ya hay botones específicos)
+- **Completion**: Solo msgGlobal y statusBar
+- **Error/Emergency**: Solo msgGlobal (otras funciones suspendidas)
+- **Maintenance**: Todos los componentes globales
 
 ### Pantalla 8: Maintenance (Mantenimiento)
 

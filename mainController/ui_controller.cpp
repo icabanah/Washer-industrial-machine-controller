@@ -47,9 +47,10 @@ void UIControllerClass::showWelcomeScreen() {
   // Cambiar a la página de bienvenida
   Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
   
-  // Establecer textos de bienvenida
-  Hardware.nextionSetText("txtTitulo", "RH Electronics");
-  Hardware.nextionSetText("txtContacto", "958970967");
+  // Establecer textos de bienvenida usando los componentes correctos de la documentación
+  Hardware.nextionSetText(NEXTION_COMP_TITULO, "RH Electronics");
+  Hardware.nextionSetText(NEXTION_COMP_SUBTITULO, "Controlador de Lavadora Industrial");
+  Hardware.nextionSetText(NEXTION_COMP_CONTACTO, "958970967");
   
   // Activar animación de inicio si existe (ejemplo)
   Hardware.nextionSendCommand("anim.en=1");
@@ -76,14 +77,14 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   // Cambiar a la página de ejecución
   Hardware.nextionSetPage(NEXTION_PAGE_EXECUTION);
   
-  // Mostrar información del programa
-  Hardware.nextionSetText("txtPrograma", "P" + String(programa + 21));
+  // Mostrar información del programa usando los componentes correctos de la documentación
+  Hardware.nextionSetText(NEXTION_COMP_PROG_EJECUCION, "P" + String(programa + 21));
   
   // Establecer valores iniciales
-  Hardware.nextionSetText("txtFase", "Fase: " + String(fase));
-  Hardware.nextionSetText(NEXTION_COMP_TXT_TIME, "00:00");  // Tiempo inicial
+  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, "Fase: " + String(fase));
+  Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00");  // Tiempo inicial
   
-  // Actualizar indicadores
+  // Actualizar indicadores usando los componentes existentes que funcionan correctamente
   updateWaterLevel(nivelAgua);
   updateTemperature(temperatura);
   updateRotation(rotacion);
@@ -179,7 +180,7 @@ void UIControllerClass::showEmergencyScreen() {
 void UIControllerClass::updateTime(uint8_t minutos, uint8_t segundos) {
   char timeBuffer[6];
   _formatTimeDisplay(minutos, segundos, timeBuffer);
-  Hardware.nextionSetText(NEXTION_COMP_TXT_TIME, timeBuffer);
+  Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, timeBuffer);
   
   // Actualizar barra de progreso si es necesario
   // (suponiendo fase de 60 minutos máximo)
@@ -216,12 +217,12 @@ void UIControllerClass::updateRotation(uint8_t rotacion) {
 }
 
 void UIControllerClass::updatePhase(uint8_t fase) {
-  Hardware.nextionSetText("txtFase", "Fase: " + String(fase));
+  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, "Fase: " + String(fase));
 }
 
 void UIControllerClass::updateProgressBar(uint8_t progress) {
-  // Actualizar barra de progreso
-  Hardware.nextionSendCommand("barraProgreso.val=" + String(progress));
+  // Actualizar barra de progreso usando el componente correcto de la documentación
+  Hardware.nextionSendCommand(String(NEXTION_COMP_BARRA_PROGRESO) + ".val=" + String(progress));
 }
 
 void UIControllerClass::processEvents() {
@@ -311,25 +312,37 @@ void UIControllerClass::_handleNextionEvent(const String& event) {
 
 void UIControllerClass::_updateProgramInfo(uint8_t programa) {
   // Actualizar información mostrada para el programa seleccionado
-  Hardware.nextionSetText("txtNumPrograma", "P" + String(programa + 21));
+  Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(programa + 21));
   
-  // Mostrar parámetros para la primera fase del programa
-  Hardware.nextionSetText("txtNivel", "Nivel: " + String(_nivelAgua[programa - 1][0]));
-  Hardware.nextionSetText("txtTemperatura", "Temp: " + String(_temperaturaLim[programa - 1][0]) + "°C");
-  Hardware.nextionSetText("txtTiempoFase", "Tiempo: " + String(_temporizadorLim[programa - 1][0]) + " min");
-  Hardware.nextionSetText("txtVelocidad", "Vel: " + String(_rotacionTam[programa - 1][0]));
+  // Mostrar valores para la primera fase del programa usando los nuevos componentes
+  // Los valores se muestran en t21, t22, t23, t24 (las etiquetas t11-t14 son fijas en Nextion)
+  Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL, String(_nivelAgua[programa - 1][0]));
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP, String(_temperaturaLim[programa - 1][0]) + "°C");
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO, String(_temporizadorLim[programa - 1][0]) + " min");
   
-  // Si es el programa 3, mostrar información adicional
+  // Convertir valor numérico de rotación a texto descriptivo
+  String rotacionTexto;
+  switch (_rotacionTam[programa - 1][0]) {
+    case 1: rotacionTexto = "Lento"; break;
+    case 2: rotacionTexto = "Medio"; break;
+    case 3: rotacionTexto = "Rápido"; break;
+    default: rotacionTexto = "Desconocido"; break;
+  }
+  Hardware.nextionSetText(NEXTION_COMP_VAL_ROTACION, rotacionTexto);
+  
+  // Si es el programa 3 (P24), mostrar información adicional de múltiples fases
   if (programa == 3) {
-    // Aquí se podría mostrar información de todas las fases
+    // Aquí se podría mostrar información de todas las fases en t15
     String fasesInfo = "Fases: ";
     for (uint8_t i = 0; i < 4; i++) {
       fasesInfo += String(i + 1) + ":" + String(_temporizadorLim[programa - 1][i]) + "m ";
     }
-    Hardware.nextionSetText("txtFasesInfo", fasesInfo);
+    Hardware.nextionSetText(NEXTION_COMP_INFO_FASES, fasesInfo);
   } else {
-    Hardware.nextionSetText("txtFasesInfo", "");  // Limpiar texto si no es programa 3
+    Hardware.nextionSetText(NEXTION_COMP_INFO_FASES, "");  // Limpiar texto si no es programa 3
   }
+  
+  Serial.println("Información del programa P" + String(programa + 21) + " actualizada en pantalla");
 }
 
 bool UIControllerClass::hasUserAction() {

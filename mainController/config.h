@@ -108,4 +108,32 @@
 #define NEXTION_COMP_GAUGE_TEMP "gaugeTemp"
 #define NEXTION_COMP_GAUGE_PRESSURE "gaugePresion"
 
+// === COMPONENTES PÁGINA 0 - BIENVENIDA ===
+#define NEXTION_COMP_TITULO "t0"          // Título principal "RH Electronics"
+#define NEXTION_COMP_SUBTITULO "t1"       // Subtítulo del sistema
+#define NEXTION_COMP_CONTACTO "t2"        // Información de contacto
+
+// === COMPONENTES PÁGINA 1 - SELECCIÓN DE PROGRAMA ===
+// Programa seleccionado
+#define NEXTION_COMP_PROGRAMA_SEL "t10"   // Texto del programa seleccionado (ej: "P22")
+
+// Etiquetas fijas (configuradas en Nextion Editor, no se cambian desde código)
+#define NEXTION_COMP_LBL_NIVEL "t11"      // Etiqueta "Nivel:"
+#define NEXTION_COMP_LBL_TEMP "t12"       // Etiqueta "Temperatura:"
+#define NEXTION_COMP_LBL_TIEMPO "t13"     // Etiqueta "Tiempo:"
+#define NEXTION_COMP_LBL_ROTACION "t14"   // Etiqueta "Rotación:"
+#define NEXTION_COMP_INFO_FASES "t15"     // Información adicional de fases (P24)
+
+// Valores dinámicos (actualizados desde código según programa seleccionado)
+#define NEXTION_COMP_VAL_NIVEL "t21"      // Valor del nivel de agua
+#define NEXTION_COMP_VAL_TEMP "t22"       // Valor de temperatura
+#define NEXTION_COMP_VAL_TIEMPO "t23"     // Valor del tiempo
+#define NEXTION_COMP_VAL_ROTACION "t24"   // Valor de rotación
+
+// === COMPONENTES PÁGINA 2 - EJECUCIÓN ===
+#define NEXTION_COMP_PROG_EJECUCION "t1"  // Programa en ejecución
+#define NEXTION_COMP_FASE_EJECUCION "t2"  // Fase actual
+#define NEXTION_COMP_TIEMPO_EJECUCION "t3" // Tiempo transcurrido
+#define NEXTION_COMP_BARRA_PROGRESO "j0"  // Barra de progreso
+
 #endif // CONFIG_H
