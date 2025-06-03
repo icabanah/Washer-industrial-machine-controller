@@ -22,7 +22,7 @@ public:
   void updateTemperature();
   void updatePressure();
   void updateSensors(); // Método para actualizar todos los sensores
-  void readTemperatureCallback(); // Método público para el callback de temperatura
+  // void readTemperatureCallback(); // Ya no se usa con el nuevo enfoque
   
   // Obtención de valores actuales
   float getCurrentTemperature();
@@ -37,6 +37,7 @@ public:
   // Control de sensores
   void setTemperatureResolution(uint8_t resolution);
   void resetPressureCalibration();
+  void diagnosticTemperatureSensor(); // Nueva función para diagnóstico manual
 
 private:
   // Variables para sensores
@@ -55,15 +56,19 @@ private:
   uint8_t _pressureSensorErrorCount;
   bool _pressureSensorCalibrated;
 
-  // ID de tarea temporizada
+  // ID de tareas temporizadas
   int _monitoringTaskId;
+  int _tempReadTaskId;  // ID para el temporizador de lectura de temperatura
+  bool _tempConversionInProgress;  // Flag para evitar solicitudes concurrentes
+  unsigned long _tempConversionStartTime;  // Tiempo cuando se inició la conversión
+  uint8_t _tempReadCount;  // Contador para debug ocasional
   
   // Métodos internos
   void _setupTemperatureSensor();
   void _setupPressureSensor();
   void _setupMonitoring();
-  void _requestTemperature();
-  void _readTemperature();
+  // void _requestTemperature();  // Ya no se usa con el nuevo enfoque
+  // void _readTemperature();      // Ya no se usa con el nuevo enfoque
   void _calibratePressureSensor();
   uint8_t _convertPressureToLevel(float pressure);
 };

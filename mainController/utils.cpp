@@ -393,8 +393,8 @@ void UtilsClass::updateTimers() {
       ProgramController.updateTimers();
     }
     
-    // Registrar tiempo de actualización
-    debug("Actualizando temporizadores globales - " + String(currentTime));
+    // Registrar tiempo de actualización (comentado para reducir ruido en consola)
+    // debug("Actualizando temporizadores globales - " + String(currentTime));
   }
 }
 

@@ -10,11 +10,15 @@ void monitoringTimerCallback() {
   Sensors.updateSensors();
 }
 
+// NOTA: temperatureReadCallback ya no se usa con el nuevo enfoque
+// Se mantiene comentado por si se necesita en el futuro
+/*
 // Callback para lectura de temperatura
 void temperatureReadCallback() {
   // Llamamos al método público que internamente llamará al método privado
   Sensors.readTemperatureCallback();
 }
+*/
 
 void SensorsClass::init() {
   _currentTemperature = 0.0;
@@ -23,6 +27,10 @@ void SensorsClass::init() {
   _currentWaterLevel = 0;
   _monitoring = false;
   _monitoringTaskId = 0;
+  _tempReadTaskId = 0;
+  _tempConversionInProgress = false;
+  _tempConversionStartTime = 0;
+  _tempReadCount = 0;
   _tempSensorErrorCount = 0;
   _pressureSensorErrorCount = 0;
   _pressureSensorCalibrated = false;
@@ -47,36 +55,66 @@ void SensorsClass::_setupTemperatureSensor() {
   
   // Verificar si el sensor está conectado
   uint8_t deviceCount = _tempSensors.getDeviceCount();
+  Utils.debug("=== DIAGNÓSTICO SENSOR TEMPERATURA ===");
+  Utils.debug("Pin configurado: " + String(PIN_TEMP_SENSOR));
+  Utils.debug("Sensores detectados: " + String(deviceCount));
+  
   if (deviceCount == 0) {
-    Utils.debug("ADVERTENCIA: No se detectaron sensores de temperatura DS18B20");
+    Utils.debug("ERROR: No se detectaron sensores DS18B20");
+    Utils.debug("Verificar:");
+    Utils.debug("- Conexión física del sensor al pin " + String(PIN_TEMP_SENSOR));
+    Utils.debug("- Resistor pull-up de 4.7kΩ entre datos y VCC");
+    Utils.debug("- Alimentación del sensor (3.3V o 5V)");
   } else {
-    Utils.debug("Sensor de temperatura inicializado. Sensores encontrados: " + String(deviceCount));
+    Utils.debug("✓ Sensores encontrados correctamente");
     
-    // Si hay sensores pero la dirección configurada no funciona, usar el primer sensor encontrado
-    if (!_tempSensors.isConnected(_tempSensorAddress) && deviceCount > 0) {
-      Utils.debug("La dirección configurada no responde. Buscando dirección del primer sensor...");
-      
-      // Obtener la dirección del primer sensor encontrado
-      if (_tempSensors.getAddress(_tempSensorAddress, 0)) {
-        Utils.debug("Usando dirección del primer sensor encontrado:");
-        
-        // Mostrar la dirección encontrada para depuración
-        String address = "0x";
-        for (uint8_t i = 0; i < 8; i++) {
-          if (_tempSensorAddress[i] < 16) address += "0";
-          address += String(_tempSensorAddress[i], HEX);
-          if (i < 7) address += ", 0x";
+    // Mostrar información de todos los sensores detectados
+    for (uint8_t i = 0; i < deviceCount; i++) {
+      DeviceAddress tempAddr;
+      if (_tempSensors.getAddress(tempAddr, i)) {
+        String address = "Sensor " + String(i) + ": {0x";
+        for (uint8_t j = 0; j < 8; j++) {
+          if (tempAddr[j] < 16) address += "0";
+          address += String(tempAddr[j], HEX);
+          if (j < 7) address += ", 0x";
         }
-        Utils.debug("Dirección: {" + address + "}");
+        address += "}";
+        Utils.debug(address);
+      }
+    }
+    
+    // Verificar si la dirección configurada funciona
+    if (_tempSensors.isConnected(_tempSensorAddress)) {
+      Utils.debug("✓ Dirección configurada es válida");
+    } else {
+      Utils.debug("⚠ La dirección configurada no responde");
+      
+      if (deviceCount > 0) {
+        Utils.debug("Usando el primer sensor detectado...");
+        
+        // Obtener la dirección del primer sensor encontrado
+        if (_tempSensors.getAddress(_tempSensorAddress, 0)) {
+          String newAddress = "Nueva dirección: {0x";
+          for (uint8_t i = 0; i < 8; i++) {
+            if (_tempSensorAddress[i] < 16) newAddress += "0";
+            newAddress += String(_tempSensorAddress[i], HEX);
+            if (i < 7) newAddress += ", 0x";
+          }
+          newAddress += "}";
+          Utils.debug(newAddress);
+          Utils.debug("NOTA: Actualizar TEMP_SENSOR_ADDR en config.h con esta dirección");
+        }
       }
     }
     
     // Establecer resolución específica para el sensor
     _tempSensors.setResolution(_tempSensorAddress, TEMP_RESOLUTION);
+    Utils.debug("Resolución configurada: " + String(TEMP_RESOLUTION) + " bits");
   }
   
-  // Realizar primera solicitud de temperatura
-  _requestTemperature();
+  Utils.debug("=== FIN DIAGNÓSTICO ===");
+  
+  // No iniciar ninguna lectura aquí, se hará en el ciclo de monitoreo
 }
 
 void SensorsClass::_setupPressureSensor() {
@@ -107,13 +145,27 @@ void SensorsClass::_calibratePressureSensor() {
   }
 }
 
+/* FUNCIONES COMENTADAS - YA NO SE USAN CON EL NUEVO ENFOQUE DE POLLING
 void SensorsClass::_requestTemperature() {
+  // Si ya hay una conversión en progreso, no iniciar otra
+  if (_tempConversionInProgress) {
+    Utils.debug("Conversión de temperatura ya en progreso, omitiendo nueva solicitud");
+    return;
+  }
+  
   // Iniciar la solicitud de temperatura
   _tempSensors.requestTemperatures();
+  _tempConversionInProgress = true;
+  
+  // Si hay un temporizador anterior, cancelarlo
+  if (_tempReadTaskId > 0) {
+    Utils.stopTask(_tempReadTaskId);
+    _tempReadTaskId = 0;
+  }
   
   // Programar lectura después del tiempo de conversión
   int conversionTime = _tempSensors.millisToWaitForConversion(_tempSensors.getResolution());
-  Utils.createTimeout(conversionTime, temperatureReadCallback);
+  _tempReadTaskId = Utils.createTimeout(conversionTime, temperatureReadCallback);
 }
 
 // Método público que actúa como puente para el callback estático
@@ -123,6 +175,10 @@ void SensorsClass::readTemperatureCallback() {
 
 void SensorsClass::_readTemperature() {
   float temp = _tempSensors.getTempC(_tempSensorAddress);
+  
+  // Marcar que la conversión ha terminado
+  _tempConversionInProgress = false;
+  _tempReadTaskId = 0;
   
   // Verificar si la lectura es válida
   if (temp != DEVICE_DISCONNECTED_C && temp >= -127.0 && temp <= 85.0) {
@@ -149,6 +205,7 @@ void SensorsClass::_readTemperature() {
     Utils.createTimeout(1000, temperatureReadCallback);
   }
 }
+*/
 
 void SensorsClass::_setupMonitoring() {
   // No iniciamos el monitoreo automáticamente, se iniciará cuando se llame a startMonitoring()
@@ -157,7 +214,12 @@ void SensorsClass::_setupMonitoring() {
 
 // Método para actualizar todos los sensores a la vez
 void SensorsClass::updateSensors() {
-  updateTemperature();
+  // Para la temperatura, solo iniciamos una nueva lectura si no hay una en progreso
+  if (!_tempConversionInProgress) {
+    updateTemperature();
+  }
+  
+  // La presión se puede leer directamente sin esperas
   updatePressure();
 }
 
@@ -180,6 +242,11 @@ void SensorsClass::stopMonitoring() {
     Utils.stopTask(_monitoringTaskId);
     _monitoringTaskId = 0;
     _monitoring = false;
+    
+    // Reiniciar flags de temperatura
+    _tempConversionInProgress = false;
+    _tempReadCount = 0;
+    
     Utils.debug("Monitoreo de sensores detenido");
   }
 }
@@ -189,16 +256,55 @@ bool SensorsClass::isMonitoring() {
 }
 
 void SensorsClass::updateTemperature() {
-  // En lugar de solicitar y leer de inmediato (bloqueante),
-  // iniciamos el proceso asíncrono
-  
-  // Verificar si ya hay una conversión en progreso
-  if (!_tempSensors.isConversionComplete()) {
-    Utils.debug("Conversión de temperatura en progreso, omitiendo solicitud");
-    return;
+  // Verificar si hay una conversión en progreso
+  if (_tempConversionInProgress) {
+    // Verificar si la conversión ha terminado
+    if (_tempSensors.isConversionComplete()) {
+      // Leer el resultado
+      float temp = _tempSensors.getTempC(_tempSensorAddress);
+      _tempConversionInProgress = false;
+      
+      // Verificar si la lectura es válida
+      if (temp != DEVICE_DISCONNECTED_C && temp >= -127.0 && temp <= 85.0) {
+        _currentTemperature = temp;
+        
+        // Si es la primera lectura exitosa después de errores, reportarlo
+        if (_tempSensorErrorCount > 0) {
+          Utils.debug("✅ Sensor de temperatura recuperado");
+        }
+        _tempSensorErrorCount = 0;
+        
+        // Mostrar temperatura cada 10 lecturas (cada 5 segundos aproximadamente)
+        _tempReadCount++;
+        if (_tempReadCount >= 10) {
+          Utils.debug("🌡️ Temperatura actual: " + String(temp) + "°C");
+          _tempReadCount = 0;
+        }
+      } else {
+        _tempSensorErrorCount++;
+        Utils.debug("❌ Error de lectura temperatura: " + String(temp) + " (error #" + String(_tempSensorErrorCount) + ")");
+        
+        if (_tempSensorErrorCount == 5) {
+          Utils.debug("⚠️ PROBLEMA: Múltiples lecturas fallidas del sensor de temperatura");
+          Utils.debug("Causas posibles:");
+          Utils.debug("- Sensor desconectado del pin " + String(PIN_TEMP_SENSOR));
+          Utils.debug("- Falta resistor pull-up de 4.7kΩ");
+          Utils.debug("- Sensor dañado");
+        }
+        
+        if (_tempSensorErrorCount > 10) {
+          Utils.debug("🔄 Reintentando inicialización del sensor de temperatura...");
+          _setupTemperatureSensor();
+          _tempSensorErrorCount = 0;
+        }
+      }
+    }
+    // Si la conversión no ha terminado, esperamos al próximo ciclo
+  } else {
+    // No hay conversión en progreso, iniciamos una nueva
+    _tempSensors.requestTemperatures();
+    _tempConversionInProgress = true;
   }
-  
-  _requestTemperature();
 }
 
 void SensorsClass::updatePressure() {
@@ -278,4 +384,80 @@ void SensorsClass::setTemperatureResolution(uint8_t resolution) {
 
 void SensorsClass::resetPressureCalibration() {
   _calibratePressureSensor();
+}
+
+void SensorsClass::diagnosticTemperatureSensor() {
+  Utils.debug("=== DIAGNÓSTICO MANUAL DEL SENSOR DE TEMPERATURA ===");
+  
+  // Información básica
+  Utils.debug("Pin configurado: " + String(PIN_TEMP_SENSOR));
+  Utils.debug("Resolución: " + String(TEMP_RESOLUTION) + " bits");
+  
+  // Buscar dispositivos
+  uint8_t deviceCount = _tempSensors.getDeviceCount();
+  Utils.debug("Dispositivos detectados: " + String(deviceCount));
+  
+  if (deviceCount == 0) {
+    Utils.debug("❌ NO SE DETECTARON SENSORES");
+    Utils.debug("Pasos para revisar:");
+    Utils.debug("1. Verificar cable de datos conectado al pin " + String(PIN_TEMP_SENSOR));
+    Utils.debug("2. Verificar VCC conectado a 3.3V o 5V");
+    Utils.debug("3. Verificar GND conectado a tierra");
+    Utils.debug("4. Verificar resistor de 4.7kΩ entre datos y VCC");
+    return;
+  }
+  
+  // Mostrar todos los dispositivos encontrados
+  for (uint8_t i = 0; i < deviceCount; i++) {
+    DeviceAddress addr;
+    if (_tempSensors.getAddress(addr, i)) {
+      String hexAddr = "{0x";
+      for (uint8_t j = 0; j < 8; j++) {
+        if (addr[j] < 16) hexAddr += "0";
+        hexAddr += String(addr[j], HEX);
+        if (j < 7) hexAddr += ", 0x";
+      }
+      hexAddr += "}";
+      
+      Utils.debug("Dispositivo " + String(i) + ": " + hexAddr);
+      
+      // Probar lectura
+      _tempSensors.requestTemperaturesByAddress(addr);
+      delay(1000); // Esperar conversión completa
+      float temp = _tempSensors.getTempC(addr);
+      
+      if (temp != DEVICE_DISCONNECTED_C) {
+        Utils.debug("  ✅ Temperatura: " + String(temp) + "°C");
+      } else {
+        Utils.debug("  ❌ Error de lectura");
+      }
+    }
+  }
+  
+  // Verificar sensor configurado
+  Utils.debug("--- Verificando sensor configurado ---");
+  String configAddr = "{0x";
+  for (uint8_t i = 0; i < 8; i++) {
+    if (_tempSensorAddress[i] < 16) configAddr += "0";
+    configAddr += String(_tempSensorAddress[i], HEX);
+    if (i < 7) configAddr += ", 0x";
+  }
+  configAddr += "}";
+  Utils.debug("Dirección configurada: " + configAddr);
+  
+  if (_tempSensors.isConnected(_tempSensorAddress)) {
+    Utils.debug("✅ Sensor configurado responde correctamente");
+    _tempSensors.requestTemperaturesByAddress(_tempSensorAddress);
+    delay(1000);
+    float temp = _tempSensors.getTempC(_tempSensorAddress);
+    Utils.debug("✅ Temperatura actual: " + String(temp) + "°C");
+  } else {
+    Utils.debug("❌ Sensor configurado NO responde");
+    if (deviceCount > 0) {
+      Utils.debug("💡 Sugerencia: Actualizar TEMP_SENSOR_ADDR en config.h");
+      Utils.debug("💡 Usar la dirección del primer dispositivo encontrado");
+    }
+  }
+  
+  Utils.debug("=== FIN DIAGNÓSTICO ===");
 }
