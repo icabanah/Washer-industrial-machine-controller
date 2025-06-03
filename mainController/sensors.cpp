@@ -45,14 +45,34 @@ void SensorsClass::_setupTemperatureSensor() {
   // Configurar para lecturas asíncronas (no bloqueantes)
   _tempSensors.setWaitForConversion(false);
   
-  // Establecer resolución específica para el sensor con dirección conocida
-  _tempSensors.setResolution(_tempSensorAddress, TEMP_RESOLUTION);
-  
   // Verificar si el sensor está conectado
-  if (_tempSensors.getDeviceCount() == 0) {
+  uint8_t deviceCount = _tempSensors.getDeviceCount();
+  if (deviceCount == 0) {
     Utils.debug("ADVERTENCIA: No se detectaron sensores de temperatura DS18B20");
   } else {
-    Utils.debug("Sensor de temperatura inicializado. Sensores encontrados: " + String(_tempSensors.getDeviceCount()));
+    Utils.debug("Sensor de temperatura inicializado. Sensores encontrados: " + String(deviceCount));
+    
+    // Si hay sensores pero la dirección configurada no funciona, usar el primer sensor encontrado
+    if (!_tempSensors.isConnected(_tempSensorAddress) && deviceCount > 0) {
+      Utils.debug("La dirección configurada no responde. Buscando dirección del primer sensor...");
+      
+      // Obtener la dirección del primer sensor encontrado
+      if (_tempSensors.getAddress(_tempSensorAddress, 0)) {
+        Utils.debug("Usando dirección del primer sensor encontrado:");
+        
+        // Mostrar la dirección encontrada para depuración
+        String address = "0x";
+        for (uint8_t i = 0; i < 8; i++) {
+          if (_tempSensorAddress[i] < 16) address += "0";
+          address += String(_tempSensorAddress[i], HEX);
+          if (i < 7) address += ", 0x";
+        }
+        Utils.debug("Dirección: {" + address + "}");
+      }
+    }
+    
+    // Establecer resolución específica para el sensor
+    _tempSensors.setResolution(_tempSensorAddress, TEMP_RESOLUTION);
   }
   
   // Realizar primera solicitud de temperatura
@@ -105,9 +125,10 @@ void SensorsClass::_readTemperature() {
   float temp = _tempSensors.getTempC(_tempSensorAddress);
   
   // Verificar si la lectura es válida
-  if (temp != DEVICE_DISCONNECTED_C) {
+  if (temp != DEVICE_DISCONNECTED_C && temp >= -127.0 && temp <= 85.0) {
     _currentTemperature = temp;
     _tempSensorErrorCount = 0; // Reiniciar contador de errores
+    Utils.debug("Temperatura leída: " + String(temp) + "°C");
   } else {
     // Si la lectura falló, incrementar contador de errores
     _tempSensorErrorCount++;
@@ -115,7 +136,17 @@ void SensorsClass::_readTemperature() {
     // Si hay demasiados errores consecutivos, reportar problema
     if (_tempSensorErrorCount > 5) {
       Utils.debug("ERROR: Múltiples lecturas fallidas del sensor de temperatura");
+      
+      // Reintentar la inicialización del sensor si hay muchos errores
+      if (_tempSensorErrorCount > 10) {
+        Utils.debug("Reintentando inicialización del sensor de temperatura...");
+        _setupTemperatureSensor();
+        _tempSensorErrorCount = 0;
+      }
     }
+    
+    // Importante: Programar un reintento de lectura en caso de fallo
+    Utils.createTimeout(1000, temperatureReadCallback);
   }
 }
 
@@ -160,6 +191,13 @@ bool SensorsClass::isMonitoring() {
 void SensorsClass::updateTemperature() {
   // En lugar de solicitar y leer de inmediato (bloqueante),
   // iniciamos el proceso asíncrono
+  
+  // Verificar si ya hay una conversión en progreso
+  if (!_tempSensors.isConversionComplete()) {
+    Utils.debug("Conversión de temperatura en progreso, omitiendo solicitud");
+    return;
+  }
+  
   _requestTemperature();
 }
 
