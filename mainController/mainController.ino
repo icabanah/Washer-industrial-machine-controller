@@ -31,7 +31,7 @@ void showWelcomeScreen();
 
 void setup() {
   // Inicializar puerto serial para depuración
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println("Iniciando sistema de lavadora industrial...");
   
   // Inicializar módulos en orden de dependencia

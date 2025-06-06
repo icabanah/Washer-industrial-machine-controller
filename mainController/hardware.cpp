@@ -26,7 +26,8 @@ void HardwareClass::init() {
 
 void HardwareClass::_initEmergencyButton() {
   // Configurar botón de emergencia con resistencia pull-up
-  pinMode(PIN_BTN_EMERGENCIA, INPUT_PULLUP);
+  // pinMode(PIN_BTN_EMERGENCIA, INPUT_PULLUP);
+  pinMode(PIN_BTN_EMERGENCIA, INPUT); // Cambiado a INPUT para manejarlo manualmente
 }
 
 void HardwareClass::_initOutputs() {
@@ -57,7 +58,6 @@ void HardwareClass::_initNextion() {
   // En lugar de usar delay, programamos una tarea para completar la inicialización
   // después de que la pantalla haya tenido tiempo de inicializarse
   Utils.createTimeout(500, completeNextionInitCallback);
-  
   Serial.println("Iniciando pantalla Nextion. Completando inicialización en 500ms...");
 }
 

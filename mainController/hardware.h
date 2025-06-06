@@ -15,9 +15,9 @@ public:
   bool isEmergencyButtonPressed();
   
   // Funciones para control de Nextion
-  void nextionSendCommand(const String& command);
-  void nextionSetPage(uint8_t pageId);
-  void nextionSetText(const String& componentId, const String& text);
+  void nextionSendCommand(const String& command); // Enviar comando a Nextion
+  void nextionSetPage(uint8_t pageId); // Cambiar página en Nextion
+  void nextionSetText(const String& componentId, const String& text); // Establecer texto en un componente Nextion
   void nextionSetValue(const String& componentId, int value);
   bool nextionCheckForEvents();
   String nextionGetLastEvent();
