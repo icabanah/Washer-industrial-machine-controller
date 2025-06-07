@@ -19,6 +19,15 @@ public:
   void showErrorScreen(uint8_t errorCode = 0, const String& errorMessage = "");
   void showEmergencyScreen();
   
+  // Métodos de transición con limpieza garantizada de eventos
+  void safeTransitionToSelection(uint8_t programa = 0);
+  void safeTransitionToExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion);
+  void safeTransitionToEdit(uint8_t programa, uint8_t fase, uint8_t numeroVariable, uint8_t valor);
+  void safeTransitionToError(uint8_t errorCode = 0, const String& errorMessage = "");
+  
+  // Método para limpiar eventos pendientes
+  void clearPendingEvents();
+  
   // Métodos para actualizar datos en pantalla
   void updateTime(uint8_t minutos, uint8_t segundos);
   void updateTemperature(uint8_t temperatura);
@@ -32,6 +41,9 @@ public:
   bool hasUserAction();
   String getUserAction();
   
+  // Estado de la interfaz
+  bool isUIStable(); // Verifica si la UI no está limpiando eventos
+  
   // Métodos de ayuda para interfaz
   void showMessage(const String& message, uint16_t duration = 2000);
   void playSound(uint8_t soundType);
@@ -42,6 +54,11 @@ private:
   bool _userActionPending;
   unsigned long _messageTimestamp;
   bool _messageActive;
+  
+  // Variables para el sistema de limpieza de eventos
+  bool _clearingEvents;
+  unsigned long _clearingStartTime;
+  static const uint16_t EVENT_CLEAR_TIMEOUT = 100; // ms para limpiar eventos
   
   // Referencia a los datos del programa para visualización
   uint8_t (*_nivelAgua)[4];
@@ -54,6 +71,10 @@ private:
   void _formatTimeDisplay(uint8_t minutos, uint8_t segundos, char* buffer);
   void _updateProgramInfo(uint8_t programa);
   void _updateExecutionData(uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion);
+  
+  // Métodos internos para limpieza de eventos
+  void _clearPendingEvents();
+  bool _isEventClearingComplete();
 };
 
 // Instancia global

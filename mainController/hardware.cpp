@@ -25,9 +25,9 @@ void HardwareClass::init() {
 }
 
 void HardwareClass::_initEmergencyButton() {
-  // Configurar botón de emergencia con resistencia pull-up
-  // pinMode(PIN_BTN_EMERGENCIA, INPUT_PULLUP);
-  pinMode(PIN_BTN_EMERGENCIA, INPUT); // Cambiado a INPUT para manejarlo manualmente
+  // Configurar botón de emergencia sin resistencia interna (ya tiene pulldown físico)
+  pinMode(PIN_BTN_EMERGENCIA, INPUT);
+  Serial.println("Botón emergencia configurado como INPUT (pulldown físico)");
 }
 
 void HardwareClass::_initOutputs() {
@@ -68,16 +68,14 @@ void HardwareClass::_completeNextionInit() {
   // Ir a la página de bienvenida
   nextionSetPage(NEXTION_PAGE_WELCOME);
   
-  // Enviar un comando para verificar la comunicación
+  // Enviar comando simple de verificación de comunicación
   nextionSendCommand("get dim");
   
-  // El ESP32 tiene más memoria que Arduino, por lo que podemos enviar comandos más complejos
+  // Comando de prueba para verificar respuesta
   nextionSendCommand("page 0");
-  nextionSendCommand("cls 0");
-  nextionSendCommand("ref 0");
   
   _nextionInitComplete = true;
-  Serial.println("Pantalla Nextion inicializada completamente");
+  Serial.println("✅ Pantalla Nextion inicializada completamente");
 }
 
 void HardwareClass::updateDebouncer() {
@@ -102,8 +100,8 @@ void HardwareClass::updateDebouncer() {
 }
 
 bool HardwareClass::isEmergencyButtonPressed() {
-  // El botón está conectado con pull-up, por lo que se activa cuando está en LOW
-  return (_emergencyButtonState == LOW);
+  // Con pulldown físico: LOW = no presionado, HIGH = presionado
+  return (_emergencyButtonState == HIGH);
 }
 
 void HardwareClass::nextionSendCommand(const String& command) {
@@ -111,9 +109,13 @@ void HardwareClass::nextionSendCommand(const String& command) {
   NEXTION_SERIAL.print(command);
   _sendNextionEndCmd();
   
-  // Opcional: debug de comandos
-  Serial.print("Nextion cmd: ");
-  Serial.println(command);
+  // Debug mejorado de comandos
+  Serial.print(">>> Nextion CMD: [");
+  Serial.print(command);
+  Serial.println("]");
+  
+  // Pequeña pausa para asegurar envío
+  delay(10);
 }
 
 void HardwareClass::_sendNextionEndCmd() {
@@ -197,6 +199,47 @@ String HardwareClass::nextionGetLastEvent() {
 bool HardwareClass::isNextionInitComplete() {
   // Retorna si la inicialización de la pantalla Nextion está completa
   return _nextionInitComplete;
+}
+
+void HardwareClass::testNextionConnectivity() {
+  Serial.println("🔧 === PRUEBA DE CONECTIVIDAD NEXTION ===");
+  
+  // Verificar si hay respuesta de la pantalla
+  NEXTION_SERIAL.flush(); // Limpiar buffer
+  
+  // Enviar comando simple que debería generar respuesta
+  Serial.println("Enviando comando: get sleep");
+  nextionSendCommand("get sleep");
+  
+  // Esperar respuesta breve
+  delay(100);
+  
+  if (NEXTION_SERIAL.available()) {
+    Serial.println("✅ Nextion responde:");
+    while (NEXTION_SERIAL.available()) {
+      Serial.print("0x");
+      Serial.print(NEXTION_SERIAL.read(), HEX);
+      Serial.print(" ");
+    }
+    Serial.println();
+  } else {
+    Serial.println("❌ Sin respuesta de Nextion");
+    Serial.println("Verificar:");
+    Serial.println("- Conexiones RX/TX (pines 16/17)");
+    Serial.println("- Alimentación de pantalla");
+    Serial.println("- Baudrate (115200)");
+  }
+  
+  // Intentar comando de página
+  Serial.println("Enviando: page 0");
+  nextionSendCommand("page 0");
+  delay(50);
+  
+  // Intentar comando de texto simple
+  Serial.println("Enviando comando de texto...");
+  nextionSetText("lbl_titulo", "TEST");
+  
+  Serial.println("🔧 === FIN PRUEBA CONECTIVIDAD ===");
 }
 
 void HardwareClass::digitalWrite(uint8_t pin, uint8_t state) {

@@ -43,6 +43,11 @@ void setup() {
   UIController.init();
   ProgramController.init();
   
+  // Prueba de conectividad con Nextion después de inicialización
+  delay(1000); // Esperar que la pantalla termine de inicializarse
+  Serial.println("Probando conectividad con pantalla Nextion...");
+  Hardware.testNextionConnectivity();
+  
   // Registrar callbacks para el temporizador principal
   // Esto centraliza la gestión del tiempo y evita múltiples temporizadores desincronizados
   Utils.registerTimerCallback([]() {
@@ -70,7 +75,7 @@ void setup() {
   showWelcomeScreen();
   
   // Iniciar monitoreo de sensores
-  Sensors.startMonitoring();
+  // Sensors.startMonitoring();
   
   // Iniciar temporizador principal
   Utils.startMainTimer();
@@ -80,7 +85,7 @@ void setup() {
 
 void loop() {
   // Verificar botón de emergencia con máxima prioridad
-  checkEmergencyButton();
+  // checkEmergencyButton();
   
   // Verificar eventos de la interfaz de usuario
   if (Hardware.nextionCheckForEvents()) {

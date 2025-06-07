@@ -61,19 +61,19 @@ Hardware.nextionSendCommand("page Selección_de_Programa");
 **Función:** Pantalla inicial del sistema que se muestra al encender
 
 #### Componentes:
-1. **t0** - Texto (Título)
+1. **lbl_titulo** - Texto (Título)
    - Texto: "RH Electronics"
    - Posición: Centro (x=360, y=150)
    - Fuente: Arial, 42pt, Bold
    - Color: Blanco
 
-2. **t1** - Texto (Subtítulo)
+2. **lbl_subtitulo** - Texto (Subtítulo)
    - Texto: "Controlador de Lavadora Industrial"
    - Posición: Centro (x=360, y=220)
    - Fuente: Arial, 24pt
    - Color: Blanco
 
-3. **t2** - Texto (Contacto)
+3. **lbl_contacto** - Texto (Contacto)
    - Texto: "958970967"
    - Posición: Centro (x=360, y=280)
    - Fuente: Arial, 20pt

@@ -40,22 +40,36 @@ void UIControllerClass::init() {
   _userActionPending = false;
   _messageActive = false;
   
-  Serial.println("UI Controller inicializado");
+  // Inicializar variables para limpieza de eventos
+  _clearingEvents = false;
+  _clearingStartTime = 0;
+  
+  Serial.println("UI Controller inicializado con sistema de limpieza de eventos");
 }
 
 void UIControllerClass::showWelcomeScreen() {
+  Serial.println("=== INICIANDO PANTALLA BIENVENIDA ===");
+  Serial.print("Componente título definido como: ");
+  Serial.println(NEXTION_COMP_TITULO);
+  
   // Cambiar a la página de bienvenida
   Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
+  delay(100); // Pausa breve para asegurar cambio de página
   
   // Establecer textos de bienvenida usando los componentes correctos de la documentación
-  Hardware.nextionSetText(NEXTION_COMP_TITULO, "RH Electronics");
+  Serial.println("Enviando comando para título...");
+  Hardware.nextionSetText(NEXTION_COMP_TITULO, "iTrebolsoft");
+  
+  Serial.println("Enviando comando para subtítulo...");  
   Hardware.nextionSetText(NEXTION_COMP_SUBTITULO, "Controlador de Lavadora Industrial");
+  
+  Serial.println("Enviando comando para contacto...");
   Hardware.nextionSetText(NEXTION_COMP_CONTACTO, "958970967");
   
   // Activar animación de inicio si existe (ejemplo)
   Hardware.nextionSendCommand("anim.en=1");
   
-  Serial.println("Mostrando pantalla de bienvenida");
+  Serial.println("=== PANTALLA BIENVENIDA ENVIADA ===");
 }
 
 void UIControllerClass::showSelectionScreen(uint8_t programa) {
@@ -194,18 +208,18 @@ void UIControllerClass::_formatTimeDisplay(uint8_t minutos, uint8_t segundos, ch
 
 void UIControllerClass::updateTemperature(uint8_t temperatura) {
   // Actualizar texto de temperatura
-  Hardware.nextionSetText(NEXTION_COMP_TXT_TEMP, String(temperatura) + "°C");
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP, String(temperatura) + "°C");
   
   // Actualizar medidor visual si existe
-  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_TEMP, temperatura);
+  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_TEMP_EJECUCION, temperatura);
 }
 
 void UIControllerClass::updateWaterLevel(uint8_t nivel) {
   // Actualizar texto de nivel
-  Hardware.nextionSetText(NEXTION_COMP_TXT_PRESSURE, "Nivel: " + String(nivel));
+  Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL, "Nivel: " + String(nivel));
   
   // Actualizar indicador visual
-  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_PRESSURE, nivel * 25);  // 0-100%
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_ROTACION, nivel * 25);  // 0-100%
 }
 
 void UIControllerClass::updateRotation(uint8_t rotacion) {
@@ -226,6 +240,18 @@ void UIControllerClass::updateProgressBar(uint8_t progress) {
 }
 
 void UIControllerClass::processEvents() {
+  // Verificar si estamos en proceso de limpieza de eventos
+  if (_clearingEvents) {
+    // Durante la limpieza, descartar todos los eventos sin procesarlos
+    while (Hardware.nextionCheckForEvents()) {
+      Hardware.nextionGetLastEvent(); // Descartar evento
+    }
+    
+    // Verificar si la limpieza ha terminado
+    _isEventClearingComplete();
+    return; // No procesar eventos normales durante la limpieza
+  }
+  
   // Verificar si hay eventos de la pantalla Nextion
   if (Hardware.nextionCheckForEvents()) {
     String event = Hardware.nextionGetLastEvent();
@@ -354,6 +380,11 @@ String UIControllerClass::getUserAction() {
   return _lastUserAction;
 }
 
+bool UIControllerClass::isUIStable() {
+  // La UI es estable cuando no está limpiando eventos y no hay mensajes activos críticos
+  return !_clearingEvents && _isEventClearingComplete();
+}
+
 void UIControllerClass::showMessage(const String& message, uint16_t duration) {
   // Mostrar un mensaje temporal en la pantalla
   Hardware.nextionSendCommand("msgBox.txt=\"" + message + "\"");
@@ -368,4 +399,159 @@ void UIControllerClass::playSound(uint8_t soundType) {
   // Los tipos pueden ser:
   // 0: normal, 1: advertencia, 2: alarma
   Hardware.nextionSendCommand("audio.val=" + String(soundType));
+}
+
+// ===== MÉTODOS DE LIMPIEZA DE EVENTOS =====
+//
+// ESTRATEGIA DE LIMPIEZA DE EVENTOS:
+// 
+// Problema: Las pantallas Nextion pueden acumular eventos táctiles en su buffer interno
+// mientras el ESP32 está procesando otras tareas. Esto puede causar comportamientos 
+// inesperados cuando el usuario toca botones rápidamente o durante transiciones.
+//
+// Solución: Antes de mostrar una nueva pantalla crítica, ejecutamos una secuencia de 
+// limpieza que:
+// 1. Cambia temporalmente a una página neutra (WELCOME)
+// 2. Procesa y descarta todos los eventos pendientes durante un período de tiempo
+// 3. Luego cambia a la pantalla objetivo con garantía de estado limpio
+//
+// Uso recomendado:
+// - Para transiciones normales: usar métodos show...() directos
+// - Para transiciones críticas: usar métodos safeTransitionTo...()
+// - Para emergencias: usar safeTransitionToError() (con timeout más corto)
+//
+// EJEMPLO DE USO DESDE PROGRAM CONTROLLER:
+// 
+// // Transición normal (rápida)
+// UIController.showSelectionScreen(programa);
+//
+// // Transición crítica (con limpieza garantizada)
+// UIController.safeTransitionToExecution(programa, fase, nivel, temp, rot);
+//
+// // Verificar estabilidad antes de procesar eventos críticos
+// if (UIController.isUIStable()) {
+//   // Proceder con lógica crítica
+// }
+//
+// ===================================================================
+
+void UIControllerClass::clearPendingEvents() {
+  // Limpiar eventos locales pendientes
+  _userActionPending = false;
+  _lastUserAction = "";
+  
+  // Procesar y descartar eventos pendientes en el hardware
+  while (Hardware.nextionCheckForEvents()) {
+    Hardware.nextionGetLastEvent(); // Descartar evento
+  }
+  
+  Serial.println("Eventos de UI limpiados");
+}
+
+void UIControllerClass::_clearPendingEvents() {
+  // Método interno para iniciar proceso de limpieza
+  _clearingEvents = true;
+  _clearingStartTime = millis();
+  
+  // Cambiar temporalmente a una página neutra para limpiar eventos
+  Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
+  
+  // Limpiar eventos locales
+  clearPendingEvents();
+  
+  Serial.println("Iniciando limpieza profunda de eventos...");
+}
+
+bool UIControllerClass::_isEventClearingComplete() {
+  // Verificar si el proceso de limpieza ha terminado
+  if (!_clearingEvents) {
+    return true; // No estamos limpiando
+  }
+  
+  // Verificar timeout
+  if (millis() - _clearingStartTime >= EVENT_CLEAR_TIMEOUT) {
+    _clearingEvents = false;
+    Serial.println("Limpieza de eventos completada");
+    return true;
+  }
+  
+  return false;
+}
+
+// ===== MÉTODOS DE TRANSICIÓN SEGURA =====
+
+void UIControllerClass::safeTransitionToSelection(uint8_t programa) {
+  // Iniciar limpieza de eventos
+  _clearPendingEvents();
+  
+  // Procesar eventos durante el período de limpieza
+  unsigned long startTime = millis();
+  while (millis() - startTime < EVENT_CLEAR_TIMEOUT) {
+    if (Hardware.nextionCheckForEvents()) {
+      Hardware.nextionGetLastEvent(); // Descartar evento
+    }
+    delay(1); // Breve pausa para permitir que lleguen eventos
+  }
+  
+  // Ahora mostrar la pantalla objetivo con eventos limpios
+  showSelectionScreen(programa);
+  
+  Serial.println("Transición segura a pantalla de selección completada");
+}
+
+void UIControllerClass::safeTransitionToExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion) {
+  // Iniciar limpieza de eventos
+  _clearPendingEvents();
+  
+  // Procesar eventos durante el período de limpieza
+  unsigned long startTime = millis();
+  while (millis() - startTime < EVENT_CLEAR_TIMEOUT) {
+    if (Hardware.nextionCheckForEvents()) {
+      Hardware.nextionGetLastEvent(); // Descartar evento
+    }
+    delay(1); // Breve pausa para permitir que lleguen eventos
+  }
+  
+  // Ahora mostrar la pantalla objetivo con eventos limpios
+  showExecutionScreen(programa, fase, nivelAgua, temperatura, rotacion);
+  
+  Serial.println("Transición segura a pantalla de ejecución completada");
+}
+
+void UIControllerClass::safeTransitionToEdit(uint8_t programa, uint8_t fase, uint8_t numeroVariable, uint8_t valor) {
+  // Iniciar limpieza de eventos
+  _clearPendingEvents();
+  
+  // Procesar eventos durante el período de limpieza
+  unsigned long startTime = millis();
+  while (millis() - startTime < EVENT_CLEAR_TIMEOUT) {
+    if (Hardware.nextionCheckForEvents()) {
+      Hardware.nextionGetLastEvent(); // Descartar evento
+    }
+    delay(1); // Breve pausa para permitir que lleguen eventos
+  }
+  
+  // Ahora mostrar la pantalla objetivo con eventos limpios
+  showEditScreen(programa, fase, numeroVariable, valor);
+  
+  Serial.println("Transición segura a pantalla de edición completada");
+}
+
+void UIControllerClass::safeTransitionToError(uint8_t errorCode, const String& errorMessage) {
+  // Para errores, la limpieza debe ser inmediata y prioritaria
+  _clearPendingEvents();
+  
+  // Breve limpieza de eventos críticos
+  unsigned long startTime = millis();
+  while (millis() - startTime < 50) { // Timeout más corto para errores
+    if (Hardware.nextionCheckForEvents()) {
+      Hardware.nextionGetLastEvent(); // Descartar evento
+    }
+    delay(1);
+  }
+  
+  // Mostrar pantalla de error inmediatamente
+  showErrorScreen(errorCode, errorMessage);
+  
+  Serial.println("Transición segura a pantalla de error completada");
 }

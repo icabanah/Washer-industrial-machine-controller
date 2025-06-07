@@ -145,68 +145,6 @@ void SensorsClass::_calibratePressureSensor() {
   }
 }
 
-/* FUNCIONES COMENTADAS - YA NO SE USAN CON EL NUEVO ENFOQUE DE POLLING
-void SensorsClass::_requestTemperature() {
-  // Si ya hay una conversión en progreso, no iniciar otra
-  if (_tempConversionInProgress) {
-    Utils.debug("Conversión de temperatura ya en progreso, omitiendo nueva solicitud");
-    return;
-  }
-  
-  // Iniciar la solicitud de temperatura
-  _tempSensors.requestTemperatures();
-  _tempConversionInProgress = true;
-  
-  // Si hay un temporizador anterior, cancelarlo
-  if (_tempReadTaskId > 0) {
-    Utils.stopTask(_tempReadTaskId);
-    _tempReadTaskId = 0;
-  }
-  
-  // Programar lectura después del tiempo de conversión
-  int conversionTime = _tempSensors.millisToWaitForConversion(_tempSensors.getResolution());
-  _tempReadTaskId = Utils.createTimeout(conversionTime, temperatureReadCallback);
-}
-
-// Método público que actúa como puente para el callback estático
-void SensorsClass::readTemperatureCallback() {
-  _readTemperature();
-}
-
-void SensorsClass::_readTemperature() {
-  float temp = _tempSensors.getTempC(_tempSensorAddress);
-  
-  // Marcar que la conversión ha terminado
-  _tempConversionInProgress = false;
-  _tempReadTaskId = 0;
-  
-  // Verificar si la lectura es válida
-  if (temp != DEVICE_DISCONNECTED_C && temp >= -127.0 && temp <= 85.0) {
-    _currentTemperature = temp;
-    _tempSensorErrorCount = 0; // Reiniciar contador de errores
-    Utils.debug("Temperatura leída: " + String(temp) + "°C");
-  } else {
-    // Si la lectura falló, incrementar contador de errores
-    _tempSensorErrorCount++;
-    
-    // Si hay demasiados errores consecutivos, reportar problema
-    if (_tempSensorErrorCount > 5) {
-      Utils.debug("ERROR: Múltiples lecturas fallidas del sensor de temperatura");
-      
-      // Reintentar la inicialización del sensor si hay muchos errores
-      if (_tempSensorErrorCount > 10) {
-        Utils.debug("Reintentando inicialización del sensor de temperatura...");
-        _setupTemperatureSensor();
-        _tempSensorErrorCount = 0;
-      }
-    }
-    
-    // Importante: Programar un reintento de lectura en caso de fallo
-    Utils.createTimeout(1000, temperatureReadCallback);
-  }
-}
-*/
-
 void SensorsClass::_setupMonitoring() {
   // No iniciamos el monitoreo automáticamente, se iniciará cuando se llame a startMonitoring()
   _monitoringTaskId = 0;

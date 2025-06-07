@@ -24,6 +24,9 @@ public:
   bool isNextionInitComplete(); // Verificar si la inicialización de Nextion está completa
   void _completeNextionInit(); // Movido a público para acceso desde callback
   
+  // Función de prueba de conectividad
+  void testNextionConnectivity();
+  
   // Control de pines de salida
   void digitalWrite(uint8_t pin, uint8_t state);
   uint8_t digitalRead(uint8_t pin);
