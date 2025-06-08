@@ -75,6 +75,8 @@ private:
   // Variables para edición
   uint8_t _editingProgram;
   uint8_t _editingPhase;
+  uint8_t _editingParameter; // Parámetro actualmente siendo editado
+  uint8_t _editingParameterValue; // Valor del parámetro siendo editado
   bool _isEditing;
   
   // Datos de programa
@@ -95,6 +97,18 @@ private:
   void _handlePauseState();
   void _handleErrorState();
   void _handleEmergencyState();
+  
+  // Métodos para manejar eventos táctiles por página
+  void _handleSelectionPageEvents(uint8_t componentId);
+  void _handleEditPageEvents(uint8_t componentId);
+  void _handleExecutionPageEvents(uint8_t componentId);
+  
+  // Métodos auxiliares para edición de parámetros
+  void _decreaseCurrentParameter();
+  void _increaseCurrentParameter();
+  void _selectPreviousParameter();
+  void _selectNextParameter();
+  void _updateEditDisplay();
   
   // Métodos de programa
   void _initializeProgram();

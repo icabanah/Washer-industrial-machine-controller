@@ -24,6 +24,12 @@ public:
   bool isNextionInitComplete(); // Verificar si la inicialización de Nextion está completa
   void _completeNextionInit(); // Movido a público para acceso desde callback
   
+  // Funciones específicas para eventos táctiles
+  bool hasValidTouchEvent();
+  uint8_t getTouchEventPage();
+  uint8_t getTouchEventComponent();
+  uint8_t getTouchEventType();
+  
   // Función de prueba de conectividad
   void testNextionConnectivity();
   
@@ -31,7 +37,16 @@ public:
   void digitalWrite(uint8_t pin, uint8_t state);
   uint8_t digitalRead(uint8_t pin);
   
-  // Función específica para antirrebote
+
+  /// @brief 
+  /// Actualiza el estado del botón de emergencia con antirrebote.
+  /// Este método lee el estado del botón de emergencia y aplica un algoritmo de antirrebote para evitar lecturas erróneas.
+  /// @details
+  /// Este método utiliza un algoritmo de antirrebote para asegurar que el estado del botón de emergencia se actualice correctamente.
+  /// Se compara el estado actual del botón con el último estado conocido y se actualiza solo si ha pasado un tiempo suficiente desde el último cambio.
+  /// @note
+  /// Asegúrate de que el pin del botón de emergencia esté configurado como INPUT_PULLUP en la inicialización, si no lo tienes configurado con resistores explícitamente.
+  /// @warning
   void updateDebouncer();
 
 private:
@@ -47,6 +62,12 @@ private:
   // Búfer para comunicación Nextion
   String _nextionLastEvent;
   char _nextionBuffer[64];
+  
+  // Variables para eventos táctiles
+  bool _hasValidTouch;
+  uint8_t _touchPage;
+  uint8_t _touchComponent;
+  uint8_t _touchEventType;
   
   // Métodos internos
   void _initEmergencyButton();

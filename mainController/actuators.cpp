@@ -49,7 +49,7 @@ void ActuatorsClass::init() {
   openDrainValve(); // Por seguridad, la válvula de drenaje se abre al iniciar
   unlockDoor();
   
-  Utils.debug("Actuadores inicializados");
+  Utils.debug("ActuatorsClass::init| Actuadores inicializados");
 }
 
 void ActuatorsClass::startMotorForward() {

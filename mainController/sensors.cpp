@@ -39,7 +39,7 @@ void SensorsClass::init() {
   _setupPressureSensor();
   _setupMonitoring();
   
-  Utils.debug("Sensores inicializados");
+  Utils.debug("SensorsClass::init| Sensores inicializados");
 }
 
 void SensorsClass::_setupTemperatureSensor() {
@@ -117,6 +117,9 @@ void SensorsClass::_setupTemperatureSensor() {
   // No iniciar ninguna lectura aquí, se hará en el ciclo de monitoreo
 }
 
+/// @brief 
+/// Configura el sensor de presión HX710B.
+/// Este método inicializa el sensor de presión y realiza una calibración inicial.
 void SensorsClass::_setupPressureSensor() {
   // Usar objeto estático en lugar de asignación dinámica
   _pressureSensor.begin(PIN_PRESION_DOUT, PIN_PRESION_SCLK);
@@ -127,21 +130,24 @@ void SensorsClass::_setupPressureSensor() {
   if (_pressureSensor.wait_ready_timeout(1000, 100)) {
     // Sensor está respondiendo, realizar calibración inicial
     _calibratePressureSensor();
-    Utils.debug("Sensor de presión inicializado correctamente");
+    Utils.debug("SensorsClass::_setupPressureSensor| Sensor de presión inicializado correctamente");
   } else {
-    Utils.debug("ADVERTENCIA: Sensor de presión no responde");
+    Utils.debug("SensorsClass::_setupPressureSensor| ADVERTENCIA: Sensor de presión no responde");
   }
 }
 
+/// @brief 
+/// Reinicia la calibración del sensor de presión.
+/// Este método restablece el offset del sensor de presión y lo recalibra.
 void SensorsClass::_calibratePressureSensor() {
   // Realizar varias lecturas para establecer un offset y calibración adecuados
   if (_pressureSensor.wait_ready_timeout(1000, 100)) {
     _pressureSensor.tare(10); // 10 lecturas para establecer offset
     _pressureSensorCalibrated = true;
-    Utils.debug("Sensor de presión calibrado");
+    Utils.debug("SensorsClass::_calibratePressureSensor| Sensor de presión calibrado");
   } else {
     _pressureSensorCalibrated = false;
-    Utils.debug("Error al calibrar sensor de presión");
+    Utils.debug("SensorsClass::_calibratePressureSensor| Error al calibrar sensor de presión");
   }
 }
 
@@ -150,7 +156,9 @@ void SensorsClass::_setupMonitoring() {
   _monitoringTaskId = 0;
 }
 
-// Método para actualizar todos los sensores a la vez
+/// @brief 
+/// Actualiza los sensores de temperatura y presión.
+/// Este método se encarga de leer los valores actuales de los sensores y actualizar las variables internas.
 void SensorsClass::updateSensors() {
   // Para la temperatura, solo iniciamos una nueva lectura si no hay una en progreso
   if (!_tempConversionInProgress) {
@@ -161,6 +169,12 @@ void SensorsClass::updateSensors() {
   updatePressure();
 }
 
+/// @brief 
+/// Inicia el monitoreo de sensores.
+/// Este método configura un temporizador que llama periódicamente a la función de actualización de sensores.
+/// @details
+/// Este método crea una tarea recurrente que se ejecuta cada 500 ms para actualizar los sensores de temperatura y presión.
+/// Asegúrate de que el monitoreo se detenga adecuadamente con `stopMonitoring()` cuando ya no sea necesario.
 void SensorsClass::startMonitoring() {
   if (!_monitoring) {
     // Crear una tarea recurrente para monitoreo cada 500ms
@@ -245,6 +259,9 @@ void SensorsClass::updateTemperature() {
   }
 }
 
+/// @brief 
+/// Actualiza la lectura del sensor de presión.
+/// Este método lee el valor actual del sensor de presión y actualiza las variables internas.
 void SensorsClass::updatePressure() {
   if (_pressureSensor.is_ready()) {
     // Usar el método pascal() para obtener la presión en unidades adecuadas

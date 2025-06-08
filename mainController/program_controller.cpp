@@ -8,7 +8,7 @@ void ProgramControllerClass::init() {
   // Inicializar variables de estado
   _currentState = ESTADO_SELECCION;
   _previousState = ESTADO_SELECCION;
-  _currentProgram = 0;
+  _currentProgram = 1;
   _currentPhase = 0;
   
   // Inicializar variables de temporizador
@@ -19,16 +19,22 @@ void ProgramControllerClass::init() {
   _timerRunning = false;
   
   // Inicializar variables de edición
-  _editingProgram = 0;
+  _editingProgram = 1;
   _editingPhase = 0;
+  _editingParameter = 0;
+  _editingParameterValue = 0;
   _isEditing = false;
   
   // Cargar datos de programa desde almacenamiento
   _loadProgramData();
   
-  Utils.debug("Program Controller inicializado");
+  Utils.debug("ProgramControllerClass::init| Program Controller inicializado");
 }
 
+/// @brief 
+/// Carga los datos de los programas desde el almacenamiento.
+/// Este método se encarga de cargar los niveles de agua, temperaturas, tiempos y rotaciones para cada programa y fase.
+/// Utiliza la clase `Storage` para acceder a los datos almacenados.
 void ProgramControllerClass::_loadProgramData() {
   // Cargar todos los parámetros para todos los programas
   for (uint8_t p = 0; p < NUM_PROGRAMAS; p++) {
@@ -44,9 +50,25 @@ void ProgramControllerClass::_loadProgramData() {
   _currentProgram = Storage.loadProgram();
   _currentPhase = Storage.loadPhase();
   
-  Utils.debug("Datos de programa cargados");
+  Utils.debug("ProgramControllerClass::_loadProgramData| Datos de programa cargados");
 }
 
+/// @brief 
+/// Cambia el estado del controlador de programas.
+/// Este método actualiza el estado actual del controlador de programas y realiza las acciones
+/// necesarias al cambiar de estado, como actualizar la interfaz de usuario y configurar los actuadores.
+/// @param newState 
+/// El nuevo estado al que se desea cambiar.
+/// Debe ser uno de los siguientes valores:
+/// - ESTADO_SELECCION: Selección de programa.
+/// - ESTADO_EDICION: Edición de parámetros del programa.
+/// - ESTADO_EJECUCION: Ejecución del programa.
+/// - ESTADO_PAUSA: Pausa del programa.
+/// - ESTADO_ERROR: Estado de error.
+/// - ESTADO_EMERGENCIA: Estado de emergencia.
+/// @details
+/// Este método es utilizado para gestionar el flujo del controlador de programas, permitiendo que el sistema reaccione a eventos del usuario o condiciones del sistema.
+/// Al cambiar de estado, se actualiza la interfaz de usuario y se configuran los actuadores según el nuevo estado.
 void ProgramControllerClass::setState(uint8_t newState) {
   if (newState != _currentState) {
     _previousState = _currentState;
@@ -59,7 +81,7 @@ void ProgramControllerClass::setState(uint8_t newState) {
         break;
       
       case ESTADO_EDICION:
-        UIController.showEditScreen(_editingProgram, _editingPhase, 0, 0);
+        UIController.showEditScreen(_editingProgram, _editingPhase);
         break;
       
       case ESTADO_EJECUCION:
@@ -94,6 +116,24 @@ void ProgramControllerClass::setState(uint8_t newState) {
   }
 }
 
+/// @brief 
+/// Obtiene el estado actual del controlador de programas.
+/// @return 
+/// El estado actual del controlador de programas.
+/// Los estados posibles son:
+/// - ESTADO_SELECCION: Selección de programa.
+/// - ESTADO_EDICION: Edición de parámetros del programa.
+/// - ESTADO_EJECUCION: Ejecución del programa.
+/// - ESTADO_PAUSA: Pausa del programa.
+/// - ESTADO_ERROR: Estado de error.
+/// - ESTADO_EMERGENCIA: Estado de emergencia.
+////// Este método es utilizado para obtener el estado actual del controlador de programas,
+/// permitiendo que otros componentes del sistema puedan reaccionar a los cambios de estado
+/// y actualizar la interfaz de usuario o realizar acciones específicas según el estado.
+/// @note
+/// Este método es parte de la clase ProgramControllerClass y debe ser llamado después de
+/// haber inicializado el controlador de programas con el método init().
+/// @see ProgramControllerClass::init() 
 uint8_t ProgramControllerClass::getState() {
   return _currentState;
 }
@@ -106,6 +146,17 @@ void ProgramControllerClass::selectProgram(uint8_t program) {
   }
 }
 
+/// @brief 
+/// Obtiene el programa actual seleccionado.
+/// Este método devuelve el número del programa que está actualmente seleccionado.
+/// El programa se selecciona mediante el método `selectProgram(uint8_t program)`.
+/// @note
+/// Este método es útil para saber qué programa está activo en el controlador de programas,
+/// permitiendo que otros componentes del sistema puedan reaccionar a los cambios de programa.
+/// Por ejemplo, la interfaz de usuario puede actualizarse para mostrar los detalles del programa seleccionado.
+/// @return 
+/// El número del programa actualmente seleccionado, que debe estar en el rango de 1 a `NUM_PROGRAMAS - 1`.
+/// Si no se ha seleccionado ningún programa, el valor por defecto es 0.
 uint8_t ProgramControllerClass::getCurrentProgram() {
   return _currentProgram;
 }
@@ -113,21 +164,21 @@ uint8_t ProgramControllerClass::getCurrentProgram() {
 void ProgramControllerClass::startProgram() {
   if (_currentState == ESTADO_SELECCION) {
     setState(ESTADO_EJECUCION);
-    Utils.debug("Programa iniciado");
+    Utils.debug("ProgramControllerClass::startProgram| Programa iniciado: " + String(_currentProgram));
   }
 }
 
 void ProgramControllerClass::pauseProgram() {
   if (_currentState == ESTADO_EJECUCION) {
     setState(ESTADO_PAUSA);
-    Utils.debug("Programa pausado");
+    Utils.debug("ProgramControllerClass::startProgram| Programa pausado: " + String(_currentProgram));
   }
 }
 
 void ProgramControllerClass::resumeProgram() {
   if (_currentState == ESTADO_PAUSA) {
     setState(ESTADO_EJECUCION);
-    Utils.debug("Programa reanudado");
+    Utils.debug("ProgramControllerClass::startProgram| Programa reanudado: " + String(_currentProgram));
   }
 }
 
@@ -135,7 +186,7 @@ void ProgramControllerClass::stopProgram() {
   if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA) {
     Actuators.emergencyStop(); // Detener todos los actuadores de forma segura
     setState(ESTADO_SELECCION);
-    Utils.debug("Programa detenido");
+    Utils.debug("ProgramControllerClass::stopProgram| Programa detenido: " + String(_currentProgram));
   }
 }
 
@@ -143,7 +194,7 @@ void ProgramControllerClass::setPhase(uint8_t phase) {
   if (phase < NUM_FASES) {
     _currentPhase = phase;
     Storage.savePhase(phase);
-    Utils.debugValue("Fase establecida a", phase);
+    Utils.debugValue("ProgramControllerClass::setPhase| Fase establecida a: ", phase);
   }
 }
 
@@ -156,7 +207,7 @@ void ProgramControllerClass::nextPhase() {
     _currentPhase++;
     Storage.savePhase(_currentPhase);
     _updatePhaseParameters();
-    Utils.debugValue("Avanzado a la fase", _currentPhase);
+    Utils.debugValue("ProgramControllerClass::nextPhase| Avanzado a la fase: ", _currentPhase);
   } else {
     _completeProgram();
   }
@@ -260,13 +311,13 @@ void ProgramControllerClass::_checkSensorConditions() {
     // Iniciar el temporizador solo cuando se alcanzan las condiciones necesarias
     if (!_timerRunning) {
       _timerRunning = true;
-      Utils.debug("Condiciones alcanzadas, iniciando temporizador de fase");
+      Utils.debug("ProgramControllerClass::_checkSensorConditions| Condiciones alcanzadas, iniciando temporizador de fase");
     }
   }
 }
 
 void ProgramControllerClass::_completePhase() {
-  Utils.debugValue("Fase completada", _currentPhase);
+  Utils.debugValue("ProgramControllerClass::_completePhase| Fase completada: ", _currentPhase);
   
   // Detener actuadores de la fase actual
   Actuators.stopAutoRotation();
@@ -282,7 +333,7 @@ void ProgramControllerClass::_completePhase() {
 }
 
 void ProgramControllerClass::_completeProgram() {
-  Utils.debug("Programa completado");
+  Utils.debug("ProgramControllerClass::_completeProgram| Programa completado");
   
   // Llevar el sistema a un estado seguro
   Actuators.stopAutoRotation();
@@ -308,7 +359,7 @@ void ProgramControllerClass::_initializeProgram() {
   // Preparar el sistema para el inicio del programa
   Actuators.lockDoor();
   
-  Utils.debug("Programa inicializado");
+  Utils.debug("ProgramControllerClass::_initializeProgram| Programa inicializado");
 }
 
 void ProgramControllerClass::_configureActuatorsForPhase() {
@@ -340,7 +391,7 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
     }
   }
   
-  Utils.debug("Actuadores configurados para la fase");
+  Utils.debug("ProgramControllerClass::_configureActuatorsForPhase| Actuadores configurados para la fase");
 }
 
 uint8_t ProgramControllerClass::getRemainingMinutes() {
@@ -369,9 +420,20 @@ void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
   if (program < NUM_PROGRAMAS && phase < NUM_FASES) {
     _editingProgram = program;
     _editingPhase = phase;
+    _editingParameter = PARAM_NIVEL; // Comenzar editando el nivel
+    _editingParameterValue = _waterLevels[program][phase]; // Cargar valor actual
     _isEditing = true;
+    
     setState(ESTADO_EDICION);
-    Utils.debug("Modo edición iniciado");
+    
+    Utils.debug("ProgramControllerClass::startEditing| ✏️ Modo edición iniciado:");
+    Utils.debug("ProgramControllerClass::startEditing|   Programa: " + String(program + 22));
+    Utils.debug("ProgramControllerClass::startEditing|   Fase: " + String(phase + 1));
+    Utils.debug("ProgramControllerClass::startEditing|   Parámetro inicial: NIVEL");
+    Utils.debug("ProgramControllerClass::startEditing|   Valor inicial: " + String(_editingParameterValue));
+    
+    // Mostrar pantalla de edición
+    _updateEditDisplay();
   }
 }
 
@@ -405,9 +467,41 @@ void ProgramControllerClass::editParameter(uint8_t paramType, uint8_t value) {
 }
 
 void ProgramControllerClass::saveEditing() {
+  if (!_isEditing) return;
+  
+  // Guardar el valor del parámetro editado en la estructura de datos
+  switch (_editingParameter) {
+    case PARAM_NIVEL:
+      _waterLevels[_editingProgram][_editingPhase] = _editingParameterValue;
+      Utils.debug("💾 Nivel guardado: " + String(_editingParameterValue));
+      break;
+    case PARAM_TEMPERATURA:
+      _temperatures[_editingProgram][_editingPhase] = _editingParameterValue;
+      Utils.debug("💾 Temperatura guardada: " + String(_editingParameterValue) + "°C");
+      break;
+    case PARAM_TIEMPO:
+      _times[_editingProgram][_editingPhase] = _editingParameterValue;
+      Utils.debug("💾 Tiempo guardado: " + String(_editingParameterValue) + " min");
+      break;
+    case PARAM_ROTACION:
+      _rotations[_editingProgram][_editingPhase] = _editingParameterValue;
+      Utils.debug("💾 Rotación guardada: " + String(_editingParameterValue));
+      break;
+  }
+  
+  // Guardar en almacenamiento persistente usando métodos individuales
+  Storage.saveWaterLevel(_editingProgram, _editingPhase, _waterLevels[_editingProgram][_editingPhase]);
+  Storage.saveTemperature(_editingProgram, _editingPhase, _temperatures[_editingProgram][_editingPhase]);
+  Storage.saveTime(_editingProgram, _editingPhase, _times[_editingProgram][_editingPhase]);
+  Storage.saveRotation(_editingProgram, _editingPhase, _rotations[_editingProgram][_editingPhase]);
+  
   _isEditing = false;
   setState(ESTADO_SELECCION);
-  Utils.debug("Edición guardada");
+  
+  // Mostrar pantalla de selección actualizada
+  UIController.showSelectionScreen(_editingProgram);
+  
+  Utils.debug("✅ Edición guardada exitosamente");
 }
 
 void ProgramControllerClass::cancelEditing() {
@@ -419,30 +513,40 @@ void ProgramControllerClass::cancelEditing() {
 }
 
 void ProgramControllerClass::processUserEvent(const String& event) {
-  // Procesar eventos según el estado actual
-  switch (_currentState) {
-    case ESTADO_SELECCION:
-      _handleSelectionState();
+  // Verificar si hay un evento táctil válido
+  if (!Hardware.hasValidTouchEvent()) {
+    return; // No hay evento táctil válido
+  }
+  
+  uint8_t touchPage = Hardware.getTouchEventPage();
+  uint8_t touchComponent = Hardware.getTouchEventComponent();
+  uint8_t touchType = Hardware.getTouchEventType();
+  
+  // Solo procesar eventos de botón presionado (touchType == 1)
+  if (touchType != 1) {
+    return;
+  }
+  
+  Utils.debug("Procesando evento táctil - Página: " + String(touchPage) + 
+              ", Componente: " + String(touchComponent) + 
+              ", Estado: " + String(_currentState));
+  
+  // Procesar eventos según la página actual
+  switch (touchPage) {
+    case NEXTION_PAGE_SELECTION:
+      _handleSelectionPageEvents(touchComponent);
       break;
-    
-    case ESTADO_EDICION:
-      _handleEditingState();
+      
+    case NEXTION_PAGE_EDIT:
+      _handleEditPageEvents(touchComponent);
       break;
-    
-    case ESTADO_EJECUCION:
-      _handleExecutionState();
+      
+    case NEXTION_PAGE_EXECUTION:
+      _handleExecutionPageEvents(touchComponent);
       break;
-    
-    case ESTADO_PAUSA:
-      _handlePauseState();
-      break;
-    
-    case ESTADO_ERROR:
-      _handleErrorState();
-      break;
-    
-    case ESTADO_EMERGENCIA:
-      _handleEmergencyState();
+      
+    default:
+      Utils.debug("Página no manejada: " + String(touchPage));
       break;
   }
 }
@@ -507,6 +611,130 @@ void ProgramControllerClass::_triggerError(uint8_t errorCode, const String& erro
   UIController.showErrorScreen(errorCode, errorMessage);
 }
 
+// ===== IMPLEMENTACIÓN DE MANEJO DE EVENTOS TÁCTILES =====
+
+void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
+  Utils.debug("🔘 Evento en página de selección - Componente: " + String(componentId));
+  
+  switch (componentId) {
+    case NEXTION_ID_BTN_PROG_ANTERIOR:
+      // Cambiar al programa anterior
+      if (_currentProgram > 0) {
+        _currentProgram--;
+      } else {
+        _currentProgram = NUM_PROGRAMAS - 1; // Circular: ir al último programa
+      }
+      Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
+      UIController.showSelectionScreen(_currentProgram);
+      break;
+      
+    case NEXTION_ID_BTN_PROG_SIGUIENTE:
+      // Cambiar al programa siguiente
+      if (_currentProgram < NUM_PROGRAMAS - 1) {
+        _currentProgram++;
+      } else {
+        _currentProgram = 0; // Circular: ir al primer programa
+      }
+      Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
+      UIController.showSelectionScreen(_currentProgram);
+      break;
+      
+    case NEXTION_ID_BTN_COMENZAR:
+      // Iniciar el programa seleccionado
+      Utils.debug("▶️ Iniciando programa " + String(_currentProgram + 22));
+      startProgram();
+      break;
+      
+    case NEXTION_ID_BTN_EDITAR:
+      // Entrar en modo de edición para el programa seleccionado
+      Utils.debug("✏️ Editando programa " + String(_currentProgram + 22));
+      startEditing(_currentProgram, 0); // Comenzar editando la primera fase
+      break;
+      
+    default:
+      Utils.debug("⚠️ Componente no reconocido en página de selección: " + String(componentId));
+      break;
+  }
+}
+
+void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
+  Utils.debug("🔧 Evento en página de edición - Componente: " + String(componentId));
+  
+  switch (componentId) {
+    case NEXTION_ID_BTN_PARAM_MENOS:
+      // Disminuir valor del parámetro actual
+      _decreaseCurrentParameter();
+      break;
+      
+    case NEXTION_ID_BTN_PARAM_MAS:
+      // Aumentar valor del parámetro actual
+      _increaseCurrentParameter();
+      break;
+      
+    case NEXTION_ID_BTN_PARAM_ANTERIOR:
+      // Cambiar al parámetro anterior
+      _selectPreviousParameter();
+      break;
+      
+    case NEXTION_ID_BTN_PARAM_SIGUIENTE:
+      // Cambiar al parámetro siguiente
+      _selectNextParameter();
+      break;
+      
+    case NEXTION_ID_BTN_GUARDAR:
+      // Guardar cambios y volver a selección
+      Utils.debug("💾 Guardando cambios de edición");
+      saveEditing();
+      break;
+      
+    case NEXTION_ID_BTN_CANCELAR:
+      // Cancelar edición y volver a selección
+      Utils.debug("❌ Cancelando edición");
+      cancelEditing();
+      break;
+      
+    default:
+      Utils.debug("⚠️ Componente no reconocido en página de edición: " + String(componentId));
+      break;
+  }
+}
+
+void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
+  Utils.debug("⚙️ Evento en página de ejecución - Componente: " + String(componentId));
+  
+  switch (componentId) {
+    case NEXTION_ID_BTN_PAUSAR:
+      // Pausar/reanudar programa
+      if (_currentState == ESTADO_EJECUCION) {
+        Utils.debug("⏸️ Pausando programa");
+        pauseProgram();
+      } else if (_currentState == ESTADO_PAUSA) {
+        Utils.debug("▶️ Reanudando programa");
+        resumeProgram();
+      }
+      break;
+      
+    case NEXTION_ID_BTN_PARAR:
+      // Detener programa completamente
+      Utils.debug("⏹️ Deteniendo programa");
+      stopProgram();
+      break;
+      
+    default:
+      Utils.debug("⚠️ Componente no reconocido en página de ejecución: " + String(componentId));
+      break;
+  }
+}
+
+/// @brief 
+/// Actualiza el controlador de programa.
+/// Esta función debe ser llamada periódicamente desde el loop principal del programa.
+/// Se encarga de procesar eventos de usuario, actualizar el estado del controlador y manejar la lógica de la máquina de estados.
+/// @details
+/// - Procesa eventos de interfaz de usuario, como toques en la pantalla.
+/// - Actualiza el estado del controlador de programa según la lógica de la máquina de estados.
+/// - Llama a métodos auxiliares para manejar la edición de parámetros y la ejecución del programa.
+/// - Debe ser llamada en el loop principal para asegurar que el controlador de programa funcione correctamente.
 void ProgramControllerClass::update() {
   // Actualización periódica del controlador de programa
   // Esta función debe ser llamada desde el loop principal
@@ -519,4 +747,164 @@ void ProgramControllerClass::update() {
   
   // Actualizar según el estado actual
   _handleStateMachine();
+}
+
+
+// ===== MÉTODOS AUXILIARES PARA EDICIÓN DE PARÁMETROS =====
+
+void ProgramControllerClass::_decreaseCurrentParameter() {
+  // Disminuir el valor del parámetro actual respetando límites
+  switch (_editingParameter) {
+    case PARAM_NIVEL:
+      if (_editingParameterValue > MIN_NIVEL) {
+        _editingParameterValue--;
+        Utils.debug("🔽 Nivel disminuido a: " + String(_editingParameterValue));
+      } else {
+        Utils.debug("⚠️ Nivel ya está en el mínimo: " + String(MIN_NIVEL));
+      }
+      break;
+      
+    case PARAM_TEMPERATURA:
+      if (_editingParameterValue > MIN_TEMPERATURA) {
+        _editingParameterValue--;
+        Utils.debug("🔽 Temperatura disminuida a: " + String(_editingParameterValue) + "°C");
+      } else {
+        Utils.debug("⚠️ Temperatura ya está en el mínimo: " + String(MIN_TEMPERATURA) + "°C");
+      }
+      break;
+      
+    case PARAM_TIEMPO:
+      if (_editingParameterValue > MIN_TIEMPO) {
+        _editingParameterValue--;
+        Utils.debug("🔽 Tiempo disminuido a: " + String(_editingParameterValue) + " min");
+      } else {
+        Utils.debug("⚠️ Tiempo ya está en el mínimo: " + String(MIN_TIEMPO) + " min");
+      }
+      break;
+      
+    case PARAM_ROTACION:
+      if (_editingParameterValue > MIN_ROTACION) {
+        _editingParameterValue--;
+        Utils.debug("🔽 Rotación disminuida a: " + String(_editingParameterValue));
+      } else {
+        Utils.debug("⚠️ Rotación ya está en el mínimo: " + String(MIN_ROTACION));
+      }
+      break;
+  }
+  
+  _updateEditDisplay();
+}
+
+void ProgramControllerClass::_increaseCurrentParameter() {
+  // Aumentar el valor del parámetro actual respetando límites
+  switch (_editingParameter) {
+    case PARAM_NIVEL:
+      if (_editingParameterValue < MAX_NIVEL) {
+        _editingParameterValue++;
+        Utils.debug("🔼 Nivel aumentado a: " + String(_editingParameterValue));
+      } else {
+        Utils.debug("⚠️ Nivel ya está en el máximo: " + String(MAX_NIVEL));
+      }
+      break;
+      
+    case PARAM_TEMPERATURA:
+      if (_editingParameterValue < MAX_TEMPERATURA) {
+        _editingParameterValue++;
+        Utils.debug("🔼 Temperatura aumentada a: " + String(_editingParameterValue) + "°C");
+      } else {
+        Utils.debug("⚠️ Temperatura ya está en el máximo: " + String(MAX_TEMPERATURA) + "°C");
+      }
+      break;
+      
+    case PARAM_TIEMPO:
+      if (_editingParameterValue < MAX_TIEMPO) {
+        _editingParameterValue++;
+        Utils.debug("🔼 Tiempo aumentado a: " + String(_editingParameterValue) + " min");
+      } else {
+        Utils.debug("⚠️ Tiempo ya está en el máximo: " + String(MAX_TIEMPO) + " min");
+      }
+      break;
+      
+    case PARAM_ROTACION:
+      if (_editingParameterValue < MAX_ROTACION) {
+        _editingParameterValue++;
+        Utils.debug("🔼 Rotación aumentada a: " + String(_editingParameterValue));
+      } else {
+        Utils.debug("⚠️ Rotación ya está en el máximo: " + String(MAX_ROTACION));
+      }
+      break;
+  }
+  
+  _updateEditDisplay();
+}
+
+void ProgramControllerClass::_selectPreviousParameter() {
+  // Cambiar al parámetro anterior en orden cíclico
+  if (_editingParameter > 0) {
+    _editingParameter--;
+  } else {
+    _editingParameter = 3; // Ir al último parámetro (PARAM_ROTACION)
+  }
+  
+  // Cargar el valor actual del nuevo parámetro
+  switch (_editingParameter) {
+    case PARAM_NIVEL:
+      _editingParameterValue = _waterLevels[_editingProgram][_editingPhase];
+      Utils.debug("📝 Editando NIVEL - Valor actual: " + String(_editingParameterValue));
+      break;
+    case PARAM_TEMPERATURA:
+      _editingParameterValue = _temperatures[_editingProgram][_editingPhase];
+      Utils.debug("📝 Editando TEMPERATURA - Valor actual: " + String(_editingParameterValue) + "°C");
+      break;
+    case PARAM_TIEMPO:
+      _editingParameterValue = _times[_editingProgram][_editingPhase];
+      Utils.debug("📝 Editando TIEMPO - Valor actual: " + String(_editingParameterValue) + " min");
+      break;
+    case PARAM_ROTACION:
+      _editingParameterValue = _rotations[_editingProgram][_editingPhase];
+      Utils.debug("📝 Editando ROTACIÓN - Valor actual: " + String(_editingParameterValue));
+      break;
+  }
+  
+  _updateEditDisplay();
+}
+
+void ProgramControllerClass::_selectNextParameter() {
+  // Cambiar al parámetro siguiente en orden cíclico
+  if (_editingParameter < 3) {
+    _editingParameter++;
+  } else {
+    _editingParameter = 0; // Ir al primer parámetro (PARAM_NIVEL)
+  }
+  
+  // Cargar el valor actual del nuevo parámetro
+  switch (_editingParameter) {
+    case PARAM_NIVEL:
+      _editingParameterValue = _waterLevels[_editingProgram][_editingPhase];
+      Utils.debug("📝 Editando NIVEL - Valor actual: " + String(_editingParameterValue));
+      break;
+    case PARAM_TEMPERATURA:
+      _editingParameterValue = _temperatures[_editingProgram][_editingPhase];
+      Utils.debug("📝 Editando TEMPERATURA - Valor actual: " + String(_editingParameterValue) + "°C");
+      break;
+    case PARAM_TIEMPO:
+      _editingParameterValue = _times[_editingProgram][_editingPhase];
+      Utils.debug("📝 Editando TIEMPO - Valor actual: " + String(_editingParameterValue) + " min");
+      break;
+    case PARAM_ROTACION:
+      _editingParameterValue = _rotations[_editingProgram][_editingPhase];
+      Utils.debug("📝 Editando ROTACIÓN - Valor actual: " + String(_editingParameterValue));
+      break;
+  }
+  
+  _updateEditDisplay();
+}
+
+void ProgramControllerClass::_updateEditDisplay() {
+  // Actualizar la pantalla de edición con los valores actuales
+  UIController.showEditScreen(_editingProgram, _editingPhase);
+  
+  Utils.debug("🖥️ Pantalla de edición actualizada:");
+  Utils.debug("   Programa: " + String(_editingProgram + 22));
+  Utils.debug("   Fase: " + String(_editingPhase + 1));
 }

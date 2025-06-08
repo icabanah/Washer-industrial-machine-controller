@@ -1,5 +1,7 @@
 // ui_controller.cpp
 #include "ui_controller.h"
+#include "Arduino.h"
+#include <stdio.h>
 
 // Definición de la instancia global
 UIControllerClass UIController;
@@ -44,7 +46,19 @@ void UIControllerClass::init() {
   _clearingEvents = false;
   _clearingStartTime = 0;
   
-  Serial.println("UI Controller inicializado con sistema de limpieza de eventos");
+  // === INICIALIZAR VARIABLES DE EDICIÓN ===
+  _programaEnEdicion = 1;
+  _faseEnEdicion = 0;
+  _parametroActual = PARAM_NIVEL;
+  _modoEdicionActivo = false;
+  _editTimeoutStart = 0;
+  
+  // Inicializar valores temporales
+  for (int i = 0; i < 4; i++) {
+    _valoresTemporales[i] = 0;
+  }
+  
+  Serial.println("UIControllerClass::init| UI Controller inicializado con sistema de limpieza de eventos");
 }
 
 void UIControllerClass::showWelcomeScreen() {
@@ -67,11 +81,29 @@ void UIControllerClass::showWelcomeScreen() {
   Hardware.nextionSetText(NEXTION_COMP_CONTACTO, "958970967");
   
   // Activar animación de inicio si existe (ejemplo)
-  Hardware.nextionSendCommand("anim.en=1");
+  // Hardware.nextionSendCommand("anim.en=1");
   
   Serial.println("=== PANTALLA BIENVENIDA ENVIADA ===");
 }
 
+/// @brief 
+/// Muestra la pantalla de selección de programa.
+/// Esta pantalla permite al usuario seleccionar entre los programas disponibles.
+/// @details
+/// La pantalla de selección muestra los botones para cada programa (1, 2 o 3) y resalta el seleccionado.
+/// Al seleccionar un programa, se actualiza la información del mismo y se resalta el botón correspondiente.
+/// @note
+/// Asegúrate de que los componentes de la pantalla Nextion estén correctamente configurados con los IDs especificados.
+/// @warning
+/// Este método asume que los programas están numerados del 1 al 3.
+/// Si se intenta seleccionar un programa fuera de este rango, no se realizará ninguna acción.
+/// @param programa 
+/// El número del programa a mostrar (1, 2 o 3).
+/// Si se pasa 0, se mostrará la pantalla de selección sin resaltar ningún programa.
+/// @example
+/// UIController.showSelectionScreen(1); // Muestra la pantalla de selección y resalta el programa 22
+/// UIController.showSelectionScreen(0); // Muestra la pantalla de selección sin resaltar ningún programa
+/// UIController.showSelectionScreen(4); // No hará nada, ya que el programa 4 no es válido
 void UIControllerClass::showSelectionScreen(uint8_t programa) {
   // Cambiar a la página de selección
   Hardware.nextionSetPage(NEXTION_PAGE_SELECTION);
@@ -83,10 +115,32 @@ void UIControllerClass::showSelectionScreen(uint8_t programa) {
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM1, (programa == 1) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (programa == 2) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (programa == 3) ? 1 : 0);
-  
-  Serial.println("Mostrando pantalla de selección de programa");
+
+  Serial.println("showSelectionScreen(): Mostrando pantalla de selección de programa para P" + String(programa + 21));
+  Serial.println("showSelectionScreen(): Botón del programa 1: " + String((programa == 1) ? 1 : 0));
+  Serial.println("showSelectionScreen(): Botón del programa 2: " + String((programa == 2) ? 1 : 0));
+  Serial.println("showSelectionScreen(): Botón del programa 3: " + String((programa == 3) ? 1 : 0));  
 }
 
+/// @brief
+/// Muestra la pantalla de ejecución del programa.
+/// Esta pantalla muestra el estado actual del programa en ejecución, incluyendo fase, tiempo, nivel de agua, temperatura y rotación.
+/// @details
+/// La pantalla de ejecución se actualiza con los valores actuales del programa y muestra un temporizador que
+/// indica el tiempo transcurrido en la fase actual.
+/// También se actualizan los indicadores de nivel de agua, temperatura y rotación.
+/// @example
+/// UIController.showExecutionScreen(1, 2, 3, 40, 150); // Muestra la pantalla de ejecución del programa 1, fase 2, nivel de agua 3, temperatura 40°C y rotación 150 RPM
+/// @param programa
+/// El número del programa en ejecución (1, 2 o 3).
+/// @param fase
+/// La fase actual del programa (1 a 4).
+/// @param nivelAgua
+/// El nivel de agua actual (0 a 4).
+/// @param temperatura
+/// La temperatura actual en grados Celsius (0 a 100).
+/// @param rotacion
+/// La rotación actual del tambor en RPM (0 a 300).
 void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion) {
   // Cambiar a la página de ejecución
   Hardware.nextionSetPage(NEXTION_PAGE_EXECUTION);
@@ -109,43 +163,17 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   Serial.println("Mostrando pantalla de ejecución de programa");
 }
 
-void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase, uint8_t numeroVariable, uint8_t valor) {
+void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase) {
+  // Inicializar modo de edición
+  initEditMode(programa, fase);
+  
   // Cambiar a la página de edición
   Hardware.nextionSetPage(NEXTION_PAGE_EDIT);
   
-  // Mostrar información básica
-  Hardware.nextionSetText("txtProgramaFase", "P" + String(programa + 21) + " - F" + String(fase));
+  // Actualizar toda la pantalla con los valores iniciales
+  updateEditDisplay();
   
-  // Mostrar etiqueta según variable seleccionada
-  String varLabel;
-  switch (numeroVariable) {
-    case 1: varLabel = "Nivel de agua"; break;
-    case 2: varLabel = "Tiempo (min)"; break;
-    case 3: varLabel = "Temperatura"; break;
-    case 4: varLabel = "Velocidad"; break;
-    default: varLabel = "Desconocido"; break;
-  }
-  
-  Hardware.nextionSetText("txtVariable", varLabel);
-  
-  // Mostrar valor actual
-  Hardware.nextionSetText("txtValor", String(valor));
-  
-  // Configurar rangos para los controles
-  int minVal = 0;
-  int maxVal = 100;
-  
-  switch (numeroVariable) {
-    case 1: maxVal = 4; break;  // Nivel agua: 1-4
-    case 4: maxVal = 3; break;  // Velocidad: 1-3
-  }
-  
-  // Configurar controles
-  Hardware.nextionSendCommand("sliderValor.minval=" + String(minVal));
-  Hardware.nextionSendCommand("sliderValor.maxval=" + String(maxVal));
-  Hardware.nextionSendCommand("sliderValor.val=" + String(valor));
-  
-  Serial.println("Mostrando pantalla de edición");
+  Serial.println("Mostrando pantalla de edición - Programa P" + String(programa + 21) + " Fase F" + String(fase));
 }
 
 void UIControllerClass::showErrorScreen(uint8_t errorCode, const String& errorMessage) {
@@ -252,6 +280,11 @@ void UIControllerClass::processEvents() {
     return; // No procesar eventos normales durante la limpieza
   }
   
+  // === VERIFICAR TIMEOUT DE EDICIÓN ===
+  if (_modoEdicionActivo) {
+    _checkEditTimeout();
+  }
+  
   // Verificar si hay eventos de la pantalla Nextion
   if (Hardware.nextionCheckForEvents()) {
     String event = Hardware.nextionGetLastEvent();
@@ -316,13 +349,8 @@ void UIControllerClass::_handleNextionEvent(const String& event) {
           break;
           
         case NEXTION_PAGE_EDIT:
-          if (event[1] == 7) {  // Botón guardar - mantener ID numérico hasta actualización
-            _lastUserAction = "SAVE";
-            _userActionPending = true;
-          } else if (event[1] == 8) {  // Botón cancelar - mantener ID numérico hasta actualización
-            _lastUserAction = "CANCEL";
-            _userActionPending = true;
-          }
+          // === EVENTOS DE LA PÁGINA DE EDICIÓN ===
+          handleEditPageEvent(event[1]);
           break;
       }
     }
@@ -336,12 +364,21 @@ void UIControllerClass::_handleNextionEvent(const String& event) {
   }
 }
 
+/// @brief 
+/// Actualiza la información del programa seleccionado en la pantalla.
+/// Este método actualiza los componentes de la pantalla Nextion con los valores del programa seleccionado.
+/// @details
+/// Este método toma el número del programa (1, 2 o 3) y actualiza los componentes de la pantalla Nextion
+/// con los valores correspondientes de nivel de agua, temperatura, tiempo y rotación.
+/// También maneja la visualización de información adicional para el programa P24 que tiene múltiples fases.
+/// @param programa 
+/// El número del programa a mostrar (1, 2 o 3).
+/// Si se pasa un número fuera de este rango, no se realizará ninguna acción.
 void UIControllerClass::_updateProgramInfo(uint8_t programa) {
   // Actualizar información mostrada para el programa seleccionado
   Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(programa + 21));
   
   // Mostrar valores para la primera fase del programa usando los nuevos componentes
-  // Los valores se muestran en t21, t22, t23, t24 (las etiquetas t11-t14 son fijas en Nextion)
   Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL, String(_nivelAgua[programa - 1][0]));
   Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP, String(_temperaturaLim[programa - 1][0]) + "°C");
   Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO, String(_temporizadorLim[programa - 1][0]) + " min");
@@ -385,6 +422,14 @@ bool UIControllerClass::isUIStable() {
   return !_clearingEvents && _isEventClearingComplete();
 }
 
+/// @brief 
+/// Muestra un mensaje temporal en la pantalla.
+/// Este método muestra un mensaje en la pantalla Nextion que desaparece después de un tiempo.
+/// @param message 
+/// El mensaje a mostrar. Si el mensaje es vacío, no se mostrará nada.
+/// @param duration 
+/// La duración en milisegundos que el mensaje permanecerá visible. Por defecto es 2000 ms (2 segundos).
+/// Si se pasa 0, el mensaje permanecerá visible hasta que se oculte manualmente.
 void UIControllerClass::showMessage(const String& message, uint16_t duration) {
   // Mostrar un mensaje temporal en la pantalla
   Hardware.nextionSendCommand("msgBox.txt=\"" + message + "\"");
@@ -518,7 +563,7 @@ void UIControllerClass::safeTransitionToExecution(uint8_t programa, uint8_t fase
   Serial.println("Transición segura a pantalla de ejecución completada");
 }
 
-void UIControllerClass::safeTransitionToEdit(uint8_t programa, uint8_t fase, uint8_t numeroVariable, uint8_t valor) {
+void UIControllerClass::safeTransitionToEdit(uint8_t programa, uint8_t fase) {
   // Iniciar limpieza de eventos
   _clearPendingEvents();
   
@@ -532,7 +577,7 @@ void UIControllerClass::safeTransitionToEdit(uint8_t programa, uint8_t fase, uin
   }
   
   // Ahora mostrar la pantalla objetivo con eventos limpios
-  showEditScreen(programa, fase, numeroVariable, valor);
+  showEditScreen(programa, fase);
   
   Serial.println("Transición segura a pantalla de edición completada");
 }
@@ -554,4 +599,327 @@ void UIControllerClass::safeTransitionToError(uint8_t errorCode, const String& e
   showErrorScreen(errorCode, errorMessage);
   
   Serial.println("Transición segura a pantalla de error completada");
+}
+
+// ===== IMPLEMENTACIÓN DE MÉTODOS PARA EDICIÓN DE PARÁMETROS =====
+
+/**
+ * @brief Inicializar el modo de edición con los parámetros del programa y fase especificados
+ * @param programa Número de programa (1, 2, 3)
+ * @param fase Número de fase (1-4)
+ */
+void UIControllerClass::initEditMode(uint8_t programa, uint8_t fase) {
+  _programaEnEdicion = programa;
+  _faseEnEdicion = fase;
+  _parametroActual = PARAM_NIVEL; // Comenzar con el primer parámetro
+  _modoEdicionActivo = true;
+  _resetEditTimeout();
+  
+  // Cargar valores actuales desde storage
+  _loadParametersFromStorage(programa, fase);
+  
+  Serial.println("Modo edición inicializado - P" + String(programa + 21) + " F" + String(fase));
+}
+
+/**
+ * @brief Actualizar toda la pantalla de edición con los valores actuales
+ */
+void UIControllerClass::updateEditDisplay() {
+  if (!_modoEdicionActivo) return;
+  
+  char buffer[20];
+  
+  // Actualizar programa y fase en edición
+  generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_PROG_EDICION, buffer);
+  
+  snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion);
+  Hardware.nextionSetText(NEXTION_COMP_FASE_EDICION, buffer);
+  
+  // Actualizar parámetro actual y panel derecho
+  updateParameterDisplay();
+  updateRightPanel();
+  
+  Serial.println("Pantalla de edición actualizada");
+}
+
+/**
+ * @brief Actualizar la visualización del parámetro actual siendo editado
+ */
+void UIControllerClass::updateParameterDisplay() {
+  if (!_modoEdicionActivo) return;
+  
+  char buffer[20];
+  
+  // Actualizar nombre del parámetro actual
+  const char* textoParam = obtenerTextoParametro(_parametroActual);
+  Hardware.nextionSetText(NEXTION_COMP_PARAM_EDITAR, textoParam);
+  
+  // Actualizar valor del parámetro actual con formato
+  formatearParametroConUnidad(_parametroActual, _valoresTemporales[_parametroActual], buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
+  
+  Serial.println("Parámetro actual actualizado: " + String(textoParam) + " = " + String(buffer));
+}
+/**
+ * @brief Actualizar el panel derecho con todos los valores actuales
+ */
+void UIControllerClass::updateRightPanel() {
+  if (!_modoEdicionActivo) return;
+  
+  char buffer[20];
+  
+  // Actualizar nivel en panel derecho
+  snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_NIVEL]);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL_EDIT, buffer);
+  
+  // Actualizar temperatura en panel derecho
+  snprintf(buffer, sizeof(buffer), "%d°C", _valoresTemporales[PARAM_TEMPERATURA]);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP_EDIT, buffer);
+  
+  // Actualizar tiempo en panel derecho
+  snprintf(buffer, sizeof(buffer), "%d min", _valoresTemporales[PARAM_TIEMPO]);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO_EDIT, buffer);
+  
+  // Actualizar rotación en panel derecho
+  snprintf(buffer, sizeof(buffer), "Vel %d", _valoresTemporales[PARAM_ROTACION]);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_ROTAC_EDIT, buffer);
+  
+  // Actualizar fase en panel derecho
+  snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_FASE_EDIT, buffer);
+  
+  Serial.println("Panel derecho actualizado");
+}
+
+// ===== MANEJO DE EVENTOS DE EDICIÓN =====
+
+/**
+ * @brief Procesar eventos táctiles de la página de edición
+ * @param componentId ID del componente que generó el evento
+ */
+void UIControllerClass::handleEditPageEvent(int componentId) {
+  if (!_modoEdicionActivo) return;
+  
+  // Resetear timeout al recibir cualquier evento
+  _resetEditTimeout();
+  
+  switch (componentId) {
+    case NEXTION_ID_BTN_PARAM_MAS:
+      handleParameterIncrement();
+      break;
+      
+    case NEXTION_ID_BTN_PARAM_MENOS:
+      handleParameterDecrement();
+      break;
+      
+    case NEXTION_ID_BTN_PARAM_SIGUIENTE:
+      handleNextParameter();
+      break;
+      
+    case NEXTION_ID_BTN_PARAM_ANTERIOR:
+      handlePreviousParameter();
+      break;
+      
+    case NEXTION_ID_BTN_GUARDAR:
+      handleSaveParameters();
+      break;
+      
+    case NEXTION_ID_BTN_CANCELAR:
+      handleCancelEdit();
+      break;
+      
+    default:
+      Serial.println("Evento de edición no reconocido: " + String(componentId));
+      break;
+  }
+}
+/**
+ * @brief Manejar evento del botón "+" (incrementar parámetro)
+ */
+void UIControllerClass::handleParameterIncrement() {
+  // Incrementar el valor del parámetro actual usando las funciones de config.cpp
+  _valoresTemporales[_parametroActual] = incrementarParametro(_parametroActual, _valoresTemporales[_parametroActual]);
+  
+  // Actualizar pantalla
+  updateParameterDisplay();
+  updateRightPanel();
+  
+  // Mostrar feedback visual/sonoro
+  playSound(0); // Sonido normal
+  
+  Serial.println("Parámetro incrementado: " + String(_valoresTemporales[_parametroActual]));
+}
+
+/**
+ * @brief Manejar evento del botón "-" (decrementar parámetro)
+ */
+void UIControllerClass::handleParameterDecrement() {
+  // Decrementar el valor del parámetro actual usando las funciones de config.cpp
+  _valoresTemporales[_parametroActual] = decrementarParametro(_parametroActual, _valoresTemporales[_parametroActual]);
+  
+  // Actualizar pantalla
+  updateParameterDisplay();
+  updateRightPanel();
+  
+  // Mostrar feedback visual/sonoro
+  playSound(0); // Sonido normal
+  
+  Serial.println("Parámetro decrementado: " + String(_valoresTemporales[_parametroActual]));
+}
+
+/**
+ * @brief Manejar evento del botón "Siguiente" (pasar al siguiente parámetro)
+ */
+void UIControllerClass::handleNextParameter() {
+  // Obtener el siguiente parámetro en el ciclo usando las funciones de config.cpp
+  _parametroActual = obtenerSiguienteParametro(_parametroActual);
+  
+  // Actualizar pantalla para mostrar el nuevo parámetro
+  updateParameterDisplay();
+  
+  // Mostrar feedback visual/sonoro
+  playSound(0); // Sonido normal
+  
+  Serial.println("Cambiado a siguiente parámetro: " + String(obtenerTextoParametro(_parametroActual)));
+}
+/**
+ * @brief Manejar evento del botón "Anterior" (pasar al parámetro anterior)
+ */
+void UIControllerClass::handlePreviousParameter() {
+  // Obtener el parámetro anterior en el ciclo usando las funciones de config.cpp
+  _parametroActual = obtenerAnteriorParametro(_parametroActual);
+  
+  // Actualizar pantalla para mostrar el nuevo parámetro
+  updateParameterDisplay();
+  
+  // Mostrar feedback visual/sonoro
+  playSound(0); // Sonido normal
+  
+  Serial.println("Cambiado a parámetro anterior: " + String(obtenerTextoParametro(_parametroActual)));
+}
+
+/**
+ * @brief Manejar evento del botón "Guardar" (guardar todos los cambios)
+ */
+void UIControllerClass::handleSaveParameters() {
+  // Validar todos los parámetros antes de guardar
+  if (!_validateAllParameters()) {
+    // Mostrar mensaje de error
+    showMessage("Error: Valores no válidos", 3000);
+    playSound(1); // Sonido de advertencia
+    return;
+  }
+  
+  // Guardar valores en storage permanente
+  _saveParametersToStorage(_programaEnEdicion, _faseEnEdicion);
+  
+  // Mostrar mensaje de confirmación
+  showMessage("Parámetros guardados exitosamente", 2000);
+  playSound(0); // Sonido de confirmación
+  
+  // Salir del modo edición
+  _modoEdicionActivo = false;
+  
+  // Volver a la página de selección
+  safeTransitionToSelection(_programaEnEdicion);
+  
+  Serial.println("Parámetros guardados exitosamente - P" + String(_programaEnEdicion + 21) + " F" + String(_faseEnEdicion));
+}
+/**
+ * @brief Manejar evento del botón "Cancelar" (descartar cambios y volver)
+ */
+void UIControllerClass::handleCancelEdit() {
+  // Mostrar mensaje de confirmación
+  showMessage("Cambios descartados", 1500);
+  playSound(0); // Sonido normal
+  
+  // Salir del modo edición sin guardar
+  _modoEdicionActivo = false;
+  
+  // Volver a la página de selección
+  safeTransitionToSelection(_programaEnEdicion);
+  
+  Serial.println("Edición cancelada - Cambios descartados");
+}
+
+// ===== MÉTODOS INTERNOS PARA GESTIÓN DE PARÁMETROS =====
+
+/**
+ * @brief Cargar parámetros desde storage para el programa y fase especificados
+ * @param programa Número de programa (1, 2, 3)
+ * @param fase Número de fase (1-4)
+ */
+void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fase) {
+  // NOTA: Por ahora usaremos los valores estáticos hasta que Storage esté completamente integrado
+  // Cuando Storage esté listo, reemplazar con:
+  // _valoresTemporales[PARAM_NIVEL] = Storage.getParamNivel(programa, fase);
+  // _valoresTemporales[PARAM_TEMPERATURA] = Storage.getParamTemp(programa, fase);
+  // _valoresTemporales[PARAM_TIEMPO] = Storage.getParamTiempo(programa, fase);
+  // _valoresTemporales[PARAM_ROTACION] = Storage.getParamRotacion(programa, fase);
+  
+  // Usar valores estáticos de las matrices existentes por ahora
+  _valoresTemporales[PARAM_NIVEL] = _nivelAgua[programa - 1][fase - 1];
+  _valoresTemporales[PARAM_TEMPERATURA] = _temperaturaLim[programa - 1][fase - 1];
+  _valoresTemporales[PARAM_TIEMPO] = _temporizadorLim[programa - 1][fase - 1];
+  _valoresTemporales[PARAM_ROTACION] = _rotacionTam[programa - 1][fase - 1];
+  
+  Serial.println("Parámetros cargados desde storage");
+}
+/**
+ * @brief Guardar parámetros en storage para el programa y fase especificados
+ * @param programa Número de programa (1, 2, 3)
+ * @param fase Número de fase (1-4)
+ */
+void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase) {
+  // NOTA: Por ahora actualizaremos las matrices estáticas hasta que Storage esté completamente integrado
+  // Cuando Storage esté listo, reemplazar con:
+  // Storage.setParamNivel(programa, fase, _valoresTemporales[PARAM_NIVEL]);
+  // Storage.setParamTemp(programa, fase, _valoresTemporales[PARAM_TEMPERATURA]);
+  // Storage.setParamTiempo(programa, fase, _valoresTemporales[PARAM_TIEMPO]);
+  // Storage.setParamRotacion(programa, fase, _valoresTemporales[PARAM_ROTACION]);
+  
+  // Actualizar matrices estáticas por ahora
+  _nivelAgua[programa - 1][fase - 1] = _valoresTemporales[PARAM_NIVEL];
+  _temperaturaLim[programa - 1][fase - 1] = _valoresTemporales[PARAM_TEMPERATURA];
+  _temporizadorLim[programa - 1][fase - 1] = _valoresTemporales[PARAM_TIEMPO];
+  _rotacionTam[programa - 1][fase - 1] = _valoresTemporales[PARAM_ROTACION];
+  
+  Serial.println("Parámetros guardados en storage");
+}
+
+/**
+ * @brief Validar todos los parámetros antes de guardar
+ * @return true si todos los parámetros son válidos, false si no
+ */
+bool UIControllerClass::_validateAllParameters() {
+  for (int i = 0; i < 4; i++) {
+    if (!esParametroValido(i, _valoresTemporales[i])) {
+      Serial.println("Parámetro inválido: " + String(obtenerTextoParametro(i)) + " = " + String(_valoresTemporales[i]));
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * @brief Verificar timeout de edición y salir automáticamente si es necesario
+ */
+void UIControllerClass::_checkEditTimeout() {
+  if (_modoEdicionActivo && (millis() - _editTimeoutStart > EDIT_TIMEOUT_MS)) {
+    // Timeout alcanzado - salir automáticamente sin guardar
+    showMessage("Timeout - Saliendo sin guardar", 2000);
+    playSound(1); // Sonido de advertencia
+    
+    _modoEdicionActivo = false;
+    safeTransitionToSelection(_programaEnEdicion);
+    
+    Serial.println("Timeout de edición alcanzado - Saliendo automáticamente");
+  }
+}
+/**
+ * @brief Resetear el timeout de edición
+ */
+void UIControllerClass::_resetEditTimeout() {
+  _editTimeoutStart = millis();
 }

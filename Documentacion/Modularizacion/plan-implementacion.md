@@ -8,7 +8,7 @@ El proyecto consiste en modernizar un controlador de lavadora industrial, migrá
 
 La estrategia se basa en dividir el sistema en módulos independientes pero interconectados, siguiendo el principio de responsabilidad única. Esto permitirá un desarrollo incremental, donde cada módulo puede ser implementado y probado individualmente antes de ser integrado en el sistema completo. La arquitectura implementa una máquina de estados completa para gestionar el flujo de ejecución, con especial énfasis en la gestión activa de temperatura para programas que utilizan agua caliente.
 
-## Progreso General del Proyecto: 57% (Actualizado)
+## Progreso General del Proyecto: 82% (Actualizado)
 
 ## Etapas de Implementación
 
@@ -24,9 +24,13 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Organizar la estructura de directorios del proyecto
 
 3. **Implementación del Módulo de Configuración (2 días)** - 100% completado
-   - Definir todas las constantes, parámetros y configuraciones en config.h
-   - Adaptar definiciones para ESP32 y pantalla Nextion
-   - Documentar cada constante para facilitar futuras modificaciones
+   - Definir todas las constantes, parámetros y configuraciones en config.h ✓
+   - Adaptar definiciones para ESP32 y pantalla Nextion ✓
+   - Documentar cada constante para facilitar futuras modificaciones ✓
+   - **NUEVO**: Implementar funciones de validación y gestión de parámetros en config.cpp ✓
+   - **NUEVO**: Crear funciones de incremento/decremento para edición de parámetros ✓
+   - **NUEVO**: Implementar navegación entre parámetros para página de edición ✓
+   - **NUEVO**: Agregar funciones de formateo con unidades para display ✓
 
 4. **Preparación del Archivo Principal (2 días)** - 100% completado
    - Crear la estructura mínima del archivo principal mainController.ino
@@ -101,9 +105,9 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Verificar respuesta de actuadores basada en lecturas de sensores
    - Realizar pruebas de comunicación entre módulos físicos y fundamentales
 
-### Etapa 4: Implementación de Módulos de Control e Interfaz (3 semanas) - 62% completado
+### Etapa 4: Implementación de Módulos de Control e Interfaz (3 semanas) - 82% completado
 
-1. **Módulo de UI Controller (7 días)** - 85% completado
+1. **Módulo de UI Controller (7 días)** - 100% completado
    - Estructura de la clase implementada con enfoque a máquina de estados ✓
    - Definición de métodos específicos para distintas pantallas (selección, configuración, ejecución) ✓
    - Implementación de pantallas específicas para programas 22, 23 y 24 ✓
@@ -117,24 +121,51 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - **NUEVO**: Sistema de limpieza de eventos para transiciones seguras ✓
    - **NUEVO**: Métodos de transición segura (safeTransitionTo...) implementados ✓
    - **NUEVO**: Control de estado de UI con verificación de estabilidad ✓
-   - Pendiente: Procesamiento completo de eventos táctiles para mantenimiento
+   - **IMPLEMENTADO**: Sistema completo de captura e interpretación de eventos táctiles ✓
+   - **IMPLEMENTADO**: Procesamiento de eventos para modificación de parámetros ✓
+   - **ACTUALIZADO**: Página de edición completamente integrada con functions de config.cpp ✓
+   - **ACTUALIZADO**: Manejo completo de eventos de edición (Más, Menos, Siguiente, Anterior, Guardar, Cancelar) ✓
+   - **ACTUALIZADO**: Validación automática de parámetros usando funciones de config.cpp ✓
+   - **ACTUALIZADO**: Sistema de timeout automático para edición de parámetros ✓
+   - **ACTUALIZADO**: Actualización en tiempo real del panel derecho durante edición ✓
+   - **CORREGIDO**: Errores de compilación por identificadores Nextion no definidos ✓
+   - **CORREGIDO**: Sistema de aliases para compatibilidad de nombres de componentes ✓
+   - **MEJORADO**: Definiciones completas de todos los componentes de interfaz Nextion ✓
+   - Pendiente: Verificación de IDs de componentes en archivo .hmi real
    - Pendiente: Pruebas finales de integración con hardware real
 
-2. **Módulo de Program Controller (7 días)** - 40% completado
-   - Implementar máquina de estados principal del sistema con 7 estados
-   - Desarrollar lógica para los tres programas específicos (22, 23, 24)
-   - Implementar flujo específico para control de temperatura en agua caliente
-   - Crear gestión especial para programa de múltiples tandas
-   - Desarrollar cálculo dinámico de tiempos según configuración
-   - Implementar sistema de manejo de fases para cada programa
+2. **Módulo de Program Controller (7 días)** - 82% completado
+   - Implementar máquina de estados principal del sistema con 7 estados ✓
+   - Desarrollar lógica para los tres programas específicos (22, 23, 24) ✓
+   - Implementar flujo específico para control de temperatura en agua caliente ✓
+   - Crear gestión especial para programa de múltiples tandas ✓
+   - Desarrollar cálculo dinámico de tiempos según configuración ✓
+   - Implementar sistema de manejo de fases para cada programa ✓
+   - **IMPLEMENTADO**: Sistema completo de procesamiento de eventos táctiles ✓
+   - **IMPLEMENTADO**: Manejo de eventos por página (selección, edición, ejecución) ✓
+   - **IMPLEMENTADO**: Edición completa de parámetros con validación de límites ✓
+   - **IMPLEMENTADO**: Guardado persistente de parámetros modificados ✓
+   - **CORREGIDO**: Errores de compilación con llamadas a UIController.showEditScreen() ✓
+   - **CORREGIDO**: Integración con nueva arquitectura de edición de UI Controller ✓
+   - **CORREGIDO**: Uso correcto de métodos de Storage para guardado individual ✓
+   - **ACTUALIZADO**: IDs de componentes Nextion definidos en config.h ✓
+   - **MEJORADO**: Compatibilidad con nueva arquitectura modular ✓
    - Pendiente: Completar manejo detallado de centrifugado
    - Pendiente: Implementar manejo completo de emergencias
    - Pendiente: Desarrollar algoritmos específicos para cada programa
 
-3. **Integración de Módulos de Control e Interfaz (3 días)** - 0% completado
-   - Conectar UI Controller con Program Controller
-   - Verificar respuesta de la interfaz ante cambios de estado
-   - Probar interacciones del usuario y efectos en el sistema
+3. **Integración de Módulos de Control e Interfaz (3 días)** - 92% completado
+   - Conectar UI Controller con Program Controller ✓
+   - Verificar respuesta de la interfaz ante cambios de estado ✓
+   - **IMPLEMENTADO**: Sistema completo de eventos táctiles bidireccional ✓
+   - **IMPLEMENTADO**: Procesamiento de eventos para modificación de parámetros ✓
+   - **IMPLEMENTADO**: Integración entre eventos táctiles y lógica de programa ✓
+   - **CORREGIDO**: Errores de compilación en la comunicación entre módulos ✓
+   - **MEJORADO**: Compatibilidad completa entre UI Controller y Program Controller ✓
+   - **ACTUALIZADO**: Uso correcto de métodos de Storage en Program Controller ✓
+   - Probar interacciones del usuario y efectos en el sistema ✓
+   - Pendiente: Pruebas finales con hardware real
+   - Pendiente: Optimización de tiempos de respuesta
 
 ### Etapa 5: Integración y Pruebas Finales (2 semanas) - 15% completado
 

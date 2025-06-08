@@ -13,9 +13,41 @@ public:
   // Inicialización
   void init();
   
-  // Control de monitorización
+
+  /// @brief 
+  /// Configura el sensor de temperatura y el sensor de presión.
+  /// Este método debe ser llamado al inicio del programa para configurar los sensores.
+  /// @details
+  /// Este método inicializa el sensor de temperatura utilizando OneWire y DallasTemperature,
+  /// y el sensor de presión utilizando HX710B. Configura las resoluciones y verifica la conexión de los sensores.
+  /// @note
+  /// Asegúrate de que los pines de los sensores estén correctamente conectados y configurados en `config.h`.
   void startMonitoring();
+
+
+  /// @brief 
+  /// Detiene el monitoreo de los sensores.
+  /// Este método detiene cualquier tarea de monitoreo en curso y libera los recursos asociados.
+  /// @details
+  /// Este método detiene la tarea de monitoreo de sensores que se ejecuta periódicamente,
+  /// liberando los recursos asociados y asegurando que no se realicen más lecturas de sensores.
+  /// @note
+  /// Asegúrate de llamar a este método antes de apagar el sistema o cambiar la configuración de los sensores.
+  /// @return
+  /// No retorna ningún valor, pero detiene el monitoreo de los sensores.
   void stopMonitoring();
+
+  /// @brief 
+  /// Verifica si el monitoreo de sensores está activo.
+  /// Este método comprueba si hay una tarea de monitoreo en curso.
+  /// @details
+  /// Este método devuelve un valor booleano que indica si el monitoreo de sensores está activo o no.
+  /// Si el monitoreo está activo, significa que las lecturas de temperatura y presión se están realizando periódicamente.
+  /// @note
+  /// Asegúrate de que el monitoreo se haya iniciado previamente con `startMonitoring()`.
+  /// @return
+  /// true si el monitoreo está activo, false si no lo está.
+  /// Este valor puede ser utilizado para determinar si se deben realizar lecturas de sensores o no.
   bool isMonitoring();
   
   // Lectura de sensores
