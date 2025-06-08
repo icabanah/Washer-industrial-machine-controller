@@ -278,7 +278,14 @@ bool HardwareClass::_readNextionResponse()
   {
     _nextionLastEvent = String(_nextionBuffer);
 
-    // Debug detallado de eventos
+    // Filtrar eventos 0x1A (Numeric Variable Data automáticos) ANTES del debug
+    if (index == 1 && rawBytes[0] == 0x1A) {
+      // Evento 0x1A: datos de variable numérica automáticos de Nextion
+      // Estos son normales y no requieren procesamiento especial
+      return false; // No es un evento que necesitemos procesar
+    }
+
+    // Debug detallado de eventos (solo para eventos que no son 0x1A)
     Serial.print("🔍 Evento Nextion Raw [");
     Serial.print(index);
     Serial.print(" bytes]: ");
@@ -310,13 +317,6 @@ bool HardwareClass::_readNextionResponse()
     }
 
     // Otros tipos de respuesta (no táctiles)
-    // Filtrar eventos 0x1A (Numeric Variable Data automáticos) para evitar spam en consola
-    if (index == 1 && rawBytes[0] == 0x1A) {
-      // Evento 0x1A: datos de variable numérica automáticos de Nextion
-      // Estos son normales y no requieren procesamiento especial
-      return false; // No es un evento que necesitemos procesar
-    }
-    
     Serial.println("📄 Respuesta no táctil: " + _nextionLastEvent);
     return true;
   }

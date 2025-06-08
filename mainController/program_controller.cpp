@@ -534,26 +534,30 @@ void ProgramControllerClass::processUserEvent(const String& event) {
     return;
   }
   
-  Utils.debug("ProgramControllerClass::processUserEvent| Procesando evento táctil - Página: " + String(touchPage) + 
-              ", Componente: " + String(touchComponent) + 
-              ", Estado: " + String(_currentState));
+  Utils.debug("🔍 PROCESANDO EVENTO TÁCTIL:");
+  Utils.debug("   Página: " + String(touchPage) + " (Esperada para edición: " + String(NEXTION_PAGE_EDIT) + ")");
+  Utils.debug("   Componente: " + String(touchComponent));
+  Utils.debug("   Estado actual: " + String(_currentState));
   
   // Procesar eventos según la página actual
   switch (touchPage) {
     case NEXTION_PAGE_SELECTION:
+      Utils.debug("📄 Procesando eventos de página de selección");
       _handleSelectionPageEvents(touchComponent);
       break;
       
     case NEXTION_PAGE_EDIT:
+      Utils.debug("📄 Procesando eventos de página de edición");
       _handleEditPageEvents(touchComponent);
       break;
       
     case NEXTION_PAGE_EXECUTION:
+      Utils.debug("📄 Procesando eventos de página de ejecución");
       _handleExecutionPageEvents(touchComponent);
       break;
       
     default:
-      Utils.debug("ProgramControllerClass::processUserEvent| Página no manejada: " + String(touchPage));
+      Utils.debug("⚠️ Página no manejada: " + String(touchPage));
       break;
   }
 }
@@ -694,25 +698,36 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
 
 void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
   Utils.debug("🔧 Evento en página de edición - Componente: " + String(componentId));
+  Utils.debug("🔍 IDs esperados:");
+  Utils.debug("   MENOS: " + String(NEXTION_ID_BTN_PARAM_MENOS) + " (btnMenos)");
+  Utils.debug("   MAS: " + String(NEXTION_ID_BTN_PARAM_MAS) + " (btnMas)");
+  Utils.debug("   ANTERIOR: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR) + " (btnAnterior)");
+  Utils.debug("   SIGUIENTE: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE) + " (btnSiguiente)");
+  Utils.debug("   GUARDAR: " + String(NEXTION_ID_BTN_GUARDAR) + " (btnGuardar)");
+  Utils.debug("   CANCELAR: " + String(NEXTION_ID_BTN_CANCELAR) + " (btnCancelar)");
   
   switch (componentId) {
     case NEXTION_ID_BTN_PARAM_MENOS:
       // Disminuir valor del parámetro actual
+      Utils.debug("🔽 Ejecutando _decreaseCurrentParameter()");
       _decreaseCurrentParameter();
       break;
       
     case NEXTION_ID_BTN_PARAM_MAS:
       // Aumentar valor del parámetro actual
+      Utils.debug("🔼 Ejecutando _increaseCurrentParameter()");
       _increaseCurrentParameter();
       break;
       
     case NEXTION_ID_BTN_PARAM_ANTERIOR:
       // Cambiar al parámetro anterior
+      Utils.debug("⬅️ Ejecutando _selectPreviousParameter()");
       _selectPreviousParameter();
       break;
       
     case NEXTION_ID_BTN_PARAM_SIGUIENTE:
       // Cambiar al parámetro siguiente
+      Utils.debug("➡️ Ejecutando _selectNextParameter()");
       _selectNextParameter();
       break;
       
@@ -730,6 +745,7 @@ void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
       
     default:
       Utils.debug("⚠️ Componente no reconocido en página de edición: " + String(componentId));
+      Utils.debug("💡 Verifica que los IDs de Nextion coincidan con config.h");
       break;
   }
 }
@@ -937,7 +953,12 @@ void ProgramControllerClass::_selectNextParameter() {
 
 void ProgramControllerClass::_updateEditDisplay() {
   // Actualizar la pantalla de edición con los valores actuales
-  UIController.showEditScreen(_editingProgram, _editingPhase);
+  Utils.debug("🔧 DEBUG _updateEditDisplay:");
+  Utils.debug("   _editingProgram (índice interno): " + String(_editingProgram));
+  Utils.debug("   Pasando a showEditScreen: " + String(_editingProgram + 1));
+  Utils.debug("   Debería mostrar: P" + String((_editingProgram + 1) + 21));
+  
+  UIController.showEditScreen(_editingProgram + 1, _editingPhase); // Convertir a 1-3 para UI
   
   Utils.debug("🖥️ Pantalla de edición actualizada:");
   Utils.debug("   Programa: " + String(_editingProgram + 22));
