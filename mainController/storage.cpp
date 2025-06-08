@@ -57,8 +57,8 @@ void StorageClass::saveProgram(uint8_t program) {
 }
 
 uint8_t StorageClass::loadProgram() {
-  uint8_t program = readByte("programa", 0);
-  return (program < NUM_PROGRAMAS) ? program : 0;
+  uint8_t program = readByte("programa", 1); // Valor por defecto cambiado a 1 para mostrar el primer programa
+  return (program < NUM_PROGRAMAS) ? program : 1; // Si el programa está fuera de rango, retornar 1
 }
 
 void StorageClass::savePhase(uint8_t phase) {
@@ -163,8 +163,8 @@ bool StorageClass::validateSettings() {
 }
 
 void StorageClass::resetToDefaults() {
-  // Programa por defecto
-  saveProgram(0);
+  // Programa por defecto (cambiado a 1 para mostrar el primer programa)
+  saveProgram(1);
   savePhase(0);
   saveTimer(0, 0);
   

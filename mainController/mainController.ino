@@ -125,7 +125,7 @@ void welcomeScreenCallback()
 {
   uint8_t currentProgram = ProgramController.getCurrentProgram();
   Serial.println("welcomeScreenCallback| Tiempo de bienvenida finalizado, mostrando pantalla de selección para el programa " + String(currentProgram));
-  UIController.showSelectionScreen(currentProgram);
+  UIController.showSelectionScreen(currentProgram + 1); // Convertir a 1-3 para UI
 }
 
 void showWelcomeScreen()

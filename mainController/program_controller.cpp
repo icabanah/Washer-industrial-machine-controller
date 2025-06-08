@@ -77,7 +77,7 @@ void ProgramControllerClass::setState(uint8_t newState) {
     // Acciones específicas al cambiar de estado
     switch (newState) {
       case ESTADO_SELECCION:
-        UIController.showSelectionScreen(_currentProgram);
+        UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
         break;
       
       case ESTADO_EDICION:
@@ -499,7 +499,7 @@ void ProgramControllerClass::saveEditing() {
   setState(ESTADO_SELECCION);
   
   // Mostrar pantalla de selección actualizada
-  UIController.showSelectionScreen(_editingProgram);
+  UIController.showSelectionScreen(_editingProgram + 1); // Convertir a 1-3 para UI
   
   Utils.debug("✅ Edición guardada exitosamente");
 }
@@ -527,7 +527,7 @@ void ProgramControllerClass::processUserEvent(const String& event) {
     return;
   }
   
-  Utils.debug("Procesando evento táctil - Página: " + String(touchPage) + 
+  Utils.debug("ProgramControllerClass::processUserEvent| Procesando evento táctil - Página: " + String(touchPage) + 
               ", Componente: " + String(touchComponent) + 
               ", Estado: " + String(_currentState));
   
@@ -546,7 +546,7 @@ void ProgramControllerClass::processUserEvent(const String& event) {
       break;
       
     default:
-      Utils.debug("Página no manejada: " + String(touchPage));
+      Utils.debug("ProgramControllerClass::processUserEvent| Página no manejada: " + String(touchPage));
       break;
   }
 }
@@ -617,6 +617,30 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
   Utils.debug("🔘 Evento en página de selección - Componente: " + String(componentId));
   
   switch (componentId) {
+    case NEXTION_ID_BTN_PROGRAM1:
+      // Seleccionar programa 1 directamente (P22) - índice interno 0
+      _currentProgram = 0; // Índice interno 0 = P22
+      Storage.saveProgram(_currentProgram);
+      Utils.debug("📋 Programa 1 seleccionado directamente (P22)");
+      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+      break;
+      
+    case NEXTION_ID_BTN_PROGRAM2:
+      // Seleccionar programa 2 directamente (P23) - índice interno 1
+      _currentProgram = 1; // Índice interno 1 = P23
+      Storage.saveProgram(_currentProgram);
+      Utils.debug("📋 Programa 2 seleccionado directamente (P23)");
+      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+      break;
+      
+    case NEXTION_ID_BTN_PROGRAM3:
+      // Seleccionar programa 3 directamente (P24) - índice interno 2
+      _currentProgram = 2; // Índice interno 2 = P24
+      Storage.saveProgram(_currentProgram);
+      Utils.debug("📋 Programa 3 seleccionado directamente (P24)");
+      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+      break;
+      
     case NEXTION_ID_BTN_PROG_ANTERIOR:
       // Cambiar al programa anterior
       if (_currentProgram > 0) {
@@ -624,8 +648,9 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
       } else {
         _currentProgram = NUM_PROGRAMAS - 1; // Circular: ir al último programa
       }
+      Storage.saveProgram(_currentProgram);
       Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
-      UIController.showSelectionScreen(_currentProgram);
+      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
       break;
       
     case NEXTION_ID_BTN_PROG_SIGUIENTE:
@@ -635,8 +660,9 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
       } else {
         _currentProgram = 0; // Circular: ir al primer programa
       }
+      Storage.saveProgram(_currentProgram);
       Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
-      UIController.showSelectionScreen(_currentProgram);
+      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
       break;
       
     case NEXTION_ID_BTN_COMENZAR:

@@ -92,9 +92,9 @@ El sistema utiliza 9 pantallas (páginas) para toda la interacción con el usuar
 
 | Nombre         | Tipo                  | Propiedades            | Descripción |
 |----------------|-----------------------|------------------------|-------------|
-| `btnPrograma22` | Dual State Button     | val: 0, Font: 1        | "P22: Agua Caliente" |
-| `btnPrograma23` | Dual State Button     | val: 0, Font: 1        | "P23: Agua Fría" |
-| `btnPrograma24` | Dual State Button     | val: 0, Font: 1        | "P24: Multitanda" |
+| `btnPrograma1` | Dual State Button     | val: 0, Font: 1        | "P22: Agua Caliente" |
+| `btnPrograma2` | Dual State Button     | val: 0, Font: 1        | "P23: Agua Fría" |
+| `btnPrograma3` | Dual State Button     | val: 0, Font: 1        | "P24: Multitanda" |
 | `btnComenzar`  | Button                | Font: 1                | Botón para iniciar programa |
 | `btnEditar`    | Button                | Font: 1                | Botón para editar parámetros |
 | `txtProgSelec` | Text                  | Font: 2                | Muestra programa seleccionado |
