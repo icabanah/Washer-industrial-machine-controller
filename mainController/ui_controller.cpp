@@ -173,7 +173,13 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase) {
   // Actualizar toda la pantalla con los valores iniciales
   updateEditDisplay();
   
-  Serial.println("Mostrando pantalla de edición - Programa P" + String(programa + 21) + " Fase F" + String(fase));
+  // Ejecutar diagnóstico del estado de edición
+  diagnosticarEstadoEdicion();
+  
+  Serial.println("🖥️ Pantalla de edición actualizada:");
+  Serial.println("   Programa: " + String(programa + 21));
+  Serial.println("   Fase: " + String(fase));
+  Serial.println("🔧 startEditing() completado, estado actual: " + String(_modoEdicionActivo ? 1 : 0));
 }
 
 void UIControllerClass::showErrorScreen(uint8_t errorCode, const String& errorMessage) {
@@ -272,7 +278,7 @@ void UIControllerClass::processEvents() {
   if (_clearingEvents) {
     // Durante la limpieza, descartar todos los eventos sin procesarlos
     while (Hardware.nextionCheckForEvents()) {
-      Hardware.nextionGetLastEvent(); // Descartar evento
+      // Los eventos se procesan y descartan automáticamente en Hardware
     }
     
     // Verificar si la limpieza ha terminado
@@ -287,8 +293,8 @@ void UIControllerClass::processEvents() {
   
   // Verificar si hay eventos de la pantalla Nextion
   if (Hardware.nextionCheckForEvents()) {
-    String event = Hardware.nextionGetLastEvent();
-    _handleNextionEvent(event);
+    // Procesar eventos táctiles directamente
+    _handleTouchEvent();
   }
   
   // Actualizar mensajes temporales
@@ -300,72 +306,109 @@ void UIControllerClass::processEvents() {
 }
 
 void UIControllerClass::_handleNextionEvent(const String& event) {
-  // Procesar evento de la pantalla Nextion
-  // Los eventos típicos son del formato:
-  // 65 1 2 : Botón 1 presionado en página 2
+  // IMPORTANTE: Este método ya no se usa con String events
+  // Los eventos táctiles ahora se procesan directamente desde Hardware
+  Serial.println("⚠️ ADVERTENCIA: _handleNextionEvent(String) está obsoleto");
+  Serial.println("   Use _handleTouchEvent() en su lugar");
+}
+
+/**
+ * @brief Procesar eventos táctiles directamente desde Hardware
+ */
+void UIControllerClass::_handleTouchEvent() {
+  // Verificar si hay un evento táctil válido
+  if (!Hardware.hasValidTouchEvent()) {
+    return;
+  }
   
-  if (event.length() >= 3) {
-    uint8_t eventType = event[0];
-    String componentName;
-    int pageId = event[2];       // Convertir byte a int
-    
-    Serial.print("Evento procesado: Tipo=");
-    Serial.print(eventType);
-    Serial.print(" Página=");
-    Serial.println(pageId);
-    
-    // Eventos de botón (código 65)
-    if (eventType == 65) {
-      // Obtener nombre del componente basado en el ID del evento
-      switch (pageId) {
-        case NEXTION_PAGE_SELECTION:
-          // Determinar qué botón fue presionado
-          if (event[1] == NEXTION_COMP_BTN_PROGRAM1[0]) {
-            _lastUserAction = "PROGRAM_1";
-            _userActionPending = true;
-          } else if (event[1] == NEXTION_COMP_BTN_PROGRAM2[0]) {
-            _lastUserAction = "PROGRAM_2";
-            _userActionPending = true;
-          } else if (event[1] == NEXTION_COMP_BTN_PROGRAM3[0]) {
-            _lastUserAction = "PROGRAM_3";
-            _userActionPending = true;
-          } else if (event[1] == NEXTION_COMP_BTN_START[0]) {
-            // Botón iniciar
-            _lastUserAction = "START";
-            _userActionPending = true;
-          } else if (event[1] == NEXTION_COMP_BTN_EDIT[0]) {
-            // Botón editar
-            _lastUserAction = "EDIT";
-            _userActionPending = true;
-          }
-          break;
-          
-        case NEXTION_PAGE_EXECUTION:
-          if (event[1] == NEXTION_COMP_BTN_STOP[0]) {
-            // Botón parar
-            _lastUserAction = "STOP";
-            _userActionPending = true;
-          }
-          break;
-          
-        case NEXTION_PAGE_EDIT:
-          // === EVENTOS DE LA PÁGINA DE EDICIÓN ===
-          handleEditPageEvent(event[1]);
-          break;
-      }
-    }
-    // Eventos de slider o controles numéricos (código 67)
-    else if (eventType == 67) {
-      // Ejemplo: obtener valor de un slider
-      // El formato puede variar según el componente
-      _lastUserAction = "VALUE_CHANGE_" + String(event[1]) + "_" + String(pageId);
-      _userActionPending = true;
-    }
+  // Obtener datos del evento táctil
+  uint8_t pageId = Hardware.getTouchEventPage();
+  uint8_t componentId = Hardware.getTouchEventComponent();
+  uint8_t eventType = Hardware.getTouchEventType();
+  
+  Serial.print("🔍 Evento táctil detectado: Página=");
+  Serial.print(pageId);
+  Serial.print(" ComponentID=");
+  Serial.print(componentId);
+  Serial.print(" Tipo=");
+  Serial.println(eventType);
+  
+  // Solo procesar eventos de presionado (tipo 1)
+  if (eventType != 1) {
+    Serial.println("   Evento ignorado (no es presionado)");
+    return;
+  }
+  
+  // Procesar según la página
+  switch (pageId) {
+    case NEXTION_PAGE_SELECTION:
+      _handleSelectionPageEvent(componentId);
+      break;
+      
+    case NEXTION_PAGE_EXECUTION:
+      _handleExecutionPageEvent(componentId);
+      break;
+      
+    case NEXTION_PAGE_EDIT:
+      Serial.println("🎯 Evento en página de edición detectado - ComponentID: " + String(componentId));
+      handleEditPageEvent(componentId);
+      break;
+      
+    default:
+      Serial.println("⚠️ Página no reconocida: " + String(pageId));
+      break;
   }
 }
 
-/// @brief 
-/// Actualiza la información del programa seleccionado en la pantalla.
+/**
+ * @brief Manejar eventos de la página de selección
+ */
+void UIControllerClass::_handleSelectionPageEvent(uint8_t componentId) {
+  Serial.println("📋 Procesando evento de página de selección - ComponentID: " + String(componentId));
+  
+  if (componentId == NEXTION_ID_BTN_PROGRAM1) {
+    _lastUserAction = "PROGRAM_1";
+    _userActionPending = true;
+    Serial.println("   ✅ Programa 1 seleccionado");
+  } else if (componentId == NEXTION_ID_BTN_PROGRAM2) {
+    _lastUserAction = "PROGRAM_2";
+    _userActionPending = true;
+    Serial.println("   ✅ Programa 2 seleccionado");
+  } else if (componentId == NEXTION_ID_BTN_PROGRAM3) {
+    _lastUserAction = "PROGRAM_3";
+    _userActionPending = true;
+    Serial.println("   ✅ Programa 3 seleccionado");
+  } else if (componentId == NEXTION_ID_BTN_START) {
+    _lastUserAction = "START";
+    _userActionPending = true;
+    Serial.println("   ✅ Botón START presionado");
+  } else if (componentId == NEXTION_ID_BTN_EDIT) {
+    _lastUserAction = "EDIT";
+    _userActionPending = true;
+    Serial.println("   ✅ Botón EDIT presionado");
+  } else {
+    Serial.println("   ❓ ComponentID no reconocido: " + String(componentId));
+  }
+}
+
+/**
+ * @brief Manejar eventos de la página de ejecución
+ */
+void UIControllerClass::_handleExecutionPageEvent(uint8_t componentId) {
+  Serial.println("▶️ Procesando evento de página de ejecución - ComponentID: " + String(componentId));
+  
+  if (componentId == NEXTION_ID_BTN_PARAR) {
+    _lastUserAction = "STOP";
+    _userActionPending = true;
+    Serial.println("   ✅ Botón STOP presionado");
+  } else if (componentId == NEXTION_ID_BTN_PAUSAR) {
+    _lastUserAction = "PAUSE";
+    _userActionPending = true;
+    Serial.println("   ✅ Botón PAUSE presionado");
+  } else {
+    Serial.println("   ❓ ComponentID no reconocido: " + String(componentId));
+  }
+}
 /// Este método actualiza los componentes de la pantalla Nextion con los valores del programa seleccionado.
 /// @details
 /// Este método toma el número del programa (1, 2 o 3) y actualiza los componentes de la pantalla Nextion
@@ -699,38 +742,56 @@ void UIControllerClass::updateRightPanel() {
  * @param componentId ID del componente que generó el evento
  */
 void UIControllerClass::handleEditPageEvent(int componentId) {
-  if (!_modoEdicionActivo) return;
+  if (!_modoEdicionActivo) {
+    Serial.println("⚠️ Evento de edición recibido pero modo edición no está activo");
+    return;
+  }
+  
+  Serial.println("🔧 Procesando evento de edición - ComponentID: " + String(componentId));
   
   // Resetear timeout al recibir cualquier evento
   _resetEditTimeout();
   
   switch (componentId) {
     case NEXTION_ID_BTN_PARAM_MAS:
+      Serial.println("➕ Botón MAS presionado (ID: " + String(NEXTION_ID_BTN_PARAM_MAS) + ")");
       handleParameterIncrement();
       break;
       
     case NEXTION_ID_BTN_PARAM_MENOS:
+      Serial.println("➖ Botón MENOS presionado (ID: " + String(NEXTION_ID_BTN_PARAM_MENOS) + ")");
       handleParameterDecrement();
       break;
       
     case NEXTION_ID_BTN_PARAM_SIGUIENTE:
+      Serial.println("⏭️ Botón SIGUIENTE presionado (ID: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE) + ")");
       handleNextParameter();
       break;
       
     case NEXTION_ID_BTN_PARAM_ANTERIOR:
+      Serial.println("⏮️ Botón ANTERIOR presionado (ID: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR) + ")");
       handlePreviousParameter();
       break;
       
     case NEXTION_ID_BTN_GUARDAR:
+      Serial.println("💾 Botón GUARDAR presionado (ID: " + String(NEXTION_ID_BTN_GUARDAR) + ")");
       handleSaveParameters();
       break;
       
     case NEXTION_ID_BTN_CANCELAR:
+      Serial.println("❌ Botón CANCELAR presionado (ID: " + String(NEXTION_ID_BTN_CANCELAR) + ")");
       handleCancelEdit();
       break;
       
     default:
-      Serial.println("Evento de edición no reconocido: " + String(componentId));
+      Serial.println("❓ Evento de edición no reconocido: ComponentID=" + String(componentId));
+      Serial.println("   IDs esperados:");
+      Serial.println("   - MAS: " + String(NEXTION_ID_BTN_PARAM_MAS));
+      Serial.println("   - MENOS: " + String(NEXTION_ID_BTN_PARAM_MENOS));
+      Serial.println("   - SIGUIENTE: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE));
+      Serial.println("   - ANTERIOR: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR));
+      Serial.println("   - GUARDAR: " + String(NEXTION_ID_BTN_GUARDAR));
+      Serial.println("   - CANCELAR: " + String(NEXTION_ID_BTN_CANCELAR));
       break;
   }
 }
@@ -738,8 +799,15 @@ void UIControllerClass::handleEditPageEvent(int componentId) {
  * @brief Manejar evento del botón "+" (incrementar parámetro)
  */
 void UIControllerClass::handleParameterIncrement() {
+  Serial.println("🔧 handleParameterIncrement() iniciado");
+  
   // Incrementar el valor del parámetro actual usando las funciones de config.cpp
+  int valorAnterior = _valoresTemporales[_parametroActual];
   _valoresTemporales[_parametroActual] = incrementarParametro(_parametroActual, _valoresTemporales[_parametroActual]);
+  
+  Serial.println("   Parámetro: " + String(obtenerTextoParametro(_parametroActual)));
+  Serial.println("   Valor anterior: " + String(valorAnterior));
+  Serial.println("   Valor nuevo: " + String(_valoresTemporales[_parametroActual]));
   
   // Actualizar pantalla
   updateParameterDisplay();
@@ -748,15 +816,22 @@ void UIControllerClass::handleParameterIncrement() {
   // Mostrar feedback visual/sonoro
   playSound(0); // Sonido normal
   
-  Serial.println("Parámetro incrementado: " + String(_valoresTemporales[_parametroActual]));
+  Serial.println("✅ Parámetro incrementado exitosamente");
 }
 
 /**
  * @brief Manejar evento del botón "-" (decrementar parámetro)
  */
 void UIControllerClass::handleParameterDecrement() {
+  Serial.println("🔧 handleParameterDecrement() iniciado");
+  
   // Decrementar el valor del parámetro actual usando las funciones de config.cpp
+  int valorAnterior = _valoresTemporales[_parametroActual];
   _valoresTemporales[_parametroActual] = decrementarParametro(_parametroActual, _valoresTemporales[_parametroActual]);
+  
+  Serial.println("   Parámetro: " + String(obtenerTextoParametro(_parametroActual)));
+  Serial.println("   Valor anterior: " + String(valorAnterior));
+  Serial.println("   Valor nuevo: " + String(_valoresTemporales[_parametroActual]));
   
   // Actualizar pantalla
   updateParameterDisplay();
@@ -765,15 +840,21 @@ void UIControllerClass::handleParameterDecrement() {
   // Mostrar feedback visual/sonoro
   playSound(0); // Sonido normal
   
-  Serial.println("Parámetro decrementado: " + String(_valoresTemporales[_parametroActual]));
+  Serial.println("✅ Parámetro decrementado exitosamente");
 }
 
 /**
  * @brief Manejar evento del botón "Siguiente" (pasar al siguiente parámetro)
  */
 void UIControllerClass::handleNextParameter() {
+  Serial.println("🔧 handleNextParameter() iniciado");
+  
   // Obtener el siguiente parámetro en el ciclo usando las funciones de config.cpp
+  int parametroAnterior = _parametroActual;
   _parametroActual = obtenerSiguienteParametro(_parametroActual);
+  
+  Serial.println("   Parámetro anterior: " + String(obtenerTextoParametro(parametroAnterior)));
+  Serial.println("   Parámetro nuevo: " + String(obtenerTextoParametro(_parametroActual)));
   
   // Actualizar pantalla para mostrar el nuevo parámetro
   updateParameterDisplay();
@@ -781,14 +862,21 @@ void UIControllerClass::handleNextParameter() {
   // Mostrar feedback visual/sonoro
   playSound(0); // Sonido normal
   
-  Serial.println("Cambiado a siguiente parámetro: " + String(obtenerTextoParametro(_parametroActual)));
+  Serial.println("✅ Cambiado a siguiente parámetro exitosamente");
 }
+
 /**
  * @brief Manejar evento del botón "Anterior" (pasar al parámetro anterior)
  */
 void UIControllerClass::handlePreviousParameter() {
+  Serial.println("🔧 handlePreviousParameter() iniciado");
+  
   // Obtener el parámetro anterior en el ciclo usando las funciones de config.cpp
+  int parametroAnterior = _parametroActual;
   _parametroActual = obtenerAnteriorParametro(_parametroActual);
+  
+  Serial.println("   Parámetro anterior: " + String(obtenerTextoParametro(parametroAnterior)));
+  Serial.println("   Parámetro nuevo: " + String(obtenerTextoParametro(_parametroActual)));
   
   // Actualizar pantalla para mostrar el nuevo parámetro
   updateParameterDisplay();
@@ -796,7 +884,7 @@ void UIControllerClass::handlePreviousParameter() {
   // Mostrar feedback visual/sonoro
   playSound(0); // Sonido normal
   
-  Serial.println("Cambiado a parámetro anterior: " + String(obtenerTextoParametro(_parametroActual)));
+  Serial.println("✅ Cambiado a parámetro anterior exitosamente");
 }
 
 /**
@@ -917,6 +1005,35 @@ void UIControllerClass::_checkEditTimeout() {
     Serial.println("Timeout de edición alcanzado - Saliendo automáticamente");
   }
 }
+/**
+ * @brief Diagnóstico del estado de edición y mapeo de eventos
+ */
+void UIControllerClass::diagnosticarEstadoEdicion() {
+  Serial.println("🔍 DIAGNÓSTICO DEL SISTEMA DE EDICIÓN:");
+  Serial.println("======================================");
+  Serial.println("📊 Estado del modo edición:");
+  Serial.println("   - Modo activo: " + String(_modoEdicionActivo ? "SÍ" : "NO"));
+  Serial.println("   - Programa en edición: P" + String(_programaEnEdicion + 21));
+  Serial.println("   - Fase en edición: F" + String(_faseEnEdicion));
+  Serial.println("   - Parámetro actual: " + String(obtenerTextoParametro(_parametroActual)));
+  Serial.println("");
+  
+  Serial.println("🎯 IDs de botones de edición esperados:");
+  Serial.println("   - btnMas: " + String(NEXTION_ID_BTN_PARAM_MAS));
+  Serial.println("   - btnMenos: " + String(NEXTION_ID_BTN_PARAM_MENOS));
+  Serial.println("   - btnSiguiente: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE));
+  Serial.println("   - btnAnterior: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR));
+  Serial.println("   - btnGuardar: " + String(NEXTION_ID_BTN_GUARDAR));
+  Serial.println("   - btnCancelar: " + String(NEXTION_ID_BTN_CANCELAR));
+  Serial.println("");
+  
+  Serial.println("📋 Valores temporales actuales:");
+  for (int i = 0; i < 4; i++) {
+    Serial.println("   - " + String(obtenerTextoParametro(i)) + ": " + String(_valoresTemporales[i]));
+  }
+  Serial.println("======================================");
+}
+
 /**
  * @brief Resetear el timeout de edición
  */

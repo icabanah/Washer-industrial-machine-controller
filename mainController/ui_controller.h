@@ -35,6 +35,9 @@ public:
   void handleSaveParameters();
   void handleCancelEdit();
   
+  // Método de diagnóstico para depuración
+  void diagnosticarEstadoEdicion();
+  
   // Métodos de transición con limpieza garantizada de eventos
   void safeTransitionToSelection(uint8_t programa = 0);
   void safeTransitionToExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion);
@@ -92,7 +95,10 @@ private:
   uint8_t (*_temporizadorLim)[4];
   
   // Métodos internos para procesar componentes
-  void _handleNextionEvent(const String& event);
+  void _handleNextionEvent(const String& event);  // Método obsoleto mantenido por compatibilidad
+  void _handleTouchEvent();                        // Nuevo método para eventos táctiles
+  void _handleSelectionPageEvent(uint8_t componentId);
+  void _handleExecutionPageEvent(uint8_t componentId);
   void _formatTimeDisplay(uint8_t minutos, uint8_t segundos, char* buffer);
   void _updateProgramInfo(uint8_t programa);
   void _updateExecutionData(uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion);
