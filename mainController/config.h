@@ -138,8 +138,8 @@
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
 #define NEXTION_ID_BTN_PROGRAM2 2 // Botón "P23" para programa 2
 #define NEXTION_ID_BTN_PROGRAM3 3 // Botón "P24" para programa 3
-#define NEXTION_ID_BTN_START 10   // Botón "Comenzar"
-#define NEXTION_ID_BTN_EDIT 11    // Botón "Editar"
+#define NEXTION_ID_BTN_START 9   // Botón "Comenzar"
+#define NEXTION_ID_BTN_EDIT 10    // Botón "Editar"
 
 // === IDs ADICIONALES PARA NAVEGACIÓN ===
 #define NEXTION_ID_BTN_PROG_ANTERIOR 12  // Botón "Anterior" en selección de programa
@@ -166,8 +166,8 @@
 #define NEXTION_COMP_BTN_STOP NEXTION_COMP_BTN_PARAR  // Alias para botón parar
 
 // Información de estado
-#define NEXTION_ID_BTN_PAUSAR 14 // Botón "Pausar"
-#define NEXTION_ID_BTN_PARAR 10  // Botón "Parar"
+#define NEXTION_ID_BTN_PAUSAR 11 // Botón "Pausar"
+#define NEXTION_ID_BTN_PARAR 8  // Botón "Parar"
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 // Etiquetas de parámetros principales
@@ -194,12 +194,12 @@
 #define NEXTION_COMP_PARAM_EDITAR "param"             // Texto "param" para editar un parámetro en específico
 #define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Texto "param" para editar parámetro
 
-#define NEXTION_ID_BTN_PARAM_MENOS 9     // ID de Botón "-" para disminuir parámetro
-#define NEXTION_ID_BTN_PARAM_MAS 8       // ID de Botón "+" para aumentar parámetro
-#define NEXTION_ID_BTN_PARAM_ANTERIOR 7  // ID de Botón anterior para parámetro
-#define NEXTION_ID_BTN_PARAM_SIGUIENTE 6 // ID de Botón siguiente parámetro
-#define NEXTION_ID_BTN_GUARDAR 4         // ID de Botón "Guardar"
-#define NEXTION_ID_BTN_CANCELAR 5        // ID de Botón "Cancelar"
+#define NEXTION_ID_BTN_PARAM_MENOS 17     // ID de Botón "-" para disminuir parámetro
+#define NEXTION_ID_BTN_PARAM_MAS 16       // ID de Botón "+" para aumentar parámetro
+#define NEXTION_ID_BTN_PARAM_ANTERIOR 18  // ID de Botón anterior para parámetro
+#define NEXTION_ID_BTN_PARAM_SIGUIENTE 15 // ID de Botón siguiente parámetro
+#define NEXTION_ID_BTN_GUARDAR 3         // ID de Botón "Guardar"
+#define NEXTION_ID_BTN_CANCELAR 4        // ID de Botón "Cancelar"
 
 // === PARÁMETROS EDITABLES ===
 #define PARAM_NIVEL 0

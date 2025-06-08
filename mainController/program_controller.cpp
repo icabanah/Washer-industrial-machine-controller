@@ -74,17 +74,24 @@ void ProgramControllerClass::setState(uint8_t newState) {
     _previousState = _currentState;
     _currentState = newState;
     
+    Utils.debug("🔄 CAMBIO DE ESTADO:");
+    Utils.debug("   Estado anterior: " + String(_previousState));
+    Utils.debug("   Estado nuevo: " + String(_currentState));
+    
     // Acciones específicas al cambiar de estado
     switch (newState) {
       case ESTADO_SELECCION:
+        Utils.debug("📋 Mostrando pantalla de selección");
         UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
         break;
       
       case ESTADO_EDICION:
-        UIController.showEditScreen(_editingProgram, _editingPhase);
+        Utils.debug("✏️ Mostrando pantalla de edición");
+        UIController.showEditScreen(_editingProgram + 1, _editingPhase); // Convertir a 1-3 para UI
         break;
       
       case ESTADO_EJECUCION:
+        Utils.debug("▶️ Mostrando pantalla de ejecución");
         _initializeProgram();
         _configureActuatorsForPhase();
         UIController.showExecutionScreen(
@@ -665,16 +672,18 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
       UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
       break;
       
-    case NEXTION_ID_BTN_COMENZAR:
+    case NEXTION_ID_BTN_START:
       // Iniciar el programa seleccionado
       Utils.debug("▶️ Iniciando programa " + String(_currentProgram + 22));
       startProgram();
       break;
       
-    case NEXTION_ID_BTN_EDITAR:
+    case NEXTION_ID_BTN_EDIT:
       // Entrar en modo de edición para el programa seleccionado
       Utils.debug("✏️ Editando programa " + String(_currentProgram + 22));
+      Utils.debug("🔧 Llamando a startEditing(" + String(_currentProgram) + ", 0)");
       startEditing(_currentProgram, 0); // Comenzar editando la primera fase
+      Utils.debug("🔧 startEditing() completado, estado actual: " + String(_currentState));
       break;
       
     default:
