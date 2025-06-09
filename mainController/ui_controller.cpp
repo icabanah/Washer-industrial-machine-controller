@@ -509,8 +509,8 @@ void UIControllerClass::_clearPendingEvents() {
   _clearingEvents = true;
   _clearingStartTime = millis();
   
-  // Cambiar temporalmente a una página neutra para limpiar eventos
-  Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
+  // No cambiar de página durante la limpieza - mantener la página actual
+  // Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);  // ELIMINADO - causaba problemas
   
   // Limpiar eventos locales
   clearPendingEvents();
