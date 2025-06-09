@@ -13,6 +13,7 @@ public:
   
   // Inicialización
   void init();
+  void initializeDefaultValues(); // Inicializar valores predeterminados de programas
   
   // Operaciones básicas de almacenamiento
   uint8_t readByte(const char* key, uint8_t defaultValue = 0);

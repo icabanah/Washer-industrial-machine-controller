@@ -39,6 +39,7 @@ void setup()
   Hardware.init();
   Utils.init();
   Storage.init();
+  Storage.initializeDefaultValues(); // Inicializar valores predeterminados si es necesario
   Sensors.init();
   Actuators.init();
   UIController.init();

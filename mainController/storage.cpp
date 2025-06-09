@@ -1,5 +1,6 @@
 // storage.cpp
 #include "storage.h"
+#include "utils.h"             // Utilidades comunes
 #include <string>
 #include <stdio.h>  // Para sprintf
 
@@ -245,4 +246,93 @@ bool StorageClass::saveAllProgramSettings(uint8_t program, const uint8_t (&water
   }
   
   return true;
+}
+
+
+/**
+ * @brief Inicializa valores predeterminados para los programas P22, P23 y P24
+ * Solo se ejecuta si no existen valores guardados previamente
+ */
+void StorageClass::initializeDefaultValues() {
+  // Verificar si ya existen valores guardados
+  if (loadWaterLevel(0, 0) == 0 && loadTemperature(0, 0) == 0) {
+    Utils.debug("🔧 Inicializando valores predeterminados de programas...");
+    
+    // === PROGRAMA P22 (índice 0) - Lavado Normal ===
+    // Fase 0: Prelavado
+    saveWaterLevel(0, 0, 2);      // Nivel medio
+    saveTemperature(0, 0, 30);    // 30°C
+    saveTime(0, 0, 10);           // 10 minutos
+    saveRotation(0, 0, 1);        // Rotación lenta
+    
+    // Fase 1: Lavado principal
+    saveWaterLevel(0, 1, 3);      // Nivel alto
+    saveTemperature(0, 1, 40);    // 40°C
+    saveTime(0, 1, 20);           // 20 minutos
+    saveRotation(0, 1, 2);        // Rotación media
+    
+    // Fase 2: Enjuague
+    saveWaterLevel(0, 2, 3);      // Nivel alto
+    saveTemperature(0, 2, 30);    // 30°C
+    saveTime(0, 2, 15);           // 15 minutos
+    saveRotation(0, 2, 2);        // Rotación media
+    
+    // Fase 3: Centrifugado
+    saveWaterLevel(0, 3, 1);      // Nivel bajo
+    saveTemperature(0, 3, 20);    // 20°C
+    saveTime(0, 3, 8);            // 8 minutos
+    saveRotation(0, 3, 3);        // Rotación rápida
+    
+    // === PROGRAMA P23 (índice 1) - Lavado Delicado ===
+    // Fase 0: Prelavado suave
+    saveWaterLevel(1, 0, 3);      // Nivel alto
+    saveTemperature(1, 0, 20);    // 20°C
+    saveTime(1, 0, 8);            // 8 minutos
+    saveRotation(1, 0, 1);        // Rotación lenta
+    
+    // Fase 1: Lavado delicado
+    saveWaterLevel(1, 1, 3);      // Nivel alto
+    saveTemperature(1, 1, 30);    // 30°C
+    saveTime(1, 1, 15);           // 15 minutos
+    saveRotation(1, 1, 1);        // Rotación lenta
+    
+    // Fase 2: Enjuague suave
+    saveWaterLevel(1, 2, 3);      // Nivel alto
+    saveTemperature(1, 2, 20);    // 20°C
+    saveTime(1, 2, 12);           // 12 minutos
+    saveRotation(1, 2, 1);        // Rotación lenta
+    
+    // Fase 3: Centrifugado suave
+    saveWaterLevel(1, 3, 2);      // Nivel medio
+    saveTemperature(1, 3, 20);    // 20°C
+    saveTime(1, 3, 5);            // 5 minutos
+    saveRotation(1, 3, 2);        // Rotación media
+    
+    // === PROGRAMA P24 (índice 2) - Lavado Intensivo ===
+    // Fase 0: Prelavado intenso
+    saveWaterLevel(2, 0, 3);      // Nivel alto
+    saveTemperature(2, 0, 40);    // 40°C
+    saveTime(2, 0, 15);           // 15 minutos
+    saveRotation(2, 0, 2);        // Rotación media
+    
+    // Fase 1: Lavado intensivo
+    saveWaterLevel(2, 1, 4);      // Nivel muy alto
+    saveTemperature(2, 1, 60);    // 60°C
+    saveTime(2, 1, 30);           // 30 minutos
+    saveRotation(2, 1, 3);        // Rotación rápida
+    
+    // Fase 2: Enjuague intensivo
+    saveWaterLevel(2, 2, 4);      // Nivel muy alto
+    saveTemperature(2, 2, 40);    // 40°C
+    saveTime(2, 2, 20);           // 20 minutos
+    saveRotation(2, 2, 2);        // Rotación media
+    
+    // Fase 3: Centrifugado intensivo
+    saveWaterLevel(2, 3, 1);      // Nivel bajo
+    saveTemperature(2, 3, 20);    // 20°C
+    saveTime(2, 3, 12);           // 12 minutos
+    saveRotation(2, 3, 3);        // Rotación rápida
+    
+    Utils.debug("✅ Valores predeterminados inicializados correctamente");
+  }
 }
