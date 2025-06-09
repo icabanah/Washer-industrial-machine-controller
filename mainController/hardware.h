@@ -19,7 +19,7 @@ public:
   void nextionSetPage(uint8_t pageId); // Cambiar página en Nextion
   void nextionSetText(const String& componentId, const String& text); // Establecer texto en un componente Nextion
   void nextionSetValue(const String& componentId, int value);
-  bool nextionCheckForEvents();
+  bool nextionCheckForEvents(); // Verificar si hay eventos táctiles
   String nextionGetLastEvent();
   bool isNextionInitComplete(); // Verificar si la inicialización de Nextion está completa
   void _completeNextionInit(); // Movido a público para acceso desde callback

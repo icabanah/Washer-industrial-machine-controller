@@ -1009,12 +1009,7 @@ void UIControllerClass::_checkEditTimeout() {
  * @brief Diagnóstico del estado de edición y mapeo de eventos
  */
 void UIControllerClass::diagnosticarEstadoEdicion() {
-  Serial.println("🔍 DIAGNÓSTICO DEL SISTEMA DE EDICIÓN:");
-  Serial.println("======================================");
-  Serial.println("📊 Estado del modo edición:");
-  Serial.println("   - Modo activo: " + String(_modoEdicionActivo ? "SÍ" : "NO"));
-  Serial.println("   - Programa en edición: P" + String(_programaEnEdicion + 21));
-  Serial.println("   - Fase en edición: F" + String(_faseEnEdicion));
+  // Método deshabilitado para reducir spam en consola
   Serial.println("   - Parámetro actual: " + String(obtenerTextoParametro(_parametroActual)));
   Serial.println("");
   

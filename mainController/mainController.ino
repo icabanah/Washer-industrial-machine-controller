@@ -91,9 +91,15 @@ void loop()
   // Verificar eventos táctiles de la interfaz de usuario
   if (Hardware.nextionCheckForEvents())
   {
+    Serial.println("📱 Evento detectado en mainController");
     // El nuevo sistema procesa automáticamente los eventos táctiles
     // usando los IDs de componentes y páginas
     String event = Hardware.nextionGetLastEvent();
+    Serial.println("📱 Evento recibido: " + event);
+    Serial.print("📱 Página actual: ");
+    Serial.print(Hardware.getTouchEventPage());
+    Serial.print(", Componente: ");
+    Serial.println(Hardware.getTouchEventComponent());
     ProgramController.processUserEvent(event);
   }
 
