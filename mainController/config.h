@@ -122,30 +122,30 @@
 #define NEXTION_COMP_SEL_TIEMPO "val_tiempo"  // Valor del tiempo
 #define NEXTION_COMP_SEL_ROTACION "val_rotac" // Valor de rotación
 #define NEXTION_COMP_SEL_FASE "val_fase"      // Valor de fase
-#define NEXTION_COMP_MSG_TEXT "msg_text"      // Texto del mensaje temporal
+#define NEXTION_COMP_MSG_TEXT "msg_sel"       // Texto del mensaje temporal
 
 // === ALIASES PARA COMPATIBILIDAD ===
 // Estos aliases permiten usar diferentes nombres para los mismos componentes
-#define NEXTION_COMP_VAL_NIVEL NEXTION_COMP_SEL_NIVEL      // Alias para nivel
-#define NEXTION_COMP_VAL_TEMP NEXTION_COMP_SEL_TEMP        // Alias para temperatura  
-#define NEXTION_COMP_VAL_TIEMPO NEXTION_COMP_SEL_TIEMPO    // Alias para tiempo
+#define NEXTION_COMP_VAL_NIVEL NEXTION_COMP_SEL_NIVEL       // Alias para nivel
+#define NEXTION_COMP_VAL_TEMP NEXTION_COMP_SEL_TEMP         // Alias para temperatura
+#define NEXTION_COMP_VAL_TIEMPO NEXTION_COMP_SEL_TIEMPO     // Alias para tiempo
 #define NEXTION_COMP_VAL_ROTACION NEXTION_COMP_SEL_ROTACION // Alias para rotación
 
 // === COMPONENTES ADICIONALES PARA INFORMACIÓN ===
-#define NEXTION_COMP_INFO_FASES "lbl_fases"   // Información adicional de fases (P24)
+#define NEXTION_COMP_INFO_FASES "lbl_fases" // Información adicional de fases (P24)
 
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
 #define NEXTION_ID_BTN_PROGRAM2 2 // Botón "P23" para programa 2
 #define NEXTION_ID_BTN_PROGRAM3 3 // Botón "P24" para programa 3
-#define NEXTION_ID_BTN_START 9   // Botón "Comenzar"
+#define NEXTION_ID_BTN_START 9    // Botón "Comenzar"
 #define NEXTION_ID_BTN_EDIT 10    // Botón "Editar"
 
 // === IDs ADICIONALES PARA NAVEGACIÓN ===
-#define NEXTION_ID_BTN_PROG_ANTERIOR 12  // Botón "Anterior" en selección de programa
-#define NEXTION_ID_BTN_PROG_SIGUIENTE 13 // Botón "Siguiente" en selección de programa
-#define NEXTION_ID_BTN_COMENZAR NEXTION_ID_BTN_START  // Alias para compatibilidad
-#define NEXTION_ID_BTN_EDITAR NEXTION_ID_BTN_EDIT     // Alias para compatibilidad
+#define NEXTION_ID_BTN_PROG_ANTERIOR 12              // Botón "Anterior" en selección de programa
+#define NEXTION_ID_BTN_PROG_SIGUIENTE 13             // Botón "Siguiente" en selección de programa
+#define NEXTION_ID_BTN_COMENZAR NEXTION_ID_BTN_START // Alias para compatibilidad
+#define NEXTION_ID_BTN_EDITAR NEXTION_ID_BTN_EDIT    // Alias para compatibilidad
 
 // === COMPONENTES PÁGINA 2 - EJECUCIÓN ===
 #define NEXTION_COMP_PROG_EJECUCION "progr_ejec"         // Programa en ejecución
@@ -153,7 +153,7 @@
 #define NEXTION_COMP_TIEMPO_EJECUCION "tiempo_ejec"      // Tiempo transcurrido en ejecución
 #define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"          // Temperatura transcurrido en ejecución
 #define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"        // Nivel transcurrido en ejecución
-#define NEXTION_COMP_BARRA_PROGRESO "barra_prog"         // Barra de progreso del 
+#define NEXTION_COMP_BARRA_PROGRESO "barra_prog"         // Barra de progreso del
 #define NEXTION_COMP_GAUGE_TEMP_EJECUCION "gauge_temp"   // Gauge de temperatura
 #define NEXTION_COMP_BARRA_NIVEL_EJECUCION "barra_nivel" // Gauge de presión (nivel de agua)
 #define NEXTION_COMP_GAUGE_VEL_EJECUCION "gauge_vel"     // Gauge de presión (nivel de agua)
@@ -163,26 +163,26 @@
 #define NEXTION_COMP_BTN_PAUSAR "btnPausar"
 
 // === ALIASES PARA BOTONES DE CONTROL ===
-#define NEXTION_COMP_BTN_STOP NEXTION_COMP_BTN_PARAR  // Alias para botón parar
+#define NEXTION_COMP_BTN_STOP NEXTION_COMP_BTN_PARAR // Alias para botón parar
 
 // Información de estado
 #define NEXTION_ID_BTN_PAUSAR 11 // Botón "Pausar"
-#define NEXTION_ID_BTN_PARAR 8  // Botón "Parar"
+#define NEXTION_ID_BTN_PARAR 8   // Botón "Parar"
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 // Etiquetas de parámetros principales
-#define NEXTION_COMP_PROG_EDICION "progr_edic"     // Visualización del programa actual en edición
-#define NEXTION_COMP_FASE_EDICION "fase_edic"      // Visualización del valor de fase de programa en edición
-#define NEXTION_COMP_TIEMPO_EDICION "tiempo_edic"  // Visualización del valor de temporizador de programa en edición
-#define NEXTION_COMP_TEMP_EDICION "temp_edic"      // Visualización del valor de temperatura de programa en edición
-#define NEXTION_COMP_NIVEL_EDICION "nivel_edic"    // Visualización del valor de nivel de programa en edición
+#define NEXTION_COMP_PROG_EDICION "progr_edic"    // Visualización del programa actual en edición
+#define NEXTION_COMP_FASE_EDICION "fase_edic"     // Visualización del valor de fase de programa en edición
+#define NEXTION_COMP_TIEMPO_EDICION "tiempo_edic" // Visualización del valor de temporizador de programa en edición
+#define NEXTION_COMP_TEMP_EDICION "temp_edic"     // Visualización del valor de temperatura de programa en edición
+#define NEXTION_COMP_NIVEL_EDICION "nivel_edic"   // Visualización del valor de nivel de programa en edición
 
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
-#define NEXTION_COMP_VAL_NIVEL_EDIT "val_nivel"    // Valor actual del nivel en panel derecho
-#define NEXTION_COMP_VAL_TEMP_EDIT "val_temp"      // Valor actual de temperatura en panel derecho
-#define NEXTION_COMP_VAL_TIEMPO_EDIT "val_tiempo"  // Valor actual del tiempo en panel derecho
-#define NEXTION_COMP_VAL_ROTAC_EDIT "val_rotac"    // Valor actual de rotación en panel derecho
-#define NEXTION_COMP_VAL_FASE_EDIT "val_fase"      // Valor actual de fase en panel derecho
+#define NEXTION_COMP_VAL_NIVEL_EDIT "val_nivel"   // Valor actual del nivel en panel derecho
+#define NEXTION_COMP_VAL_TEMP_EDIT "val_temp"     // Valor actual de temperatura en panel derecho
+#define NEXTION_COMP_VAL_TIEMPO_EDIT "val_tiempo" // Valor actual del tiempo en panel derecho
+#define NEXTION_COMP_VAL_ROTAC_EDIT "val_rotac"   // Valor actual de rotación en panel derecho
+#define NEXTION_COMP_VAL_FASE_EDIT "val_fase"     // Valor actual de fase en panel derecho
 
 // Etiquetas de parámetros
 #define NEXTION_COMP_BTN_SIGUIENTE "btnSiguiente"     // Botón "Siguiente" para editar parámetro
@@ -198,8 +198,8 @@
 #define NEXTION_ID_BTN_PARAM_MAS 16       // ID de Botón "+" para aumentar parámetro
 #define NEXTION_ID_BTN_PARAM_ANTERIOR 18  // ID de Botón anterior para parámetro
 #define NEXTION_ID_BTN_PARAM_SIGUIENTE 15 // ID de Botón siguiente parámetro
-#define NEXTION_ID_BTN_GUARDAR 3         // ID de Botón "Guardar"
-#define NEXTION_ID_BTN_CANCELAR 4        // ID de Botón "Cancelar"
+#define NEXTION_ID_BTN_GUARDAR 3          // ID de Botón "Guardar"
+#define NEXTION_ID_BTN_CANCELAR 4         // ID de Botón "Cancelar"
 
 // === PARÁMETROS EDITABLES ===
 #define PARAM_NIVEL 0
@@ -218,10 +218,10 @@
 #define MAX_ROTACION 3
 
 // === INCREMENTOS DE EDICIÓN ===
-#define INCREMENT_NIVEL 1       // Incremento para nivel de agua
-#define INCREMENT_TEMP 5        // Incremento para temperatura (°C)
-#define INCREMENT_TIEMPO 1      // Incremento para tiempo (minutos)
-#define INCREMENT_ROTACION 1    // Incremento para rotación
+#define INCREMENT_NIVEL 1    // Incremento para nivel de agua
+#define INCREMENT_TEMP 5     // Incremento para temperatura (°C)
+#define INCREMENT_TIEMPO 1   // Incremento para tiempo (minutos)
+#define INCREMENT_ROTACION 1 // Incremento para rotación
 
 // === TEXTOS DE PARÁMETROS PARA DISPLAY ===
 #define TEXT_PARAM_NIVEL "Nivel"
@@ -230,7 +230,7 @@
 #define TEXT_PARAM_ROTACION "Rotacion"
 
 // === CONFIGURACIÓN DE EDICIÓN ===
-#define EDIT_TIMEOUT_MS 30000   // Timeout para salir automáticamente de edición (30 segundos)
+#define EDIT_TIMEOUT_MS 30000    // Timeout para salir automáticamente de edición (30 segundos)
 #define PARAM_BLINK_INTERVAL 500 // Intervalo de parpadeo para parámetro en edición (ms)
 
 // ===== DECLARACIONES DE FUNCIONES DE CONFIGURACIÓN =====
@@ -246,7 +246,7 @@ int incrementarParametro(int tipoParam, int valorActual);
 int decrementarParametro(int tipoParam, int valorActual);
 
 // Funciones de información de parámetros
-const char* obtenerTextoParametro(int tipoParam);
+const char *obtenerTextoParametro(int tipoParam);
 int obtenerValorMinimo(int tipoParam);
 int obtenerValorMaximo(int tipoParam);
 int obtenerIncrementoParametro(int tipoParam);
@@ -256,10 +256,10 @@ int obtenerSiguienteParametro(int tipoActual);
 int obtenerAnteriorParametro(int tipoActual);
 
 // Funciones de utilidad para programas
-void generarTextoPrograma(int numeroPrograma, char* buffer, int tamanioBuffer);
+void generarTextoPrograma(int numeroPrograma, char *buffer, int tamanioBuffer);
 bool esParametroValido(int tipoParam, int valor);
 
 // Funciones de formateo para display
-void formatearParametroConUnidad(int tipoParam, int valor, char* buffer, int tamanioBuffer);
+void formatearParametroConUnidad(int tipoParam, int valor, char *buffer, int tamanioBuffer);
 
 #endif // CONFIG_H

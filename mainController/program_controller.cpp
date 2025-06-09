@@ -433,11 +433,11 @@ void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
     
     setState(ESTADO_EDICION);
     
-    Utils.debug("ProgramControllerClass::startEditing| ✏️ Modo edición iniciado:");
-    Utils.debug("ProgramControllerClass::startEditing|   Programa: " + String(program + 22));
-    Utils.debug("ProgramControllerClass::startEditing|   Fase: " + String(phase + 1));
-    Utils.debug("ProgramControllerClass::startEditing|   Parámetro inicial: NIVEL");
-    Utils.debug("ProgramControllerClass::startEditing|   Valor inicial: " + String(_editingParameterValue));
+    // Utils.debug("ProgramControllerClass::startEditing| ✏️ Modo edición iniciado:");
+    // Utils.debug("ProgramControllerClass::startEditing|   Programa: " + String(program + 22));
+    // Utils.debug("ProgramControllerClass::startEditing|   Fase: " + String(phase + 1));
+    // Utils.debug("ProgramControllerClass::startEditing|   Parámetro inicial: NIVEL");
+    // Utils.debug("ProgramControllerClass::startEditing|   Valor inicial: " + String(_editingParameterValue));
     
     // Mostrar pantalla de edición
     _updateEditDisplay();
@@ -517,6 +517,12 @@ void ProgramControllerClass::cancelEditing() {
   _loadProgramData();
   setState(ESTADO_SELECCION);
   Utils.debug("Edición cancelada");
+}
+
+void ProgramControllerClass::endEditing() {
+  _isEditing = false;
+  setState(ESTADO_SELECCION);
+  Utils.debug("✅ Edición terminada, volviendo a estado de selección");
 }
 
 void ProgramControllerClass::processUserEvent(const String& event) {
@@ -685,9 +691,9 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     case NEXTION_ID_BTN_EDIT:
       // Entrar en modo de edición para el programa seleccionado
       Utils.debug("✏️ Editando programa " + String(_currentProgram + 22));
-      Utils.debug("🔧 Llamando a startEditing(" + String(_currentProgram) + ", 0)");
+      // Utils.debug("🔧 Llamando a startEditing(" + String(_currentProgram) + ", 0)");
       startEditing(_currentProgram, 0); // Comenzar editando la primera fase
-      Utils.debug("🔧 startEditing() completado, estado actual: " + String(_currentState));
+      // Utils.debug("🔧 startEditing() completado, estado actual: " + String(_currentState));
       break;
       
     default:
@@ -702,32 +708,6 @@ void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
   // Delegar completamente el manejo de eventos al UIController
   UIController.handleEditPageEvent(componentId);
 }
-//       break;
-      
-//     case NEXTION_ID_BTN_PARAM_SIGUIENTE:
-//       // Cambiar al parámetro siguiente
-//       Utils.debug("➡️ Ejecutando _selectNextParameter()");
-//       _selectNextParameter();
-//       break;
-      
-//     case NEXTION_ID_BTN_GUARDAR:
-//       // Guardar cambios y volver a selección
-//       Utils.debug("💾 Guardando cambios de edición");
-//       saveEditing();
-//       break;
-      
-//     case NEXTION_ID_BTN_CANCELAR:
-//       // Cancelar edición y volver a selección
-//       Utils.debug("❌ Cancelando edición");
-//       cancelEditing();
-//       break;
-      
-//     default:
-//       Utils.debug("⚠️ Componente no reconocido en página de edición: " + String(componentId));
-//       Utils.debug("💡 Verifica que los IDs de Nextion coincidan con config.h");
-//       break;
-//   }
-// }
 
 void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
   Utils.debug("⚙️ Evento en página de ejecución - Componente: " + String(componentId));

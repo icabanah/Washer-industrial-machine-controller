@@ -44,6 +44,7 @@ public:
   
   // Gestión de edición
   void startEditing(uint8_t program, uint8_t phase);
+  void endEditing(); // Terminar edición y volver a selección
   void editParameter(uint8_t paramType, uint8_t value);
   void saveEditing();
   void cancelEditing();

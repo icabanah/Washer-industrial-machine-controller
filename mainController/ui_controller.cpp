@@ -1,5 +1,6 @@
 // ui_controller.cpp
 #include "ui_controller.h"
+#include "program_controller.h"
 #include "Arduino.h"
 #include <stdio.h>
 
@@ -62,10 +63,6 @@ void UIControllerClass::init() {
 }
 
 void UIControllerClass::showWelcomeScreen() {
-  Serial.println("=== INICIANDO PANTALLA BIENVENIDA ===");
-  Serial.print("Componente título definido como: ");
-  Serial.println(NEXTION_COMP_TITULO);
-  
   // Cambiar a la página de bienvenida
   Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
   delay(100); // Pausa breve para asegurar cambio de página
@@ -83,7 +80,6 @@ void UIControllerClass::showWelcomeScreen() {
   // Activar animación de inicio si existe (ejemplo)
   // Hardware.nextionSendCommand("anim.en=1");
   
-  Serial.println("=== PANTALLA BIENVENIDA ENVIADA ===");
 }
 
 /// @brief 
@@ -116,10 +112,6 @@ void UIControllerClass::showSelectionScreen(uint8_t programa) {
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (programa == 2) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (programa == 3) ? 1 : 0);
 
-  Serial.println("showSelectionScreen(): Mostrando pantalla de selección de programa para P" + String(programa + 21));
-  Serial.println("showSelectionScreen(): Botón del programa 1: " + String((programa == 1) ? 1 : 0));
-  Serial.println("showSelectionScreen(): Botón del programa 2: " + String((programa == 2) ? 1 : 0));
-  Serial.println("showSelectionScreen(): Botón del programa 3: " + String((programa == 3) ? 1 : 0));  
 }
 
 /// @brief
@@ -174,7 +166,7 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase) {
   updateEditDisplay();
   
   // Ejecutar diagnóstico del estado de edición
-  diagnosticarEstadoEdicion();
+  // diagnosticarEstadoEdicion();
   
   Serial.println("🖥️ Pantalla de edición actualizada:");
   Serial.println("   Programa: " + String(programa + 21));
@@ -409,6 +401,7 @@ void UIControllerClass::_handleExecutionPageEvent(uint8_t componentId) {
     Serial.println("   ❓ ComponentID no reconocido: " + String(componentId));
   }
 }
+
 /// Este método actualiza los componentes de la pantalla Nextion con los valores del programa seleccionado.
 /// @details
 /// Este método toma el número del programa (1, 2 o 3) y actualiza los componentes de la pantalla Nextion
@@ -489,39 +482,6 @@ void UIControllerClass::playSound(uint8_t soundType) {
   Hardware.nextionSendCommand("audio.val=" + String(soundType));
 }
 
-// ===== MÉTODOS DE LIMPIEZA DE EVENTOS =====
-//
-// ESTRATEGIA DE LIMPIEZA DE EVENTOS:
-// 
-// Problema: Las pantallas Nextion pueden acumular eventos táctiles en su buffer interno
-// mientras el ESP32 está procesando otras tareas. Esto puede causar comportamientos 
-// inesperados cuando el usuario toca botones rápidamente o durante transiciones.
-//
-// Solución: Antes de mostrar una nueva pantalla crítica, ejecutamos una secuencia de 
-// limpieza que:
-// 1. Cambia temporalmente a una página neutra (WELCOME)
-// 2. Procesa y descarta todos los eventos pendientes durante un período de tiempo
-// 3. Luego cambia a la pantalla objetivo con garantía de estado limpio
-//
-// Uso recomendado:
-// - Para transiciones normales: usar métodos show...() directos
-// - Para transiciones críticas: usar métodos safeTransitionTo...()
-// - Para emergencias: usar safeTransitionToError() (con timeout más corto)
-//
-// EJEMPLO DE USO DESDE PROGRAM CONTROLLER:
-// 
-// // Transición normal (rápida)
-// UIController.showSelectionScreen(programa);
-//
-// // Transición crítica (con limpieza garantizada)
-// UIController.safeTransitionToExecution(programa, fase, nivel, temp, rot);
-//
-// // Verificar estabilidad antes de procesar eventos críticos
-// if (UIController.isUIStable()) {
-//   // Proceder con lógica crítica
-// }
-//
-// ===================================================================
 
 void UIControllerClass::clearPendingEvents() {
   // Limpiar eventos locales pendientes
@@ -909,6 +869,9 @@ void UIControllerClass::handleSaveParameters() {
   // Salir del modo edición
   _modoEdicionActivo = false;
   
+  // Notificar al ProgramController que vuelva al estado de selección
+  ProgramController.endEditing();
+  
   // Volver a la página de selección
   safeTransitionToSelection(_programaEnEdicion);
   
@@ -925,6 +888,13 @@ void UIControllerClass::handleCancelEdit() {
   // Salir del modo edición sin guardar
   _modoEdicionActivo = false;
   
+  // Notificar al ProgramController que vuelva al estado de selección
+  ProgramController.endEditing();
+  
+  // Volver a la página de selección
+  safeTransitionToSelection(_programaEnEdicion);
+  _modoEdicionActivo = false;
+  
   // Volver a la página de selección
   safeTransitionToSelection(_programaEnEdicion);
   
@@ -939,12 +909,6 @@ void UIControllerClass::handleCancelEdit() {
  * @param fase Número de fase (1-4)
  */
 void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fase) {
-  // NOTA: Por ahora usaremos los valores estáticos hasta que Storage esté completamente integrado
-  // Cuando Storage esté listo, reemplazar con:
-  // _valoresTemporales[PARAM_NIVEL] = Storage.getParamNivel(programa, fase);
-  // _valoresTemporales[PARAM_TEMPERATURA] = Storage.getParamTemp(programa, fase);
-  // _valoresTemporales[PARAM_TIEMPO] = Storage.getParamTiempo(programa, fase);
-  // _valoresTemporales[PARAM_ROTACION] = Storage.getParamRotacion(programa, fase);
   
   // Usar valores estáticos de las matrices existentes por ahora
   _valoresTemporales[PARAM_NIVEL] = _nivelAgua[programa - 1][fase - 1];
@@ -960,13 +924,7 @@ void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fas
  * @param fase Número de fase (1-4)
  */
 void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase) {
-  // NOTA: Por ahora actualizaremos las matrices estáticas hasta que Storage esté completamente integrado
-  // Cuando Storage esté listo, reemplazar con:
-  // Storage.setParamNivel(programa, fase, _valoresTemporales[PARAM_NIVEL]);
-  // Storage.setParamTemp(programa, fase, _valoresTemporales[PARAM_TEMPERATURA]);
-  // Storage.setParamTiempo(programa, fase, _valoresTemporales[PARAM_TIEMPO]);
-  // Storage.setParamRotacion(programa, fase, _valoresTemporales[PARAM_ROTACION]);
-  
+ 
   // Actualizar matrices estáticas por ahora
   _nivelAgua[programa - 1][fase - 1] = _valoresTemporales[PARAM_NIVEL];
   _temperaturaLim[programa - 1][fase - 1] = _valoresTemporales[PARAM_TEMPERATURA];
@@ -1005,29 +963,29 @@ void UIControllerClass::_checkEditTimeout() {
     Serial.println("Timeout de edición alcanzado - Saliendo automáticamente");
   }
 }
-/**
- * @brief Diagnóstico del estado de edición y mapeo de eventos
- */
-void UIControllerClass::diagnosticarEstadoEdicion() {
-  // Método deshabilitado para reducir spam en consola
-  Serial.println("   - Parámetro actual: " + String(obtenerTextoParametro(_parametroActual)));
-  Serial.println("");
+// /**
+//  * @brief Diagnóstico del estado de edición y mapeo de eventos
+//  */
+// void UIControllerClass::diagnosticarEstadoEdicion() {
+//   // Método deshabilitado para reducir spam en consola
+//   Serial.println("   - Parámetro actual: " + String(obtenerTextoParametro(_parametroActual)));
+//   Serial.println("");
   
-  Serial.println("🎯 IDs de botones de edición esperados:");
-  Serial.println("   - btnMas: " + String(NEXTION_ID_BTN_PARAM_MAS));
-  Serial.println("   - btnMenos: " + String(NEXTION_ID_BTN_PARAM_MENOS));
-  Serial.println("   - btnSiguiente: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE));
-  Serial.println("   - btnAnterior: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR));
-  Serial.println("   - btnGuardar: " + String(NEXTION_ID_BTN_GUARDAR));
-  Serial.println("   - btnCancelar: " + String(NEXTION_ID_BTN_CANCELAR));
-  Serial.println("");
+//   Serial.println("🎯 IDs de botones de edición esperados:");
+//   Serial.println("   - btnMas: " + String(NEXTION_ID_BTN_PARAM_MAS));
+//   Serial.println("   - btnMenos: " + String(NEXTION_ID_BTN_PARAM_MENOS));
+//   Serial.println("   - btnSiguiente: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE));
+//   Serial.println("   - btnAnterior: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR));
+//   Serial.println("   - btnGuardar: " + String(NEXTION_ID_BTN_GUARDAR));
+//   Serial.println("   - btnCancelar: " + String(NEXTION_ID_BTN_CANCELAR));
+//   Serial.println("");
   
-  Serial.println("📋 Valores temporales actuales:");
-  for (int i = 0; i < 4; i++) {
-    Serial.println("   - " + String(obtenerTextoParametro(i)) + ": " + String(_valoresTemporales[i]));
-  }
-  Serial.println("======================================");
-}
+//   Serial.println("📋 Valores temporales actuales:");
+//   for (int i = 0; i < 4; i++) {
+//     Serial.println("   - " + String(obtenerTextoParametro(i)) + ": " + String(_valoresTemporales[i]));
+//   }
+//   Serial.println("======================================");
+// }
 
 /**
  * @brief Resetear el timeout de edición

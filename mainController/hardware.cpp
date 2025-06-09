@@ -324,6 +324,17 @@ bool HardwareClass::_readNextionResponse()
   return false;
 }
 
+/// @brief 
+/// Obtiene el último evento capturado desde la pantalla Nextion.
+/// Este método retorna el contenido del último evento almacenado en `_nextionLastEvent`.
+/// @note
+/// El evento puede ser un evento táctil o una respuesta de la pantalla Nextion.
+/// Los eventos táctiles típicos tienen el formato `0x65 [PageID] [ComponentID] [EventType]`, donde:
+/// - `PageID` es el ID de la página donde ocurrió el evento.
+/// - `ComponentID` es el ID del componente que generó el evento.
+/// - `EventType` indica el tipo de evento (1 para presionado, 0 para liberado).
+/// @return 
+/// Retorna el último evento como una cadena de texto.
 String HardwareClass::nextionGetLastEvent()
 {
   // Retorna el último evento capturado desde la pantalla Nextion

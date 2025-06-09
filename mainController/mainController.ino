@@ -95,7 +95,6 @@ void loop()
     // El nuevo sistema procesa automáticamente los eventos táctiles
     // usando los IDs de componentes y páginas
     String event = Hardware.nextionGetLastEvent();
-    Serial.println("📱 Evento recibido: " + event);
     Serial.print("📱 Página actual: ");
     Serial.print(Hardware.getTouchEventPage());
     Serial.print(", Componente: ");
