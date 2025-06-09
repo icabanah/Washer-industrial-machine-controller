@@ -1,6 +1,7 @@
 // ui_controller.cpp
 #include "ui_controller.h"
 #include "program_controller.h"
+#include "storage.h"
 #include "Arduino.h"
 #include <stdio.h>
 
@@ -290,10 +291,10 @@ void UIControllerClass::processEvents() {
   }
   
   // Actualizar mensajes temporales
-  if (_messageActive && (millis() - _messageTimestamp > 2000)) {
+  if (_messageActive && (millis() - _messageTimestamp > _messageDuration)) {
     _messageActive = false;
-    // Ocultar mensaje
-    Hardware.nextionSendCommand("msgBox.vis=0");
+    // Limpiar mensaje
+    Hardware.nextionSetText(NEXTION_COMP_MSG_TEXT, "");
   }
 }
 
@@ -414,14 +415,20 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa) {
   // Actualizar información mostrada para el programa seleccionado
   Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(programa + 21));
   
-  // Mostrar valores para la primera fase del programa usando los nuevos componentes
-  Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL, String(_nivelAgua[programa - 1][0]));
-  Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP, String(_temperaturaLim[programa - 1][0]) + "°C");
-  Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO, String(_temporizadorLim[programa - 1][0]) + " min");
+  // Cargar valores actualizados desde Storage para la primera fase (fase 0)
+  uint8_t nivel = Storage.loadWaterLevel(programa - 1, 0);
+  uint8_t temp = Storage.loadTemperature(programa - 1, 0);
+  uint8_t tiempo = Storage.loadTime(programa - 1, 0);
+  uint8_t rotacion = Storage.loadRotation(programa - 1, 0);
+  
+  // Mostrar valores actualizados
+  Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL, String(nivel));
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP, String(temp) + "°C");
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO, String(tiempo) + " min");
   
   // Convertir valor numérico de rotación a texto descriptivo
   String rotacionTexto;
-  switch (_rotacionTam[programa - 1][0]) {
+  switch (rotacion) {
     case 1: rotacionTexto = "Lento"; break;
     case 2: rotacionTexto = "Medio"; break;
     case 3: rotacionTexto = "Rápido"; break;
@@ -431,17 +438,18 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa) {
   
   // Si es el programa 3 (P24), mostrar información adicional de múltiples fases
   if (programa == 3) {
-    // Aquí se podría mostrar información de todas las fases en t15
+    // Mostrar información de todas las fases
     String fasesInfo = "Fases: ";
     for (uint8_t i = 0; i < 4; i++) {
-      fasesInfo += String(i + 1) + ":" + String(_temporizadorLim[programa - 1][i]) + "m ";
+      uint8_t tiempoFase = Storage.loadTime(programa - 1, i);
+      fasesInfo += String(i + 1) + ":" + String(tiempoFase) + "m ";
     }
     Hardware.nextionSetText(NEXTION_COMP_INFO_FASES, fasesInfo);
   } else {
     Hardware.nextionSetText(NEXTION_COMP_INFO_FASES, "");  // Limpiar texto si no es programa 3
   }
   
-  Serial.println("Información del programa P" + String(programa + 21) + " actualizada en pantalla");
+  Serial.println("Información del programa P" + String(programa + 21) + " actualizada desde Storage");
 }
 
 bool UIControllerClass::hasUserAction() {
@@ -468,11 +476,11 @@ bool UIControllerClass::isUIStable() {
 /// Si se pasa 0, el mensaje permanecerá visible hasta que se oculte manualmente.
 void UIControllerClass::showMessage(const String& message, uint16_t duration) {
   // Mostrar un mensaje temporal en la pantalla
-  Hardware.nextionSendCommand("msgBox.txt=\"" + message + "\"");
-  Hardware.nextionSendCommand("msgBox.vis=1");
+  Hardware.nextionSetText(NEXTION_COMP_MSG_TEXT, message);
   
   _messageActive = true;
   _messageTimestamp = millis();
+  _messageDuration = duration;
 }
 
 void UIControllerClass::playSound(uint8_t soundType) {

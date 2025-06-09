@@ -122,7 +122,7 @@
 #define NEXTION_COMP_SEL_TIEMPO "val_tiempo"  // Valor del tiempo
 #define NEXTION_COMP_SEL_ROTACION "val_rotac" // Valor de rotación
 #define NEXTION_COMP_SEL_FASE "val_fase"      // Valor de fase
-#define NEXTION_COMP_MSG_TEXT "msg_sel"       // Texto del mensaje temporal
+#define NEXTION_COMP_MSG_TEXT "msg_sel"       // Texto del mensaje temporal "msg_sel"       // Texto del mensaje temporal
 
 // === ALIASES PARA COMPATIBILIDAD ===
 // Estos aliases permiten usar diferentes nombres para los mismos componentes

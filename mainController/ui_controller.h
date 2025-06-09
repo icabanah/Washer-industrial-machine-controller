@@ -73,6 +73,7 @@ private:
   bool _userActionPending;
   unsigned long _messageTimestamp;
   bool _messageActive;
+  uint16_t _messageDuration;
   
   // Variables para el sistema de limpieza de eventos
   bool _clearingEvents;
