@@ -298,12 +298,12 @@ void UIControllerClass::processEvents() {
   }
 }
 
-void UIControllerClass::_handleNextionEvent(const String& event) {
-  // IMPORTANTE: Este método ya no se usa con String events
-  // Los eventos táctiles ahora se procesan directamente desde Hardware
-  Serial.println("⚠️ ADVERTENCIA: _handleNextionEvent(String) está obsoleto");
-  Serial.println("   Use _handleTouchEvent() en su lugar");
-}
+// void UIControllerClass::_handleNextionEvent(const String& event) {
+//   // IMPORTANTE: Este método ya no se usa con String events
+//   // Los eventos táctiles ahora se procesan directamente desde Hardware
+//   Serial.println("⚠️ ADVERTENCIA: _handleNextionEvent(String) está obsoleto");
+//   Serial.println("   Use _handleTouchEvent() en su lugar");
+// }
 
 /**
  * @brief Procesar eventos táctiles directamente desde Hardware
@@ -620,7 +620,7 @@ void UIControllerClass::safeTransitionToError(uint8_t errorCode, const String& e
  * @param fase Número de fase (1-4)
  */
 void UIControllerClass::initEditMode(uint8_t programa, uint8_t fase) {
-  _programaEnEdicion = programa;
+  _programaEnEdicion = programa + 1;
   _faseEnEdicion = fase;
   _parametroActual = PARAM_NIVEL; // Comenzar con el primer parámetro
   _modoEdicionActivo = true;
@@ -917,14 +917,17 @@ void UIControllerClass::handleCancelEdit() {
  * @param fase Número de fase (1-4)
  */
 void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fase) {
+  // Cargar valores directamente desde Storage
+  _valoresTemporales[PARAM_NIVEL] = Storage.loadWaterLevel(programa - 1, fase - 1);
+  _valoresTemporales[PARAM_TEMPERATURA] = Storage.loadTemperature(programa - 1, fase - 1);
+  _valoresTemporales[PARAM_TIEMPO] = Storage.loadTime(programa - 1, fase - 1);
+  _valoresTemporales[PARAM_ROTACION] = Storage.loadRotation(programa - 1, fase - 1);
   
-  // Usar valores estáticos de las matrices existentes por ahora
-  _valoresTemporales[PARAM_NIVEL] = _nivelAgua[programa - 1][fase - 1];
-  _valoresTemporales[PARAM_TEMPERATURA] = _temperaturaLim[programa - 1][fase - 1];
-  _valoresTemporales[PARAM_TIEMPO] = _temporizadorLim[programa - 1][fase - 1];
-  _valoresTemporales[PARAM_ROTACION] = _rotacionTam[programa - 1][fase - 1];
-  
-  Serial.println("Parámetros cargados desde storage");
+  Serial.println("Parámetros cargados desde storage - P" + String(programa + 21) + " F" + String(fase) + ":");
+  Serial.println("  Nivel: " + String(_valoresTemporales[PARAM_NIVEL]));
+  Serial.println("  Temperatura: " + String(_valoresTemporales[PARAM_TEMPERATURA]) + "°C");
+  Serial.println("  Tiempo: " + String(_valoresTemporales[PARAM_TIEMPO]) + " min");
+  Serial.println("  Rotación: " + String(_valoresTemporales[PARAM_ROTACION]));
 }
 /**
  * @brief Guardar parámetros en storage para el programa y fase especificados
@@ -932,14 +935,19 @@ void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fas
  * @param fase Número de fase (1-4)
  */
 void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase) {
- 
-  // Actualizar matrices estáticas por ahora
+  // Guardar valores directamente en Storage
+  Storage.saveWaterLevel(programa - 1, fase - 1, _valoresTemporales[PARAM_NIVEL]);
+  Storage.saveTemperature(programa - 1, fase - 1, _valoresTemporales[PARAM_TEMPERATURA]);
+  Storage.saveTime(programa - 1, fase - 1, _valoresTemporales[PARAM_TIEMPO]);
+  Storage.saveRotation(programa - 1, fase - 1, _valoresTemporales[PARAM_ROTACION]);
+  
+  // Actualizar matrices estáticas también para mantener consistencia
   _nivelAgua[programa - 1][fase - 1] = _valoresTemporales[PARAM_NIVEL];
   _temperaturaLim[programa - 1][fase - 1] = _valoresTemporales[PARAM_TEMPERATURA];
   _temporizadorLim[programa - 1][fase - 1] = _valoresTemporales[PARAM_TIEMPO];
   _rotacionTam[programa - 1][fase - 1] = _valoresTemporales[PARAM_ROTACION];
   
-  Serial.println("Parámetros guardados en storage");
+  Serial.println("Parámetros guardados en Storage - P" + String(programa + 21) + " F" + String(fase));
 }
 
 /**
