@@ -8,7 +8,7 @@ void ProgramControllerClass::init() {
   // Inicializar variables de estado
   _currentState = ESTADO_SELECCION;
   _previousState = ESTADO_SELECCION;
-  _currentProgram = 1;
+  _currentProgram = 0;  // Inicializar con programa P22 (índice 0) por defecto
   _currentPhase = 0;
   
   // Inicializar variables de temporizador
@@ -19,7 +19,7 @@ void ProgramControllerClass::init() {
   _timerRunning = false;
   
   // Inicializar variables de edición
-  _editingProgram = 1;
+  _editingProgram = 0;  // Inicializar con programa P22 (índice 0) por defecto
   _editingPhase = 0;
   _editingParameter = 0;
   _editingParameterValue = 0;
@@ -82,12 +82,12 @@ void ProgramControllerClass::setState(uint8_t newState) {
     switch (newState) {
       case ESTADO_SELECCION:
         Utils.debug("📋 Mostrando pantalla de selección");
-        UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+        UIController.showSelectionScreen(_currentProgram); // Pasar índice directamente
         break;
       
       case ESTADO_EDICION:
         Utils.debug("✏️ Mostrando pantalla de edición");
-        UIController.showEditScreen(_editingProgram + 1, _editingPhase); // Convertir a 1-3 para UI
+        UIController.showEditScreen(_editingProgram, _editingPhase);
         break;
       
       case ESTADO_EJECUCION:
@@ -442,7 +442,7 @@ void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
     
     // Utils.debug("ProgramControllerClass::startEditing| ✏️ Modo edición iniciado:");
     // Utils.debug("ProgramControllerClass::startEditing|   Programa: " + String(program + 22));
-    // Utils.debug("ProgramControllerClass::startEditing|   Fase: " + String(phase + 1));
+    // Utils.debug("ProgramControllerClass::startEditing|   Fase: " + String(phase));
     // Utils.debug("ProgramControllerClass::startEditing|   Parámetro inicial: NIVEL");
     // Utils.debug("ProgramControllerClass::startEditing|   Valor inicial: " + String(_editingParameterValue));
     
@@ -513,7 +513,7 @@ void ProgramControllerClass::saveEditing() {
   setState(ESTADO_SELECCION);
   
   // Mostrar pantalla de selección actualizada
-  UIController.showSelectionScreen(_editingProgram + 1); // Convertir a 1-3 para UI
+  UIController.showSelectionScreen(_editingProgram); // Pasar índice directamente
   
   Utils.debug("✅ Edición guardada exitosamente");
 }
@@ -646,7 +646,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
       _currentProgram = 0; // Índice interno 0 = P22
       Storage.saveProgram(_currentProgram);
       Utils.debug("📋 Programa 1 seleccionado directamente (P22)");
-      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+      UIController.showSelectionScreen(_currentProgram); // Pasar índice 0 directamente
       break;
       
     case NEXTION_ID_BTN_PROGRAM2:
@@ -654,7 +654,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
       _currentProgram = 1; // Índice interno 1 = P23
       Storage.saveProgram(_currentProgram);
       Utils.debug("📋 Programa 2 seleccionado directamente (P23)");
-      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+      UIController.showSelectionScreen(_currentProgram); // Pasar índice 1 directamente
       break;
       
     case NEXTION_ID_BTN_PROGRAM3:
@@ -662,7 +662,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
       _currentProgram = 2; // Índice interno 2 = P24
       Storage.saveProgram(_currentProgram);
       Utils.debug("📋 Programa 3 seleccionado directamente (P24)");
-      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+      UIController.showSelectionScreen(_currentProgram); // Pasar índice 2 directamente
       break;
       
     // case NEXTION_ID_BTN_PROG_ANTERIOR:
@@ -674,7 +674,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     //   }
     //   Storage.saveProgram(_currentProgram);
     //   Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
-    //   UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+    //   UIController.showSelectionScreen(_currentProgram);
     //   break;
       
     // case NEXTION_ID_BTN_PROG_SIGUIENTE:
@@ -686,7 +686,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     //   }
     //   Storage.saveProgram(_currentProgram);
     //   Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
-    //   UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+    //   UIController.showSelectionScreen(_currentProgram);
     //   break;
       
     case NEXTION_ID_BTN_START:
@@ -697,6 +697,12 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
       
     case NEXTION_ID_BTN_EDIT:
       // Entrar en modo de edición para el programa seleccionado
+      Serial.println("=== BOTÓN EDIT PRESIONADO ===");
+      Serial.println("_currentProgram = " + String(_currentProgram));
+      
+      // Depuración: Mostrar todos los valores almacenados
+      // Storage.debugPrintAllPrograms();
+      
       Utils.debug("✏️ Editando programa " + String(_currentProgram + 22));
       // Utils.debug("🔧 Llamando a startEditing(" + String(_currentProgram) + ", 0)");
       startEditing(_currentProgram, 0); // Comenzar editando la primera fase
@@ -766,8 +772,6 @@ void ProgramControllerClass::update() {
   _handleStateMachine();
 }
 
-
-// ===== MÉTODOS AUXILIARES PARA EDICIÓN DE PARÁMETROS =====
 
 void ProgramControllerClass::_decreaseCurrentParameter() {
   // Disminuir el valor del parámetro actual respetando límites

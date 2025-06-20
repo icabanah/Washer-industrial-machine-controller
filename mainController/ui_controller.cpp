@@ -162,6 +162,9 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
 /// @note
 /// Asegúrate de que los componentes de la pantalla Nextion estén correctamente configurados con los IDs especificados.
 void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase) {
+  Serial.println("Programa recibido: " + String(programa) + " (P" + String(programa + 22) + ")");
+  Serial.println("Fase recibida: " + String(fase));
+  
   // Inicializar modo de edición
   initEditMode(programa, fase);
   
@@ -644,10 +647,10 @@ void UIControllerClass::updateEditDisplay() {
   char buffer[20];
   
   // Actualizar programa y fase en edición
-  generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer));
+  generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer)); // Sumar 1 porque generarTextoPrograma espera 1,2,3
   Hardware.nextionSetText(NEXTION_COMP_PROG_EDICION, buffer);
   
-  snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion); // Actualizar fase en edición
+  snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion + 1); // Mostrar F1, F2, F3, F4 al usuario
   Hardware.nextionSetText(NEXTION_COMP_FASE_EDICION, buffer);
   
   // Actualizar parámetro actual y panel derecho
@@ -701,7 +704,7 @@ void UIControllerClass::updateRightPanel() {
   Hardware.nextionSetText(NEXTION_COMP_VAL_ROTAC_EDIT, buffer);
   
   // Actualizar fase en panel derecho
-  snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion);
+  snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion + 1); // Mostrar F1, F2, F3, F4 al usuario
   Hardware.nextionSetText(NEXTION_COMP_VAL_FASE_EDIT, buffer);
   
   Serial.println("Panel derecho actualizado");
@@ -921,17 +924,22 @@ void UIControllerClass::handleCancelEdit() {
 /// @param fase 
 /// Número de fase (0-3)
 void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fase) {
+  Serial.println("Programa recibido (índice): " + String(programa));
+  Serial.println("Fase recibida: " + String(fase));
+  Serial.println("Esto corresponde a: P" + String(programa + 22) + " F" + String(fase));
+  
   // Cargar valores directamente desde Storage
   _valoresTemporales[PARAM_NIVEL] = Storage.loadWaterLevel(programa, fase);
   _valoresTemporales[PARAM_TEMPERATURA] = Storage.loadTemperature(programa, fase);
   _valoresTemporales[PARAM_TIEMPO] = Storage.loadTime(programa, fase);
   _valoresTemporales[PARAM_ROTACION] = Storage.loadRotation(programa, fase);
   
-  Serial.println("Parámetros cargados desde storage - P" + String(programa + 22) + " F" + String(fase) + ":");
+  Serial.println("Valores cargados desde Storage:");
   Serial.println("  Nivel: " + String(_valoresTemporales[PARAM_NIVEL]));
   Serial.println("  Temperatura: " + String(_valoresTemporales[PARAM_TEMPERATURA]) + "°C");
   Serial.println("  Tiempo: " + String(_valoresTemporales[PARAM_TIEMPO]) + " min");
   Serial.println("  Rotación: " + String(_valoresTemporales[PARAM_ROTACION]));
+  Serial.println("=== FIN _loadParametersFromStorage ===");
 }
 
 

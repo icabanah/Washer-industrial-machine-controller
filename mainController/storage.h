@@ -57,6 +57,9 @@ public:
   // Contador de uso
   uint16_t loadUsageCounter();
   void incrementUsageCounter();
+  
+  // // Depuración
+  // void debugPrintAllPrograms();
 
 private:
   // Variables para manejo interno

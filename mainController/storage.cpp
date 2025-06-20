@@ -336,3 +336,22 @@ void StorageClass::initializeDefaultValues() {
     Utils.debug("✅ Valores predeterminados inicializados correctamente");
   }
 }
+// /**
+//  * @brief Función de depuración para verificar los valores almacenados
+//  */
+// void StorageClass::debugPrintAllPrograms() {
+//   Serial.println("=== VALORES ALMACENADOS EN STORAGE ===");
+  
+//   for (uint8_t p = 0; p < NUM_PROGRAMAS; p++) {
+//     Serial.println("PROGRAMA P" + String(p + 22) + " (índice " + String(p) + "):");
+//     for (uint8_t f = 0; f < NUM_FASES; f++) {
+//       Serial.println("  Fase " + String(f) + ":");
+//       Serial.println("    Nivel: " + String(loadWaterLevel(p, f)));
+//       Serial.println("    Temperatura: " + String(loadTemperature(p, f)) + "°C");
+//       Serial.println("    Tiempo: " + String(loadTime(p, f)) + " min");
+//       Serial.println("    Rotación: " + String(loadRotation(p, f)));
+//     }
+//   }
+  
+//   Serial.println("=====================================");
+// }

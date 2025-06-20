@@ -213,13 +213,13 @@ int obtenerIncrementoParametro(int tipoParam) {
 /// @param tamanioBuffer 
 void generarTextoPrograma(int numeroPrograma, char* buffer, int tamanioBuffer) {
     switch (numeroPrograma) {
-        case 1:
+        case 0:
             snprintf(buffer, tamanioBuffer, "P22");
             break;
-        case 2:
+        case 1:
             snprintf(buffer, tamanioBuffer, "P23");
             break;
-        case 3:
+        case 2:
             snprintf(buffer, tamanioBuffer, "P24");
             break;
         default:
