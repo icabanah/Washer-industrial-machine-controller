@@ -19,14 +19,11 @@ public:
   void showErrorScreen(uint8_t errorCode = 0, const String& errorMessage = "");
   void showEmergencyScreen();
   
-  // === NUEVOS MÉTODOS PARA PÁGINA DE EDICIÓN ===
-  // Inicialización y gestión de edición de parámetros
   void initEditMode(uint8_t programa, uint8_t fase);
   void updateEditDisplay();
   void updateParameterDisplay();
   void updateRightPanel();
   
-  // Manejo de eventos de edición
   void handleEditPageEvent(int componentId);
   void handleParameterIncrement();
   void handleParameterDecrement(); 
@@ -34,9 +31,6 @@ public:
   void handlePreviousParameter();
   void handleSaveParameters();
   void handleCancelEdit();
-  
-  // Método de diagnóstico para depuración
-  void diagnosticarEstadoEdicion();
   
   // Métodos de transición con limpieza garantizada de eventos
   void safeTransitionToSelection(uint8_t programa = 0);
@@ -82,7 +76,7 @@ private:
   
   // === VARIABLES PARA EDICIÓN DE PARÁMETROS ===
   // Estado de edición actual
-  uint8_t _programaEnEdicion;      // Programa siendo editado (1, 2, 3)
+  uint8_t _programaEnEdicion;      // Programa siendo editado (0, 1, 2)
   uint8_t _faseEnEdicion;          // Fase siendo editada (1-4)
   int _parametroActual;            // Parámetro actualmente seleccionado (PARAM_NIVEL, etc.)
   int _valoresTemporales[4];       // Valores temporales: [nivel, temp, tiempo, rotacion]

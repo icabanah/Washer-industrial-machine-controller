@@ -423,6 +423,13 @@ uint8_t ProgramControllerClass::getProgressPercentage() {
   return 100 - ((remainingTotal * 100) / _totalSeconds);
 }
 
+/// @brief
+/// Inicia el modo de edición para un programa y fase específicos.
+/// Este método permite al usuario editar los parámetros de un programa específico,
+/// @param program
+/// El número del programa a editar (0 a 2).
+/// @param phase
+/// El número de la fase a editar (0 a 3).
 void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
   if (program < NUM_PROGRAMAS && phase < NUM_FASES) {
     _editingProgram = program;
@@ -540,30 +547,30 @@ void ProgramControllerClass::processUserEvent(const String& event) {
     return;
   }
   
-  Utils.debug("🔍 PROCESANDO EVENTO TÁCTIL:");
-  Utils.debug("   Página: " + String(touchPage) + " (Esperada para edición: " + String(NEXTION_PAGE_EDIT) + ")");
-  Utils.debug("   Componente: " + String(touchComponent));
-  Utils.debug("   Estado actual: " + String(_currentState));
+  // Utils.debug("🔍 PROCESANDO EVENTO TÁCTIL:");
+  // Utils.debug("   Página: " + String(touchPage) + " (Esperada para edición: " + String(NEXTION_PAGE_EDIT) + ")");
+  // Utils.debug("   Componente: " + String(touchComponent));
+  // Utils.debug("   Estado actual: " + String(_currentState));
   
   // Procesar eventos según la página actual
   switch (touchPage) {
     case NEXTION_PAGE_SELECTION:
-      Utils.debug("📄 Procesando eventos de página de selección");
+      // Utils.debug("📄 Procesando eventos de página de selección");
       _handleSelectionPageEvents(touchComponent);
       break;
       
     case NEXTION_PAGE_EDIT:
-      Utils.debug("📄 Procesando eventos de página de edición");
+      // Utils.debug("📄 Procesando eventos de página de edición");
       _handleEditPageEvents(touchComponent);
       break;
       
     case NEXTION_PAGE_EXECUTION:
-      Utils.debug("📄 Procesando eventos de página de ejecución");
+      // Utils.debug("📄 Procesando eventos de página de ejecución");
       _handleExecutionPageEvents(touchComponent);
       break;
       
     default:
-      Utils.debug("⚠️ Página no manejada: " + String(touchPage));
+      // Utils.debug("⚠️ Página no manejada: " + String(touchPage));
       break;
   }
 }
@@ -658,29 +665,29 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
       UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
       break;
       
-    case NEXTION_ID_BTN_PROG_ANTERIOR:
-      // Cambiar al programa anterior
-      if (_currentProgram > 0) {
-        _currentProgram--;
-      } else {
-        _currentProgram = NUM_PROGRAMAS - 1; // Circular: ir al último programa
-      }
-      Storage.saveProgram(_currentProgram);
-      Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
-      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
-      break;
+    // case NEXTION_ID_BTN_PROG_ANTERIOR:
+    //   // Cambiar al programa anterior
+    //   if (_currentProgram > 0) {
+    //     _currentProgram--;
+    //   } else {
+    //     _currentProgram = NUM_PROGRAMAS - 1; // Circular: ir al último programa
+    //   }
+    //   Storage.saveProgram(_currentProgram);
+    //   Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
+    //   UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+    //   break;
       
-    case NEXTION_ID_BTN_PROG_SIGUIENTE:
-      // Cambiar al programa siguiente
-      if (_currentProgram < NUM_PROGRAMAS - 1) {
-        _currentProgram++;
-      } else {
-        _currentProgram = 0; // Circular: ir al primer programa
-      }
-      Storage.saveProgram(_currentProgram);
-      Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
-      UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
-      break;
+    // case NEXTION_ID_BTN_PROG_SIGUIENTE:
+    //   // Cambiar al programa siguiente
+    //   if (_currentProgram < NUM_PROGRAMAS - 1) {
+    //     _currentProgram++;
+    //   } else {
+    //     _currentProgram = 0; // Circular: ir al primer programa
+    //   }
+    //   Storage.saveProgram(_currentProgram);
+    //   Utils.debug("📋 Programa seleccionado: " + String(_currentProgram + 22));
+    //   UIController.showSelectionScreen(_currentProgram + 1); // Convertir a 1-3 para UI
+    //   break;
       
     case NEXTION_ID_BTN_START:
       // Iniciar el programa seleccionado
@@ -703,7 +710,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
 }
 
 void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
-  Utils.debug("🔧 Delegando evento de edición a UIController - Componente: " + String(componentId));
+  // Utils.debug("🔧 Delegando evento de edición a UIController - Componente: " + String(componentId));
   
   // Delegar completamente el manejo de eventos al UIController
   UIController.handleEditPageEvent(componentId);
@@ -910,6 +917,10 @@ void ProgramControllerClass::_selectNextParameter() {
   _updateEditDisplay();
 }
 
+/// @brief 
+/// Actualiza la pantalla de edición con los valores actuales.
+/// Este método se encarga de mostrar los valores actuales de los parámetros del programa en la pantalla de edición.
+/// Se debe llamar después de realizar cambios en los parámetros para reflejarlos en la interfaz de usuario.
 void ProgramControllerClass::_updateEditDisplay() {
   // Actualizar la pantalla de edición con los valores actuales
   Serial.println("🔄 Actualizando valores en pantalla de edición");

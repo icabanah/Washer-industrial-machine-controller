@@ -199,12 +199,18 @@ int obtenerIncrementoParametro(int tipoParam) {
 }
 // ===== FUNCIONES DE UTILIDAD PARA PROGRAMAS =====
 
-/**
- * @brief Genera el texto de programa en formato "P22", "P23", "P24"
- * @param numeroPrograma Número del programa (1, 2, 3)
- * @param buffer Buffer donde se almacenará el texto generado
- * @param tamanioBuffer Tamaño del buffer
- */
+
+/// @brief 
+/// Genera el texto del programa según su número
+/// @note 
+/// Esta función es utilizada para mostrar el nombre del programa en la interfaz de usuario.
+/// Los programas válidos son P22, P23 y P24. Si el número del programa no es válido, se mostrará "P--".
+/// @param numeroPrograma 
+/// El número del programa (1, 2 o 3).
+/// Si se pasa un número fuera de este rango, se mostrará "P--".
+/// @param buffer 
+/// Buffer donde se almacenará el texto del programa generado.
+/// @param tamanioBuffer 
 void generarTextoPrograma(int numeroPrograma, char* buffer, int tamanioBuffer) {
     switch (numeroPrograma) {
         case 1:

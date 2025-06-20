@@ -46,7 +46,7 @@ void setup()
   ProgramController.init();
 
   // Prueba de conectividad con Nextion después de inicialización
-  // delay(1000); // Esperar que la pantalla termine de inicializarse
+  delay(1000); // Esperar que la pantalla termine de inicializarse
   // Serial.println("Probando conectividad con pantalla Nextion...");
   // Hardware.testNextionConnectivity();
 
@@ -130,7 +130,7 @@ void checkEmergencyButton()
 void welcomeScreenCallback()
 {
   uint8_t currentProgram = ProgramController.getCurrentProgram();
-  Serial.println("welcomeScreenCallback| Tiempo de bienvenida finalizado, mostrando pantalla de selección para el programa " + String(currentProgram));
+  Serial.println("Tiempo de bienvenida finalizado, mostrando pantalla de selección para el programa " + String(currentProgram));
   UIController.showSelectionScreen(currentProgram + 1); // Convertir a 1-3 para UI
 }
 

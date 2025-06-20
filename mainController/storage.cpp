@@ -58,8 +58,8 @@ void StorageClass::saveProgram(uint8_t program) {
 }
 
 uint8_t StorageClass::loadProgram() {
-  uint8_t program = readByte("programa", 1); // Valor por defecto cambiado a 1 para mostrar el primer programa
-  return (program < NUM_PROGRAMAS) ? program : 1; // Si el programa está fuera de rango, retornar 1
+  uint8_t program = readByte("programa", 0); 
+  return (program < NUM_PROGRAMAS) ? program : 0; 
 }
 
 void StorageClass::savePhase(uint8_t phase) {
@@ -165,7 +165,7 @@ bool StorageClass::validateSettings() {
 
 void StorageClass::resetToDefaults() {
   // Programa por defecto (cambiado a 1 para mostrar el primer programa)
-  saveProgram(1);
+  saveProgram(0);
   savePhase(0);
   saveTimer(0, 0);
   
@@ -174,27 +174,27 @@ void StorageClass::resetToDefaults() {
   
   // Valores por defecto para el programa 1
   uint8_t defaultWaterLevels[3][4] = {
-    {2, 3, 2, 1}, // Programa 0
-    {3, 3, 2, 1}, // Programa 1
-    {2, 2, 2, 1}  // Programa 2
+    {2, 3, 2, 1}, // Programa 1
+    {3, 3, 2, 1}, // Programa 2
+    {2, 2, 2, 1}  // Programa 3
   };
   
   uint8_t defaultTemperatures[3][4] = {
-    {40, 60, 40, 30}, // Programa 0
-    {45, 70, 45, 30}, // Programa 1
-    {30, 50, 40, 30}  // Programa 2
+    {40, 60, 40, 30}, // Programa 1
+    {45, 70, 45, 30}, // Programa 2
+    {30, 50, 40, 30}  // Programa 3
   };
   
   uint8_t defaultTimes[3][4] = {
-    {5, 10, 5, 3}, // Programa 0
-    {6, 12, 6, 3}, // Programa 1
-    {4, 8, 4, 3}   // Programa 2
+    {5, 10, 5, 3}, // Programa 1
+    {6, 12, 6, 3}, // Programa 2
+    {4, 8, 4, 3}   // Programa 3
   };
   
   uint8_t defaultRotations[3][4] = {
-    {1, 2, 1, 3}, // Programa 0
-    {2, 3, 2, 3}, // Programa 1
-    {1, 2, 1, 2}  // Programa 2
+    {1, 2, 1, 3}, // Programa 1
+    {2, 3, 2, 3}, // Programa 2
+    {1, 2, 1, 2}  // Programa 3
   };
   
   // Guardar valores por defecto
