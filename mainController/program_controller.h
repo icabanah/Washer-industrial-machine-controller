@@ -73,6 +73,10 @@ private:
   uint8_t _totalSeconds;
   bool _timerRunning;
   
+  // Variables de estado de fase
+  bool _preparingPhase;
+  unsigned long _phaseStartTime;
+  
   // Variables para edición
   uint8_t _editingProgram;
   uint8_t _editingPhase;
@@ -86,7 +90,6 @@ private:
   uint8_t _times[NUM_PROGRAMAS][NUM_FASES];
   uint8_t _rotations[NUM_PROGRAMAS][NUM_FASES];
   
-  // Métodos internos
   void _loadProgramData();
   void _updatePhaseParameters();
   void _checkSensorConditions();

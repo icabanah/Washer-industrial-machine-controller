@@ -18,6 +18,10 @@ void ProgramControllerClass::init() {
   _totalSeconds = 0;
   _timerRunning = false;
   
+  // Inicializar variables de estado de fase
+  _preparingPhase = false;
+  _phaseStartTime = 0;
+  
   // Inicializar variables de edición
   _editingProgram = 0;  // Inicializar con programa P22 (índice 0) por defecto
   _editingPhase = 0;
@@ -235,22 +239,32 @@ void ProgramControllerClass::_updatePhaseParameters() {
     _remainingMinutes = _totalMinutes;
     _remainingSeconds = 0;
     
+    // Reiniciar estado de preparación
+    _preparingPhase = true;
+    _phaseStartTime = millis();
+    _timerRunning = false;
+    
     // Actualizar la interfaz de usuario
     UIController.updatePhase(_currentPhase);
     UIController.updateTime(_remainingMinutes, _remainingSeconds);
     UIController.updateProgressBar(0);
+    
+    Utils.debug("📌 Nueva fase iniciada: " + String(_currentPhase + 1));
   }
 }
 
 void ProgramControllerClass::updateTimers() {
-  if (_currentState == ESTADO_EJECUCION && _timerRunning) {
-    _decrementTimer();
+  if (_currentState == ESTADO_EJECUCION) {
+    // Siempre verificar condiciones de los sensores
+    _checkSensorConditions();
+    
+    // Solo decrementar el temporizador si está corriendo
+    if (_timerRunning) {
+      _decrementTimer();
+    }
     
     // Actualizar actuadores según estado del programa
     Actuators.updateTimers();
-    
-    // Comprobar condiciones de los sensores
-    _checkSensorConditions();
   }
 }
 
@@ -277,6 +291,9 @@ void ProgramControllerClass::_decrementTimer() {
   UIController.updateProgressBar(progress);
 }
 
+/// @brief 
+/// Verifica las condiciones de los sensores y actualiza los actuadores según la fase actual.
+/// Este método se encarga de verificar si se han alcanzado las condiciones de temperatura y nivel de agua
 void ProgramControllerClass::_checkSensorConditions() {
   // Verificar las condiciones de temperatura y nivel de agua según la fase actual
   uint8_t targetTemp = _temperatures[_currentProgram][_currentPhase];
@@ -285,6 +302,41 @@ void ProgramControllerClass::_checkSensorConditions() {
   // Actualizar la interfaz con los valores actuales
   UIController.updateTemperature(Sensors.getCurrentTemperature());
   UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
+  
+  // Si estamos preparando la fase, mostrar el estado en el temporizador
+  if (_preparingPhase) {
+    unsigned long elapsedTime = (millis() - _phaseStartTime) / 1000; // segundos
+    uint8_t prepMinutes = elapsedTime / 60;
+    uint8_t prepSeconds = elapsedTime % 60;
+    
+    // Mostrar tiempo de preparación con indicador
+    UIController.updateTime(prepMinutes, prepSeconds);
+    UIController.updateProgressBar(0); // Barra en 0 durante preparación
+    
+    // Mostrar mensaje de estado
+    String statusMsg = "Preparando: ";
+    bool waterOk = Sensors.isWaterLevelReached(targetLevel);
+    bool tempOk = Sensors.isTemperatureReached(targetTemp);
+    
+    if (!waterOk) {
+      statusMsg += "Llenando... ";
+    }
+    if (!tempOk) {
+      statusMsg += "Calentando... ";
+    }
+    if (waterOk && tempOk) {
+      statusMsg = "Iniciando ciclo...";
+    }
+    
+    // Actualizar estado en la UI (esto requerirá un método nuevo en UIController)
+    // Por ahora, usar debug
+    static unsigned long lastStatusUpdate = 0;
+    if (millis() - lastStatusUpdate > 5000) { // Cada 5 segundos
+      lastStatusUpdate = millis();
+      Utils.debug("📊 " + statusMsg + " Agua:" + String(Sensors.getCurrentWaterLevel()) + "/" + String(targetLevel) + 
+                  " Temp:" + String(Sensors.getCurrentTemperature()) + "/" + String(targetTemp) + "°C");
+    }
+  }
   
   // Control de llenado de agua
   if (Sensors.getCurrentWaterLevel() < targetLevel) {
@@ -318,7 +370,14 @@ void ProgramControllerClass::_checkSensorConditions() {
     // Iniciar el temporizador solo cuando se alcanzan las condiciones necesarias
     if (!_timerRunning) {
       _timerRunning = true;
-      Utils.debug("ProgramControllerClass::_checkSensorConditions| Condiciones alcanzadas, iniciando temporizador de fase");
+      _preparingPhase = false; // Ya no estamos preparando
+      
+      // Reiniciar el temporizador a los valores configurados
+      _remainingMinutes = _totalMinutes;
+      _remainingSeconds = 0;
+      
+      Utils.debug("✅ Condiciones alcanzadas, iniciando temporizador de fase");
+      Utils.debug("⏱️ Tiempo de fase: " + String(_totalMinutes) + " minutos");
     }
   }
 }
@@ -363,10 +422,16 @@ void ProgramControllerClass::_initializeProgram() {
   _remainingSeconds = 0;
   _timerRunning = false; // Se activará cuando se alcancen las condiciones necesarias
   
+  // Inicializar estado de preparación
+  _preparingPhase = true;
+  _phaseStartTime = millis();
+  
   // Preparar el sistema para el inicio del programa
   Actuators.lockDoor();
   
   Utils.debug("ProgramControllerClass::_initializeProgram| Programa inicializado");
+  Utils.debug("⏳ Esperando condiciones: Nivel=" + String(_waterLevels[_currentProgram][_currentPhase]) + 
+              ", Temp=" + String(_temperatures[_currentProgram][_currentPhase]) + "°C");
 }
 
 void ProgramControllerClass::_configureActuatorsForPhase() {

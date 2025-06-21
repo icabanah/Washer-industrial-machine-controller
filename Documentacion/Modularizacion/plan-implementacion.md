@@ -8,7 +8,10 @@ El proyecto consiste en modernizar un controlador de lavadora industrial, migrá
 
 La estrategia se basa en dividir el sistema en módulos independientes pero interconectados, siguiendo el principio de responsabilidad única. Esto permitirá un desarrollo incremental, donde cada módulo puede ser implementado y probado individualmente antes de ser integrado en el sistema completo. La arquitectura implementa una máquina de estados completa para gestionar el flujo de ejecución, con especial énfasis en la gestión activa de temperatura para programas que utilizan agua caliente.
 
-## Progreso General del Proyecto: 82% (Actualizado)
+## Progreso General del Proyecto: 83% (Actualizado)
+
+### Mejoras Recientes:
+- **Implementado feedback visual durante preparación de fase**: Ahora el usuario ve el tiempo transcurrido y el estado mientras el sistema alcanza las condiciones necesarias (nivel de agua y temperatura) antes de iniciar el temporizador del ciclo de lavado.
 
 ## Etapas de Implementación
 
@@ -27,10 +30,10 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Definir todas las constantes, parámetros y configuraciones en config.h ✓
    - Adaptar definiciones para ESP32 y pantalla Nextion ✓
    - Documentar cada constante para facilitar futuras modificaciones ✓
-   - **NUEVO**: Implementar funciones de validación y gestión de parámetros en config.cpp ✓
-   - **NUEVO**: Crear funciones de incremento/decremento para edición de parámetros ✓
-   - **NUEVO**: Implementar navegación entre parámetros para página de edición ✓
-   - **NUEVO**: Agregar funciones de formateo con unidades para display ✓
+   - Implementar funciones de validación y gestión de parámetros en config.cpp ✓
+   - Crear funciones de incremento/decremento para edición de parámetros ✓
+   - Implementar navegación entre parámetros para página de edición ✓
+   - Agregar funciones de formateo con unidades para display ✓
 
 4. **Preparación del Archivo Principal (2 días)** - 100% completado
    - Crear la estructura mínima del archivo principal mainController.ino
@@ -113,24 +116,24 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Implementación de pantallas específicas para programas 22, 23 y 24 ✓
    - Desarrollo de interfaz para configuración de programas con múltiples tandas ✓
    - Implementación de pantallas para mostrar información de temperatura y presión ✓
-   - **NUEVO**: Sistema de mensajes y alertas avanzado implementado ✓
-   - **NUEVO**: Pantalla de mantenimiento con controles manuales ✓
-   - **NUEVO**: Protocolo de comunicación bidireccional expandido ✓
-   - **NUEVO**: Optimizaciones de rendimiento para ESP32 ✓
-   - **NUEVO**: Integración completa con AsyncTaskLib ✓
-   - **NUEVO**: Sistema de limpieza de eventos para transiciones seguras ✓
-   - **NUEVO**: Métodos de transición segura (safeTransitionTo...) implementados ✓
-   - **NUEVO**: Control de estado de UI con verificación de estabilidad ✓
-   - **IMPLEMENTADO**: Sistema completo de captura e interpretación de eventos táctiles ✓
-   - **IMPLEMENTADO**: Procesamiento de eventos para modificación de parámetros ✓
-   - **ACTUALIZADO**: Página de edición completamente integrada con functions de config.cpp ✓
-   - **ACTUALIZADO**: Manejo completo de eventos de edición (Más, Menos, Siguiente, Anterior, Guardar, Cancelar) ✓
-   - **ACTUALIZADO**: Validación automática de parámetros usando funciones de config.cpp ✓
-   - **ACTUALIZADO**: Sistema de timeout automático para edición de parámetros ✓
-   - **ACTUALIZADO**: Actualización en tiempo real del panel derecho durante edición ✓
-   - **CORREGIDO**: Errores de compilación por identificadores Nextion no definidos ✓
-   - **CORREGIDO**: Sistema de aliases para compatibilidad de nombres de componentes ✓
-   - **MEJORADO**: Definiciones completas de todos los componentes de interfaz Nextion ✓
+   - Sistema de mensajes y alertas avanzado implementado ✓
+   - Pantalla de mantenimiento con controles manuales ✓
+   - Protocolo de comunicación bidireccional expandido ✓
+   - Optimizaciones de rendimiento para ESP32 ✓
+   - Integración completa con AsyncTaskLib ✓
+   - Sistema de limpieza de eventos para transiciones seguras ✓
+   - Métodos de transición segura (safeTransitionTo...) implementados ✓
+   - Control de estado de UI con verificación de estabilidad ✓
+   - Sistema completo de captura e interpretación de eventos táctiles ✓
+   - Procesamiento de eventos para modificación de parámetros ✓
+   - Página de edición completamente integrada con functions de config.cpp ✓
+   - Manejo completo de eventos de edición (Más, Menos, Siguiente, Anterior, Guardar, Cancelar) ✓
+   - Validación automática de parámetros usando funciones de config.cpp ✓
+   - Sistema de timeout automático para edición de parámetros ✓
+   - Actualización en tiempo real del panel derecho durante edición ✓
+   - Errores de compilación por identificadores Nextion no definidos ✓
+   - Sistema de aliases para compatibilidad de nombres de componentes ✓
+   - Definiciones completas de todos los componentes de interfaz Nextion ✓
    - Pendiente: Verificación de IDs de componentes en archivo .hmi real
    - Pendiente: Pruebas finales de integración con hardware real
 
@@ -141,15 +144,15 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Crear gestión especial para programa de múltiples tandas ✓
    - Desarrollar cálculo dinámico de tiempos según configuración ✓
    - Implementar sistema de manejo de fases para cada programa ✓
-   - **IMPLEMENTADO**: Sistema completo de procesamiento de eventos táctiles ✓
-   - **IMPLEMENTADO**: Manejo de eventos por página (selección, edición, ejecución) ✓
-   - **IMPLEMENTADO**: Edición completa de parámetros con validación de límites ✓
-   - **IMPLEMENTADO**: Guardado persistente de parámetros modificados ✓
-   - **CORREGIDO**: Errores de compilación con llamadas a UIController.showEditScreen() ✓
-   - **CORREGIDO**: Integración con nueva arquitectura de edición de UI Controller ✓
-   - **CORREGIDO**: Uso correcto de métodos de Storage para guardado individual ✓
-   - **ACTUALIZADO**: IDs de componentes Nextion definidos en config.h ✓
-   - **MEJORADO**: Compatibilidad con nueva arquitectura modular ✓
+   - Sistema completo de procesamiento de eventos táctiles ✓
+   - Manejo de eventos por página (selección, edición, ejecución) ✓
+   - Edición completa de parámetros con validación de límites ✓
+   - Guardado persistente de parámetros modificados ✓
+   - Errores de compilación con llamadas a UIController.showEditScreen() ✓
+   - Integración con nueva arquitectura de edición de UI Controller ✓
+   - Uso correcto de métodos de Storage para guardado individual ✓
+   - IDs de componentes Nextion definidos en config.h ✓
+   - Compatibilidad con nueva arquitectura modular ✓
    - Pendiente: Completar manejo detallado de centrifugado
    - Pendiente: Implementar manejo completo de emergencias
    - Pendiente: Desarrollar algoritmos específicos para cada programa
@@ -157,12 +160,12 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
 3. **Integración de Módulos de Control e Interfaz (3 días)** - 92% completado
    - Conectar UI Controller con Program Controller ✓
    - Verificar respuesta de la interfaz ante cambios de estado ✓
-   - **IMPLEMENTADO**: Sistema completo de eventos táctiles bidireccional ✓
-   - **IMPLEMENTADO**: Procesamiento de eventos para modificación de parámetros ✓
-   - **IMPLEMENTADO**: Integración entre eventos táctiles y lógica de programa ✓
-   - **CORREGIDO**: Errores de compilación en la comunicación entre módulos ✓
-   - **MEJORADO**: Compatibilidad completa entre UI Controller y Program Controller ✓
-   - **ACTUALIZADO**: Uso correcto de métodos de Storage en Program Controller ✓
+   - Sistema completo de eventos táctiles bidireccional ✓
+   - Procesamiento de eventos para modificación de parámetros ✓
+   - Integración entre eventos táctiles y lógica de programa ✓
+   - Errores de compilación en la comunicación entre módulos ✓
+   - Compatibilidad completa entre UI Controller y Program Controller ✓
+   - Uso correcto de métodos de Storage en Program Controller ✓
    - Probar interacciones del usuario y efectos en el sistema ✓
    - Pendiente: Pruebas finales con hardware real
    - Pendiente: Optimización de tiempos de respuesta

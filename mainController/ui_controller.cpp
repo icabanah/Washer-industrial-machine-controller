@@ -351,7 +351,7 @@ void UIControllerClass::_handleTouchEvent() {
       break;
       
     case NEXTION_PAGE_EDIT:
-      Serial.println("🎯 Evento en página de edición detectado - ComponentID: " + String(componentId));
+      // Serial.println("🎯 Evento en página de edición detectado - ComponentID: " + String(componentId));
       handleEditPageEvent(componentId);
       break;
       
@@ -736,15 +736,15 @@ void UIControllerClass::handleEditPageEvent(int componentId) {
       handleParameterDecrement();
       break;
       
-    // case NEXTION_ID_BTN_PARAM_SIGUIENTE:
-    //   Serial.println("⏭️ Botón SIGUIENTE presionado (ID: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE) + ")");
-    //   handleNextParameter();
-    //   break;
+    case NEXTION_ID_BTN_PARAM_SIGUIENTE:
+      Serial.println("⏭️ Botón SIGUIENTE presionado (ID: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE) + ")");
+      handleNextParameter();
+      break;
       
-    // case NEXTION_ID_BTN_PARAM_ANTERIOR:
-    //   Serial.println("⏮️ Botón ANTERIOR presionado (ID: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR) + ")");
-    //   handlePreviousParameter();
-    //   break;
+    case NEXTION_ID_BTN_PARAM_ANTERIOR:
+      Serial.println("⏮️ Botón ANTERIOR presionado (ID: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR) + ")");
+      handlePreviousParameter();
+      break;
       
     case NEXTION_ID_BTN_GUARDAR:
       Serial.println("💾 Botón GUARDAR presionado (ID: " + String(NEXTION_ID_BTN_GUARDAR) + ")");

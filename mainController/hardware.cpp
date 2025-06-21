@@ -144,9 +144,9 @@ void HardwareClass::nextionSendCommand(const String &command)
   _sendNextionEndCmd();
 
   // Debug mejorado de comandos
-  Serial.print(">>> Nextion CMD: [");
-  Serial.print(command);
-  Serial.println("]");
+  // Serial.print(">>> Nextion CMD: [");
+  // Serial.print(command);
+  // Serial.println("]");
 
   // Pequeña pausa para asegurar envío
   delay(10);
