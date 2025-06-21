@@ -641,38 +641,269 @@ void ProgramControllerClass::processUserEvent(const String& event) {
 }
 
 void ProgramControllerClass::_handleStateMachine() {
-  // Esta función implementará la lógica principal de la máquina de estados
-  // Se implementará en versiones futuras
+  // Máquina de estados principal que coordina todo el comportamiento del sistema
+  // Se ejecuta en cada ciclo del loop principal
+  
+  switch (_currentState) {
+    case ESTADO_IDLE:
+      // Estado de reposo - Sistema esperando acción del usuario
+      // No requiere procesamiento activo
+      break;
+      
+    case ESTADO_SELECCION:
+      _handleSelectionState();
+      break;
+      
+    case ESTADO_EDICION:
+      _handleEditingState();
+      break;
+      
+    case ESTADO_EJECUCION:
+      _handleExecutionState();
+      break;
+      
+    case ESTADO_PAUSA:
+      _handlePauseState();
+      break;
+      
+    case ESTADO_ERROR:
+      _handleErrorState();
+      break;
+      
+    case ESTADO_EMERGENCIA:
+      _handleEmergencyState();
+      break;
+      
+    default:
+      // Estado desconocido - regresar a IDLE por seguridad
+      Utils.debug("⚠️ Estado desconocido: " + String(_currentState) + ", regresando a IDLE");
+      setState(ESTADO_IDLE);
+      break;
+  }
 }
 
 void ProgramControllerClass::_handleSelectionState() {
-  // Procesar eventos en el estado de selección
-  // Se implementará en versiones futuras
+  // Estado de selección - El usuario está navegando entre programas
+  // Verificar si hay timeout de inactividad (opcional)
+  
+  // En este estado, el procesamiento principal se hace mediante eventos táctiles
+  // que ya están siendo manejados por processUserEvent()
+  
+  // Actualizar display si es necesario
+  static unsigned long lastDisplayUpdate = 0;
+  if (millis() - lastDisplayUpdate > 1000) { // Actualizar cada segundo
+    // Actualizar información del programa actual en la UI
+    UIController.updateProgramInfo(_currentProgram + 1); // Convertir a 1-3 para UI
+    lastDisplayUpdate = millis();
+  }
 }
 
 void ProgramControllerClass::_handleEditingState() {
-  // Procesar eventos en el estado de edición
-  // Se implementará en versiones futuras
+  // Estado de edición - El usuario está modificando parámetros del programa
+  
+  // Verificar timeout de edición (volver a selección después de inactividad)
+  static unsigned long editStartTime = millis();
+  static bool timeoutInitialized = false;
+  
+  if (!timeoutInitialized) {
+    editStartTime = millis();
+    timeoutInitialized = true;
+  }
+  
+  // Timeout de 30 segundos sin actividad
+  if (millis() - editStartTime > 30000) {
+    Utils.debug("⏱️ Timeout de edición - volviendo a selección");
+    cancelEditing();
+    timeoutInitialized = false;
+    return;
+  }
+  
+  // Resetear timeout en cada interacción (manejado en processUserEvent)
+  // El procesamiento principal de edición se hace mediante eventos táctiles
 }
 
 void ProgramControllerClass::_handleExecutionState() {
-  // Procesar eventos en el estado de ejecución
-  // Se implementará en versiones futuras
+  // Estado de ejecución - El programa de lavado está activo
+  
+  // 1. Verificar condiciones de seguridad
+  if (!Actuators.isDoorLocked()) {
+    Utils.debug("⚠️ Puerta no asegurada durante ejecución");
+    _triggerError(ERROR_PUERTA, "Puerta abierta durante ejecución");
+    return;
+  }
+  
+  // 2. Verificar si estamos preparando la fase (llenado/calentamiento)
+  if (_preparingPhase) {
+    // Mostrar estado de preparación en UI
+    unsigned long prepTime = (millis() - _phaseStartTime) / 1000;
+    UIController.updatePreparationStatus(prepTime);
+    
+    // Verificar si se alcanzaron las condiciones necesarias
+    _checkSensorConditions();
+    
+    // Si las condiciones se cumplieron, iniciar el temporizador
+    if (!_preparingPhase) {
+      Utils.debug("✅ Condiciones alcanzadas - iniciando temporizador de fase");
+      UIController.clearPreparationStatus();
+    }
+    return;
+  }
+  
+  // 3. Actualizar temporizadores (solo si está corriendo)
+  if (_timerRunning) {
+    // El decremento se hace en updateTimers() llamado por el callback
+    
+    // Actualizar display cada segundo
+    static unsigned long lastUIUpdate = 0;
+    if (millis() - lastUIUpdate >= 1000) {
+      UIController.updateTime(_remainingMinutes, _remainingSeconds);
+      UIController.updateProgressBar(getProgressPercentage());
+      lastUIUpdate = millis();
+    }
+    
+    // Verificar si la fase terminó
+    if (_remainingMinutes == 0 && _remainingSeconds == 0) {
+      _completePhase();
+    }
+  }
+  
+  // 4. Control de temperatura para programas con agua caliente
+  if (_currentProgram == 0 && _temperatures[_currentProgram][_currentPhase] > 0) {
+    // Programa 22 con agua caliente - mantener temperatura
+    float currentTemp = Sensors.getCurrentTemperature();
+    float targetTemp = _temperatures[_currentProgram][_currentPhase];
+    
+    // Histéresis de ±2°C para evitar oscilaciones
+    if (currentTemp < targetTemp - 2) {
+      // Temperatura baja - activar calentamiento
+      if (!Actuators.isSteamValveOpen()) {
+        Actuators.openSteamValve();
+        Utils.debug("🔥 Activando calentamiento - Temp: " + String(currentTemp) + "°C");
+      }
+    } else if (currentTemp > targetTemp + 2) {
+      // Temperatura alta - detener calentamiento
+      if (Actuators.isSteamValveOpen()) {
+        Actuators.closeSteamValve();
+        Utils.debug("❄️ Deteniendo calentamiento - Temp: " + String(currentTemp) + "°C");
+      }
+    }
+  }
+  
+  // 5. Control del motor según nivel de rotación
+  if (_rotations[_currentProgram][_currentPhase] > 0) {
+    // Asegurar que el motor esté funcionando con el patrón correcto
+    if (!Actuators.isMotorRunning()) {
+      Actuators.startAutoRotation(_rotations[_currentProgram][_currentPhase]);
+      Utils.debug("🔄 Motor iniciado - Nivel: " + String(_rotations[_currentProgram][_currentPhase]));
+    }
+  } else {
+    // Sin rotación en esta fase
+    if (Actuators.isMotorRunning()) {
+      Actuators.stopMotor();
+      Utils.debug("⏹️ Motor detenido - Sin rotación en esta fase");
+    }
+  }
 }
 
 void ProgramControllerClass::_handlePauseState() {
-  // Procesar eventos en el estado de pausa
-  // Se implementará en versiones futuras
+  // Estado de pausa - El programa está detenido temporalmente
+  
+  // Asegurar que todos los actuadores estén detenidos
+  static bool actuatorsStopped = false;
+  if (!actuatorsStopped) {
+    Actuators.stopMotor();
+    Actuators.closeWaterValve();
+    Actuators.closeSteamValve();
+    // Mantener puerta bloqueada por seguridad
+    actuatorsStopped = true;
+    Utils.debug("⏸️ Sistema en pausa - actuadores detenidos");
+  }
+  
+  // Mostrar estado de pausa en UI
+  static unsigned long lastBlink = 0;
+  static bool blinkState = false;
+  if (millis() - lastBlink > 500) { // Parpadeo cada 500ms
+    blinkState = !blinkState;
+    UIController.updatePauseIndicator(blinkState);
+    lastBlink = millis();
+  }
+  
+  // El sistema permanece en pausa hasta recibir comando de reanudar
+  // La reanudación se maneja mediante eventos táctiles en processUserEvent
 }
 
 void ProgramControllerClass::_handleErrorState() {
-  // Procesar eventos en el estado de error
-  // Se implementará en versiones futuras
+  // Estado de error - Se detectó una condición anormal
+  
+  // Asegurar estado seguro del sistema
+  static bool safetyMeasuresApplied = false;
+  if (!safetyMeasuresApplied) {
+    // Detener todos los actuadores
+    Actuators.emergencyStop();
+    
+    // Abrir válvula de drenaje por seguridad
+    Actuators.openDrainValve();
+    
+    // Desbloquear puerta después de un tiempo prudencial
+    Utils.createTimeout(5000, []() {
+      Actuators.unlockDoor();
+      Utils.debug("🔓 Puerta desbloqueada después de error");
+    });
+    
+    safetyMeasuresApplied = true;
+    Utils.debug("🛑 Medidas de seguridad aplicadas en estado de error");
+  }
+  
+  // Mostrar error en pantalla con parpadeo
+  static unsigned long lastErrorBlink = 0;
+  static bool errorBlinkState = false;
+  if (millis() - lastErrorBlink > 300) { // Parpadeo rápido
+    errorBlinkState = !errorBlinkState;
+    UIController.updateErrorDisplay(errorBlinkState);
+    lastErrorBlink = millis();
+  }
+  
+  // El sistema permanece en error hasta intervención manual
+  // Requiere reinicio o acción específica del usuario
 }
 
 void ProgramControllerClass::_handleEmergencyState() {
-  // Procesar eventos en el estado de emergencia
-  // Se implementará en versiones futuras
+  // Estado de emergencia - Botón de emergencia presionado
+  
+  // Aplicar medidas de emergencia inmediatas
+  static bool emergencyMeasuresApplied = false;
+  if (!emergencyMeasuresApplied) {
+    // Detener TODO inmediatamente
+    Actuators.emergencyStop();
+    
+    // Abrir todas las válvulas de seguridad
+    Actuators.openDrainValve();
+    
+    // Desbloquear puerta inmediatamente
+    Actuators.unlockDoor();
+    
+    // Detener todos los temporizadores
+    _timerRunning = false;
+    
+    emergencyMeasuresApplied = true;
+    Utils.debug("🚨 EMERGENCIA - Sistema detenido completamente");
+  }
+  
+  // Mostrar alerta de emergencia con sonido/visual
+  static unsigned long lastEmergencyAlert = 0;
+  static bool alertState = false;
+  if (millis() - lastEmergencyAlert > 250) { // Alerta muy rápida
+    alertState = !alertState;
+    UIController.updateEmergencyAlert(alertState);
+    
+    // Opcional: activar buzzer si está disponible
+    // Hardware.digitalWrite(PIN_BUZZER, alertState ? HIGH : LOW);
+    
+    lastEmergencyAlert = millis();
+  }
+  
+  // El sistema permanece en emergencia hasta reset manual
+  // Solo se puede salir mediante resetEmergency() o reinicio del sistema
 }
 
 void ProgramControllerClass::handleEmergency() {

@@ -48,6 +48,12 @@ public:
   void updateRotation(uint8_t rotacion);
   void updatePhase(uint8_t fase);
   void updateProgressBar(uint8_t progress);
+  void updatePauseIndicator(bool visible);         // Mostrar/ocultar indicador de pausa
+  void updateEmergencyAlert(bool state);            // Actualizar alerta de emergencia
+  void updateErrorDisplay(bool blinkState);         // Actualizar display de error con parpadeo
+  void updateProgramInfo(uint8_t programa);         // Actualizar información del programa en selección
+  void updatePreparationStatus(unsigned long prepTime); // Mostrar estado de preparación (llenado/calentamiento)
+  void clearPreparationStatus();                    // Limpiar estado de preparación
   
   // Proceso de eventos de interfaz
   void processEvents();
@@ -68,6 +74,7 @@ private:
   unsigned long _messageTimestamp;
   bool _messageActive;
   uint16_t _messageDuration;
+  uint8_t _currentPage;  // Página actualmente mostrada en la pantalla Nextion
   
   // Variables para el sistema de limpieza de eventos
   bool _clearingEvents;

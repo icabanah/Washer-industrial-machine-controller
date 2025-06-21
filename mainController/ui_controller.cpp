@@ -43,6 +43,7 @@ void UIControllerClass::init() {
   
   _userActionPending = false;
   _messageActive = false;
+  _currentPage = NEXTION_PAGE_WELCOME;  // Inicializar página actual
   
   // Inicializar variables para limpieza de eventos
   _clearingEvents = false;
@@ -69,6 +70,7 @@ void UIControllerClass::init() {
 void UIControllerClass::showWelcomeScreen() {
   // Cambiar a la página de bienvenida
   Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
+  _currentPage = NEXTION_PAGE_WELCOME;  // Actualizar página actual
   delay(100); // Pausa breve para asegurar cambio de página
   
   // Establecer textos de bienvenida usando los componentes correctos de la documentación
@@ -102,6 +104,7 @@ void UIControllerClass::showSelectionScreen(uint8_t programa) {
 
   // Cambiar a la página de selección
   Hardware.nextionSetPage(NEXTION_PAGE_SELECTION);
+  _currentPage = NEXTION_PAGE_SELECTION;  // Actualizar página actual
   
   // Actualizar información del programa seleccionado
   _updateProgramInfo(programa);
@@ -133,6 +136,7 @@ void UIControllerClass::showSelectionScreen(uint8_t programa) {
 void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion) {
   // Cambiar a la página de ejecución
   Hardware.nextionSetPage(NEXTION_PAGE_EXECUTION);
+  _currentPage = NEXTION_PAGE_EXECUTION;  // Actualizar página actual
   
   // Mostrar información del programa usando los componentes correctos de la documentación
   Hardware.nextionSetText(NEXTION_COMP_PROG_EJECUCION, "P" + String(programa + 22));
@@ -170,6 +174,7 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase) {
   
   // Cambiar a la página de edición
   Hardware.nextionSetPage(NEXTION_PAGE_EDIT);
+  _currentPage = NEXTION_PAGE_EDIT;  // Actualizar página actual
   
   // Actualizar toda la pantalla con los valores iniciales
   updateEditDisplay();
@@ -186,6 +191,7 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase) {
 void UIControllerClass::showErrorScreen(uint8_t errorCode, const String& errorMessage) {
   // Cambiar a la página de error
   Hardware.nextionSetPage(NEXTION_PAGE_ERROR);
+  _currentPage = NEXTION_PAGE_ERROR;  // Actualizar página actual
   
   // Mostrar código de error
   Hardware.nextionSetText("txtCodigo", "ERROR " + String(errorCode));
@@ -212,6 +218,7 @@ void UIControllerClass::showErrorScreen(uint8_t errorCode, const String& errorMe
 void UIControllerClass::showEmergencyScreen() {
   // Cambiar a la página de emergencia
   Hardware.nextionSetPage(NEXTION_PAGE_EMERGENCY);
+  _currentPage = NEXTION_PAGE_EMERGENCY;  // Actualizar página actual
   
   // Mostrar mensaje de emergencia
   Hardware.nextionSetText("txtEmergencia", "PARADA DE EMERGENCIA");
@@ -243,7 +250,7 @@ void UIControllerClass::_formatTimeDisplay(uint8_t minutos, uint8_t segundos, ch
 
 void UIControllerClass::updateTemperature(uint8_t temperatura) {
   // Actualizar texto de temperatura
-  Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP, String(temperatura) + "°C");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_TEMP, String(temperatura) + "°C");
   
   // Actualizar medidor visual si existe
   Hardware.nextionSetValue(NEXTION_COMP_GAUGE_TEMP_EJECUCION, temperatura);
@@ -251,10 +258,10 @@ void UIControllerClass::updateTemperature(uint8_t temperatura) {
 
 void UIControllerClass::updateWaterLevel(uint8_t nivel) {
   // Actualizar texto de nivel
-  Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL, "Nivel: " + String(nivel));
+  Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, "Nivel: " + String(nivel));
   
   // Actualizar indicador visual
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_ROTACION, nivel * 25);  // 0-100%
+  Hardware.nextionSetValue(NEXTION_COMP_SEL_ROTACION, nivel * 25);  // 0-100%
 }
 
 void UIControllerClass::updateRotation(uint8_t rotacion) {
@@ -430,9 +437,9 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa) {
   uint8_t rotacion = Storage.loadRotation(programa, 0);
   
   // Mostrar valores actualizados
-  Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL, String(nivel));
-  Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP, String(temp) + "°C");
-  Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO, String(tiempo) + " min");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, String(nivel));
+  Hardware.nextionSetText(NEXTION_COMP_SEL_TEMP, String(temp) + "°C");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_TIEMPO, String(tiempo) + " min");
   
   // Convertir valor numérico de rotación a texto descriptivo
   String rotacionTexto;
@@ -442,7 +449,7 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa) {
     case 3: rotacionTexto = "Rápido"; break;
     default: rotacionTexto = "Desconocido"; break;
   }
-  Hardware.nextionSetText(NEXTION_COMP_VAL_ROTACION, rotacionTexto);
+  Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, rotacionTexto);
   
   // Si es el programa 3 (P24), mostrar información adicional de múltiples fases
   if (programa == 3) {
@@ -906,10 +913,6 @@ void UIControllerClass::handleCancelEdit() {
   
   // Volver a la página de selección
   safeTransitionToSelection(_programaEnEdicion);
-  _modoEdicionActivo = false;
-  
-  // Volver a la página de selección
-  safeTransitionToSelection(_programaEnEdicion);
   
   Serial.println("Edición cancelada - Cambios descartados");
 }
@@ -1027,4 +1030,96 @@ void UIControllerClass::_checkEditTimeout() {
  */
 void UIControllerClass::_resetEditTimeout() {
   _editTimeoutStart = millis();
+}
+
+// === IMPLEMENTACIÓN DE MÉTODOS DE INDICADORES DE ESTADO ===
+
+/**
+ * @brief Actualiza el indicador de pausa en la pantalla
+ * @param visible true para mostrar, false para ocultar
+ */
+void UIControllerClass::updatePauseIndicator(bool visible) {
+  if (_currentPage != NEXTION_PAGE_EXECUTION) return;
+  
+  // Mostrar u ocultar indicador de pausa (puede ser un texto o imagen)
+  String cmd = "vis tPausa," + String(visible ? 1 : 0);
+  Hardware.nextionSendCommand(cmd);
+  
+  if (visible) {
+    Utils.debug("⏸️ Indicador de pausa activado");
+  }
+}
+
+/**
+ * @brief Actualiza la alerta de emergencia con efecto de parpadeo
+ * @param state Estado del parpadeo (on/off)
+ */
+void UIControllerClass::updateEmergencyAlert(bool state) {
+  // Cambiar color de fondo o mostrar alerta visual
+  if (state) {
+    // Fondo rojo para emergencia
+    Hardware.nextionSendCommand("page0.bco=63488"); // Color rojo
+    Hardware.nextionSendCommand("tEmergencia.txt=\"¡EMERGENCIA!\"");
+  } else {
+    // Fondo normal
+    Hardware.nextionSendCommand("page0.bco=0"); // Color negro
+    Hardware.nextionSendCommand("tEmergencia.txt=\"\"");
+  }
+}
+
+/**
+ * @brief Actualiza el display de error con efecto de parpadeo
+ * @param blinkState Estado del parpadeo para crear efecto visual
+ */
+void UIControllerClass::updateErrorDisplay(bool blinkState) {
+  if (_currentPage != NEXTION_PAGE_ERROR) return;
+  
+  // Hacer parpadear el texto de error
+  String cmd = "tError.pco=" + String(blinkState ? 63488 : 65535); // Rojo : Blanco
+  Hardware.nextionSendCommand(cmd);
+}
+
+
+/**
+ * @brief Actualiza la información del programa en la pantalla de selección
+ * @param programa Número de programa (1-3)
+ */
+void UIControllerClass::updateProgramInfo(uint8_t programa) {
+  if (_currentPage != NEXTION_PAGE_SELECTION) return;
+  
+  // Actualizar texto descriptivo del programa
+  char buffer[100];
+  generarTextoPrograma(programa, buffer, sizeof(buffer));
+  
+  String cmd = "tDescripcion.txt=\"" + String(buffer) + "\"";
+  Hardware.nextionSendCommand(cmd);
+}
+
+/**
+ * @brief Muestra el estado de preparación mientras se alcanzan las condiciones
+ * @param prepTime Tiempo transcurrido en la preparación (segundos)
+ */
+void UIControllerClass::updatePreparationStatus(unsigned long prepTime) {
+  if (_currentPage != NEXTION_PAGE_EXECUTION) return;
+  
+  // Mostrar tiempo de preparación y estado
+  char timeBuffer[10];
+  snprintf(timeBuffer, sizeof(timeBuffer), "%02lu:%02lu", prepTime / 60, prepTime % 60);
+  
+  String cmd = "tPreparacion.txt=\"Preparando... " + String(timeBuffer) + "\"";
+  Hardware.nextionSendCommand(cmd);
+  
+  // Hacer visible el texto de preparación
+  Hardware.nextionSendCommand("vis tPreparacion,1");
+}
+
+/**
+ * @brief Limpia el estado de preparación cuando se alcanzan las condiciones
+ */
+void UIControllerClass::clearPreparationStatus() {
+  if (_currentPage != NEXTION_PAGE_EXECUTION) return;
+  
+  // Ocultar texto de preparación
+  Hardware.nextionSendCommand("vis tPreparacion,0");
+  Hardware.nextionSendCommand("tPreparacion.txt=\"\"");
 }

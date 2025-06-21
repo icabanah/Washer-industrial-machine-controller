@@ -8,10 +8,12 @@ El proyecto consiste en modernizar un controlador de lavadora industrial, migrá
 
 La estrategia se basa en dividir el sistema en módulos independientes pero interconectados, siguiendo el principio de responsabilidad única. Esto permitirá un desarrollo incremental, donde cada módulo puede ser implementado y probado individualmente antes de ser integrado en el sistema completo. La arquitectura implementa una máquina de estados completa para gestionar el flujo de ejecución, con especial énfasis en la gestión activa de temperatura para programas que utilizan agua caliente.
 
-## Progreso General del Proyecto: 83% (Actualizado)
+## Progreso General del Proyecto: 86% (Actualizado)
 
 ### Mejoras Recientes:
 - **Implementado feedback visual durante preparación de fase**: Ahora el usuario ve el tiempo transcurrido y el estado mientras el sistema alcanza las condiciones necesarias (nivel de agua y temperatura) antes de iniciar el temporizador del ciclo de lavado.
+- **Máquina de estados principal implementada**: Completada la lógica central de coordinación del sistema con manejo de los 7 estados (IDLE, SELECCIÓN, EDICIÓN, EJECUCIÓN, PAUSA, ERROR, EMERGENCIA)
+- **Limpieza de código**: Eliminados todos los aliases de config.h para evitar confusión y posibles errores, usando nombres originales directamente
 
 ## Etapas de Implementación
 
@@ -137,7 +139,7 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Pendiente: Verificación de IDs de componentes en archivo .hmi real
    - Pendiente: Pruebas finales de integración con hardware real
 
-2. **Módulo de Program Controller (7 días)** - 82% completado
+2. **Módulo de Program Controller (7 días)** - 88% completado
    - Implementar máquina de estados principal del sistema con 7 estados ✓
    - Desarrollar lógica para los tres programas específicos (22, 23, 24) ✓
    - Implementar flujo específico para control de temperatura en agua caliente ✓
@@ -153,9 +155,14 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Uso correcto de métodos de Storage para guardado individual ✓
    - IDs de componentes Nextion definidos en config.h ✓
    - Compatibilidad con nueva arquitectura modular ✓
-   - Pendiente: Completar manejo detallado de centrifugado
-   - Pendiente: Implementar manejo completo de emergencias
-   - Pendiente: Desarrollar algoritmos específicos para cada programa
+   - Máquina de estados principal implementada ✓
+   - Manejo de estados IDLE, SELECCIÓN, EDICIÓN, EJECUCIÓN ✓
+   - Manejo de estados PAUSA, ERROR y EMERGENCIA ✓
+   - Control de temperatura activo durante ejecución ✓
+   - Indicadores visuales para cada estado ✓
+   - Pendiente: Completar algoritmos específicos para programa 24 (multitanda)
+   - Pendiente: Implementar lógica de centrifugado avanzado
+   - Pendiente: Pruebas con hardware real
 
 3. **Integración de Módulos de Control e Interfaz (3 días)** - 92% completado
    - Conectar UI Controller con Program Controller ✓

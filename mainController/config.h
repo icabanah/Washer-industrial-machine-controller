@@ -23,8 +23,6 @@
 #define NEXTION_BAUD_RATE 9600
 #define NEXTION_RX_PIN 16 // ESP32 U2_RXD pin conectado al TX de Nextion
 #define NEXTION_TX_PIN 17 // ESP32 U2_TXD pin conectado al RX de Nextion
-#define NEXTION_RX_PIN 16 // ESP32 U2_RXD pin conectado al TX de Nextion
-#define NEXTION_TX_PIN 17 // ESP32 U2_TXD pin conectado al RX de Nextion
 
 // Pines para sensores
 // Sensor de Presión (HX710B)
@@ -89,7 +87,18 @@
 #define ESTADO_EJECUCION 2
 #define ESTADO_PAUSA 3
 #define ESTADO_ERROR 4
-#define ESTADO_EMERGENCIA 5 // Nuevo estado para manejo de emergencias
+#define ESTADO_EMERGENCIA 5
+#define ESTADO_IDLE 6
+
+// === CÓDIGOS DE ERROR ===
+#define ERROR_NINGUNO 0
+#define ERROR_PUERTA 1
+#define ERROR_TEMPERATURA 2
+#define ERROR_NIVEL 3
+#define ERROR_SENSOR 4
+#define ERROR_TIMEOUT 5
+#define ERROR_MOTOR 6
+#define ERROR_COMUNICACION 7 // Nuevo estado para manejo de emergencias
 
 // === COMPONENTES DE LA PANTALLA NEXTION ===
 // IDs de las páginas
@@ -122,17 +131,10 @@
 #define NEXTION_COMP_SEL_TIEMPO "val_tiempo"  // Valor del tiempo
 #define NEXTION_COMP_SEL_ROTACION "val_rotac" // Valor de rotación
 #define NEXTION_COMP_SEL_FASE "val_fase"      // Valor de fase
-#define NEXTION_COMP_MSG_TEXT "msg_sel"       // Texto del mensaje temporal "msg_sel"       // Texto del mensaje temporal
-
-// === ALIASES PARA COMPATIBILIDAD ===
-// Estos aliases permiten usar diferentes nombres para los mismos componentes
-#define NEXTION_COMP_VAL_NIVEL NEXTION_COMP_SEL_NIVEL       // Alias para nivel
-#define NEXTION_COMP_VAL_TEMP NEXTION_COMP_SEL_TEMP         // Alias para temperatura
-#define NEXTION_COMP_VAL_TIEMPO NEXTION_COMP_SEL_TIEMPO     // Alias para tiempo
-#define NEXTION_COMP_VAL_ROTACION NEXTION_COMP_SEL_ROTACION // Alias para rotación
+#define NEXTION_COMP_MSG_TEXT "msg_sel"       // Texto del mensaje temporal
 
 // === COMPONENTES ADICIONALES PARA INFORMACIÓN ===
-#define NEXTION_COMP_INFO_FASES "lbl_fases" // Información adicional de fases (P24)
+// #define NEXTION_COMP_INFO_FASES "lbl_fases" // Información adicional de fases (P24)
 
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
@@ -144,16 +146,14 @@
 // === IDs ADICIONALES PARA NAVEGACIÓN ===
 #define NEXTION_ID_BTN_PROG_ANTERIOR 12              // Botón "Anterior" en selección de programa
 #define NEXTION_ID_BTN_PROG_SIGUIENTE 13             // Botón "Siguiente" en selección de programa
-#define NEXTION_ID_BTN_COMENZAR NEXTION_ID_BTN_START // Alias para compatibilidad
-#define NEXTION_ID_BTN_EDITAR NEXTION_ID_BTN_EDIT    // Alias para compatibilidad
 
 // === COMPONENTES PÁGINA 2 - EJECUCIÓN ===
 #define NEXTION_COMP_PROG_EJECUCION "progr_ejec"         // Programa en ejecución
 #define NEXTION_COMP_FASE_EJECUCION "fase_ejec"          // Fase actual en ejecución
 #define NEXTION_COMP_TIEMPO_EJECUCION "tiempo_ejec"      // Tiempo transcurrido en ejecución
-#define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"          // Temperatura transcurrido en ejecución
-#define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"        // Nivel transcurrido en ejecución
-#define NEXTION_COMP_BARRA_PROGRESO "barra_prog"         // Barra de progreso del
+#define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"          // Temperatura en ejecución
+#define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"        // Nivel en ejecución
+#define NEXTION_COMP_BARRA_PROGRESO "barra_prog"         // Barra de progreso del proceso
 #define NEXTION_COMP_GAUGE_TEMP_EJECUCION "gauge_temp"   // Gauge de temperatura
 #define NEXTION_COMP_BARRA_NIVEL_EJECUCION "barra_nivel" // Gauge de presión (nivel de agua)
 #define NEXTION_COMP_GAUGE_VEL_EJECUCION "gauge_vel"     // Gauge de presión (nivel de agua)
@@ -161,9 +161,6 @@
 // Botones de control
 #define NEXTION_COMP_BTN_PARAR "btnParar"
 #define NEXTION_COMP_BTN_PAUSAR "btnPausar"
-
-// === ALIASES PARA BOTONES DE CONTROL ===
-#define NEXTION_COMP_BTN_STOP NEXTION_COMP_BTN_PARAR // Alias para botón parar
 
 // Información de estado
 #define NEXTION_ID_BTN_PAUSAR 11 // Botón "Pausar"
