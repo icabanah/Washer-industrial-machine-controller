@@ -134,7 +134,7 @@
 #define NEXTION_COMP_MSG_TEXT "msg_sel"       // Texto del mensaje temporal
 
 // === COMPONENTES ADICIONALES PARA INFORMACIÓN ===
-// #define NEXTION_COMP_INFO_FASES "lbl_fases" // Información adicional de fases (P24)
+#define NEXTION_COMP_INFO_FASES "lbl_fases" // Información adicional de fases (P24)
 
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
