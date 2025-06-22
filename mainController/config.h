@@ -109,6 +109,18 @@
 #define NEXTION_PAGE_ERROR 4
 #define NEXTION_PAGE_EMERGENCY 5
 
+// Valores de los parámetros de programa seteado
+#define NEXTION_COMP_SET_PROG "progr_sel"      // Programa en ejecución
+#define NEXTION_COMP_SET_NIVEL "val_nivel"     // Valor del nivel de agua
+#define NEXTION_COMP_SET_TEMP "val_temp"       // Valor de temperatura
+#define NEXTION_COMP_SET_TIEMPO "val_tiempo"   // Valor del tiempo
+#define NEXTION_COMP_SET_ROTACION "val_rotac"  // Valor de rotación
+#define NEXTION_COMP_SET_FASE "val_fase"       // Valor de fase
+#define NEXTION_COMP_SET_CENTRIF "val_centrif" // Valor de fase
+#define NEXTION_COMP_SET_AGUA "val_agua"       // Valor de fase
+#define NEXTION_COMP_MSG "mensaje"             // Texto del mensaje temporal
+
+
 // === COMPONENTES PÁGINA 0 - BIENVENIDA ===
 #define NEXTION_COMP_TITULO "lbl_titulo"       // Título principal "RH Electronics"
 #define NEXTION_COMP_SUBTITULO "lbl_subtitulo" // Subtítulo del sistema
@@ -125,30 +137,14 @@
 #define NEXTION_COMP_BTN_EDIT "btnEditar"
 #define NEXTION_COMP_PROGRAMA_SEL "val_prog" // Texto del programa seleccionado (ej: "P22")
 
-// Valores de los parámetros del programa
-#define NEXTION_COMP_SEL_NIVEL "val_nivel"    // Valor del nivel de agua
-#define NEXTION_COMP_SEL_TEMP "val_temp"      // Valor de temperatura
-#define NEXTION_COMP_SEL_TIEMPO "val_tiempo"  // Valor del tiempo
-#define NEXTION_COMP_SEL_ROTACION "val_rotac" // Valor de rotación
-#define NEXTION_COMP_SEL_FASE "val_fase"      // Valor de fase
-#define NEXTION_COMP_MSG_TEXT "msg_sel"       // Texto del mensaje temporal
-
-// === COMPONENTES ADICIONALES PARA INFORMACIÓN ===
-#define NEXTION_COMP_INFO_FASES "lbl_fases" // Información adicional de fases (P24)
-
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
 #define NEXTION_ID_BTN_PROGRAM2 2 // Botón "P23" para programa 2
 #define NEXTION_ID_BTN_PROGRAM3 3 // Botón "P24" para programa 3
-#define NEXTION_ID_BTN_START 9    // Botón "Comenzar"
-#define NEXTION_ID_BTN_EDIT 10    // Botón "Editar"
-
-// === IDs ADICIONALES PARA NAVEGACIÓN ===
-#define NEXTION_ID_BTN_PROG_ANTERIOR 12  // Botón "Anterior" en selección de programa
-#define NEXTION_ID_BTN_PROG_SIGUIENTE 13 // Botón "Siguiente" en selección de programa
+#define NEXTION_ID_BTN_START 5    // Botón "Comenzar"
+#define NEXTION_ID_BTN_EDIT 6     // Botón "Editar"
 
 // === COMPONENTES PÁGINA 2 - EJECUCIÓN ===
-#define NEXTION_COMP_PROG_EJECUCION "progr_ejec"         // Programa en ejecución
 #define NEXTION_COMP_FASE_EJECUCION "fase_ejec"          // Fase actual en ejecución
 #define NEXTION_COMP_TIEMPO_EJECUCION "tiempo_ejec"      // Tiempo transcurrido en ejecución
 #define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"          // Temperatura en ejecución
@@ -164,52 +160,56 @@
 #define NEXTION_COMP_BTN_PAUSAR "btnPausar"
 
 // Información de estado
-#define NEXTION_ID_BTN_PAUSAR 11 // Botón "Pausar"
-#define NEXTION_ID_BTN_PARAR 8   // Botón "Parar"
+#define NEXTION_ID_BTN_PAUSAR 10 // Botón "Pausar"
+#define NEXTION_ID_BTN_PARAR 7   // Botón "Parar"
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 // Etiquetas de parámetros principales
-#define NEXTION_COMP_PROG_EDICION "progr_edic"    // Visualización del programa actual en edición
-#define NEXTION_COMP_FASE_EDICION "fase_edic"     // Visualización del valor de fase de programa en edición
-#define NEXTION_COMP_TIEMPO_EDICION "tiempo_edic" // Visualización del valor de temporizador de programa en edición
-#define NEXTION_COMP_TEMP_EDICION "temp_edic"     // Visualización del valor de temperatura de programa en edición
-#define NEXTION_COMP_NIVEL_EDICION "nivel_edic"   // Visualización del valor de nivel de programa en edición
+// #define NEXTION_COMP_PROG_EDICION "progr_edic"    // Visualización del programa actual en edición
+// #define NEXTION_COMP_FASE_EDICION "fase_edic"     // Visualización del valor de fase de programa en edición
+// #define NEXTION_COMP_TIEMPO_EDICION "tiempo_edic" // Visualización del valor de temporizador de programa en edición
+// #define NEXTION_COMP_TEMP_EDICION "temp_edic"     // Visualización del valor de temperatura de programa en edición
+// #define NEXTION_COMP_NIVEL_EDICION "nivel_edic"   // Visualización del valor de nivel de programa en edición
 
-// Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
-#define NEXTION_COMP_VAL_NIVEL_EDIT "val_nivel"   // Valor actual del nivel en panel derecho
-#define NEXTION_COMP_VAL_TEMP_EDIT "val_temp"     // Valor actual de temperatura en panel derecho
-#define NEXTION_COMP_VAL_TIEMPO_EDIT "val_tiempo" // Valor actual del tiempo en panel derecho
-#define NEXTION_COMP_VAL_ROTAC_EDIT "val_rotac"   // Valor actual de rotación en panel derecho
-#define NEXTION_COMP_VAL_FASE_EDIT "val_fase"     // Valor actual de fase en panel derecho
+
+// === IDs ADICIONALES PARA NAVEGACIÓN ===
+// #define NEXTION_ID_BTN_PROG_ANTERIOR 8  // Botón "Anterior" en selección de programa
+// #define NEXTION_ID_BTN_PROG_SIGUIENTE 5 // Botón "Siguiente" en selección de programa
+// #define NEXTION_ID_BTN_PROG_MAS 6       // Botón "Siguiente" en selección de programa
+// #define NEXTION_ID_BTN_PROG_MENOS 7     // Botón "Siguiente" en selección de programa
 
 // Etiquetas de parámetros
-#define NEXTION_COMP_BTN_SIGUIENTE "btnSiguiente"     // Botón "Siguiente" para editar parámetro
-#define NEXTION_COMP_BTN_ANTERIOR "btnAnterior"       // Botón "Anterior" para editar parámetro
-#define NEXTION_COMP_BTN_MAS "btnMas"                 // Botón "Mas" para editar parámetro
-#define NEXTION_COMP_BTN_MENOS "btnMenos"             // Botón "Menos" para editar parámetro
-#define NEXTION_COMP_BTN_GUARDAR "btnGuardar"         // Botón "Guardar" para guardar parámetro
-#define NEXTION_COMP_BTN_CANCELAR "btnCancelar"       // Botón "Cancelar" para cancelar la edición de parámetro
-#define NEXTION_COMP_PARAM_EDITAR "param"             // Texto "param" para editar un parámetro en específico
-#define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Texto "param" para editar parámetro
+// #define NEXTION_COMP_BTN_SIGUIENTE "btnSiguiente"     // Botón "Siguiente" para editar parámetro
+// #define NEXTION_COMP_BTN_ANTERIOR "btnAnterior"       // Botón "Anterior" para editar parámetro
+// #define NEXTION_COMP_BTN_MAS "btnMas"                 // Botón "Mas" para editar parámetro
+// #define NEXTION_COMP_BTN_MENOS "btnMenos"             // Botón "Menos" para editar parámetro
+// #define NEXTION_COMP_BTN_GUARDAR "btnGuardar"         // Botón "Guardar" para guardar parámetro
+// #define NEXTION_COMP_BTN_CANCELAR "btnCancelar"       // Botón "Cancelar" para cancelar la edición de parámetro
+// #define NEXTION_COMP_PARAM_EDITAR "param"             // Texto "param" para editar un parámetro en específico
+// #define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Texto "param" para editar parámetro
 
-#define NEXTION_ID_BTN_PARAM_MENOS 17     // ID de Botón "-" para disminuir parámetro
-#define NEXTION_ID_BTN_PARAM_MAS 16       // ID de Botón "+" para aumentar parámetro
-#define NEXTION_ID_BTN_PARAM_ANTERIOR 18  // ID de Botón anterior para parámetro
-#define NEXTION_ID_BTN_PARAM_SIGUIENTE 15 // ID de Botón siguiente parámetro
-#define NEXTION_ID_BTN_GUARDAR 3          // ID de Botón "Guardar"
-#define NEXTION_ID_BTN_CANCELAR 4         // ID de Botón "Cancelar"
+#define NEXTION_ID_BTN_PARAM_MENOS 7     // ID de Botón "-" para disminuir parámetro
+#define NEXTION_ID_BTN_PARAM_MAS 6       // ID de Botón "+" para aumentar parámetro
+#define NEXTION_ID_BTN_PARAM_ANTERIOR 8  // ID de Botón anterior para parámetro
+#define NEXTION_ID_BTN_PARAM_SIGUIENTE 5 // ID de Botón siguiente parámetro
+#define NEXTION_ID_BTN_GUARDAR 3         // ID de Botón "Guardar"
+#define NEXTION_ID_BTN_CANCELAR 4        // ID de Botón "Cancelar"
 
-// === PARÁMETROS EDITABLES ===
-#define PARAM_NIVEL 0
-#define PARAM_TEMPERATURA 1
-#define PARAM_TIEMPO 2
-#define PARAM_ROTACION 3
+// Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
+#define NEXTION_ID_PARAM_NIVEL_EDIT 15   // Valor actual del nivel en panel derecho
+#define NEXTION_ID_PARAM_TEMP_EDIT 16     // Valor actual de temperatura en panel derecho
+#define NEXTION_ID_PARAM_TIEMPO_EDIT 17 // Valor actual del tiempo en panel derecho
+#define NEXTION_ID_PARAM_ROTAC_EDIT 18   // Valor actual de rotación en panel derecho
+#define NEXTION_ID_PARAM_FASE_EDIT 20     // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_CENTRIF_EDIT 22     // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_AGUA_EDIT 24     // Valor actual de fase en panel derecho
+
 
 // === LÍMITES DE PARÁMETROS ===
 #define MIN_NIVEL 1
 #define MAX_NIVEL 4
 #define MIN_TEMPERATURA 20
-#define MAX_TEMPERATURA 90
+#define MAX_TEMPERATURA 100
 #define MIN_TIEMPO 1
 #define MAX_TIEMPO 60
 #define MIN_ROTACION 1
@@ -217,15 +217,9 @@
 
 // === INCREMENTOS DE EDICIÓN ===
 #define INCREMENT_NIVEL 1    // Incremento para nivel de agua
-#define INCREMENT_TEMP 5     // Incremento para temperatura (°C)
+#define INCREMENT_TEMP 1     // Incremento para temperatura (°C)
 #define INCREMENT_TIEMPO 1   // Incremento para tiempo (minutos)
 #define INCREMENT_ROTACION 1 // Incremento para rotación
-
-// === TEXTOS DE PARÁMETROS PARA DISPLAY ===
-#define TEXT_PARAM_NIVEL "Nivel"
-#define TEXT_PARAM_TEMPERATURA "Temperatura"
-#define TEXT_PARAM_TIEMPO "Tiempo"
-#define TEXT_PARAM_ROTACION "Rotacion"
 
 // === CONFIGURACIÓN DE EDICIÓN ===
 #define EDIT_TIMEOUT_MS 30000    // Timeout para salir automáticamente de edición (30 segundos)

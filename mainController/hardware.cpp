@@ -143,10 +143,12 @@ void HardwareClass::nextionSendCommand(const String &command)
   NEXTION_SERIAL.print(command);
   _sendNextionEndCmd();
 
-  // Debug mejorado de comandos
-  // Serial.print(">>> Nextion CMD: [");
-  // Serial.print(command);
-  // Serial.println("]");
+  // Debug temporal para identificar comandos que causan 0x02
+  static unsigned long lastDebugTime = 0;
+  if (millis() - lastDebugTime > 3000) { // Cada 3 segundos
+    Serial.println("📤 Comando enviado: " + command);
+    lastDebugTime = millis();
+  }
 
   // Pequeña pausa para asegurar envío
   delay(10);
@@ -278,14 +280,19 @@ bool HardwareClass::_readNextionResponse()
   {
     _nextionLastEvent = String(_nextionBuffer);
 
-    // Filtrar eventos 0x1A (Numeric Variable Data automáticos) ANTES del debug
-    if (index == 1 && rawBytes[0] == 0x1A) {
-      // Evento 0x1A: datos de variable numérica automáticos de Nextion
-      // Estos son normales y no requieren procesamiento especial
-      return false; // No es un evento que necesitemos procesar
+    // Filtrar eventos automáticos/de estado de Nextion ANTES del debug
+    if (index == 1) {
+      if (rawBytes[0] == 0x1A) {
+        // Evento 0x1A: datos de variable numérica automáticos de Nextion
+        return false; // No es un evento que necesitemos procesar
+      }
+      if (rawBytes[0] == 0x02) {
+        // Evento 0x02: mensaje de estado/respuesta automática de Nextion
+        return false; // No es un evento que necesitemos procesar
+      }
     }
 
-    // Debug detallado de eventos (solo para eventos que no son 0x1A)
+    // Debug detallado de eventos (filtrados automáticos 0x1A y 0x02)
     Serial.print("🔍 Evento Nextion Raw [");
     Serial.print(index);
     Serial.print(" bytes]: ");

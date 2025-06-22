@@ -651,7 +651,7 @@ void ProgramControllerClass::processUserEvent(const String& event) {
   lastEventTime = currentTime;
   
   // Debug solo para componentes importantes (botones de control)
-  if (touchComponent == NEXTION_ID_BTN_PARAR || touchComponent == NEXTION_ID_BTN_PAUSAR) {
+  if (touchComponent == NEXTION_ID_BTN_PARAR || touchComponent == NEXTION_ID_BTN_PAUSAR || touchComponent == NEXTION_ID_BTN_START) {
     Utils.debug("🎯 Evento botón control - Página: " + String(touchPage) + ", Componente: " + String(touchComponent));
   }
   
