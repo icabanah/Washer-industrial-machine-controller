@@ -8,12 +8,14 @@ El proyecto consiste en modernizar un controlador de lavadora industrial, migrá
 
 La estrategia se basa en dividir el sistema en módulos independientes pero interconectados, siguiendo el principio de responsabilidad única. Esto permitirá un desarrollo incremental, donde cada módulo puede ser implementado y probado individualmente antes de ser integrado en el sistema completo. La arquitectura implementa una máquina de estados completa para gestionar el flujo de ejecución, con especial énfasis en la gestión activa de temperatura para programas que utilizan agua caliente.
 
-## Progreso General del Proyecto: 86% (Actualizado)
+## Progreso General del Proyecto: 89% (Actualizado)
 
 ### Mejoras Recientes:
 - **Implementado feedback visual durante preparación de fase**: Ahora el usuario ve el tiempo transcurrido y el estado mientras el sistema alcanza las condiciones necesarias (nivel de agua y temperatura) antes de iniciar el temporizador del ciclo de lavado.
 - **Máquina de estados principal implementada**: Completada la lógica central de coordinación del sistema con manejo de los 7 estados (IDLE, SELECCIÓN, EDICIÓN, EJECUCIÓN, PAUSA, ERROR, EMERGENCIA)
 - **Limpieza de código**: Eliminados todos los aliases de config.h para evitar confusión y posibles errores, usando nombres originales directamente
+- **Control de centrifugado avanzado implementado**: Sistema completo con velocidades variables, rampa de aceleración, detección de balance y secuencias programables (control On/Off)
+- **Drenaje parcial implementado**: Sistema para ajuste de temperatura mediante drenaje controlado y secuencias complejas
 
 ## Etapas de Implementación
 
@@ -84,7 +86,7 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Verificar interacción correcta entre los módulos ✓
    - Realizar pruebas de integración básicas ✓
 
-### Etapa 3: Implementación de Módulos Físicos (2 semanas) - 30% completado
+### Etapa 3: Implementación de Módulos Físicos (2 semanas) - 67% completado
 
 1. **Módulo de Sensores (5 días)** - 50% completado
    - Implementar interfaz para sensor de temperatura (OneWire/DallasTemperature)
@@ -96,14 +98,21 @@ La estrategia se basa en dividir el sistema en módulos independientes pero inte
    - Pendiente: Completar algoritmos de estabilización de lecturas
    - Pendiente: Implementar detección de anomalías en sensores
 
-2. **Módulo de Actuadores (5 días)** - 40% completado
-   - Implementar control del motor bidireccional con patrones de rotación configurables
-   - Desarrollar gestión diferenciada de válvulas (agua fría, agua caliente, desagüe, vapor)
-   - Crear manejo del mecanismo de seguridad de puerta con verificación
-   - Implementar control de centrifugado variable
-   - Desarrollar sistema de gestión de temperatura para programas con agua caliente
-   - Pendiente: Implementar secuencias de drenaje parcial para ajuste de temperatura
-   - Pendiente: Completar algoritmos de control de centrifugado
+2. **Módulo de Actuadores (5 días)** - 85% completado
+   - Implementar control del motor bidireccional con patrones de rotación configurables ✓
+   - Desarrollar gestión diferenciada de válvulas (agua fría, agua caliente, desagüe, vapor) ✓
+   - Crear manejo del mecanismo de seguridad de puerta con verificación ✓
+   - Implementar control de centrifugado variable ✓
+   - Desarrollar sistema de gestión de temperatura para programas con agua caliente ✓
+   - Implementar secuencias de drenaje parcial para ajuste de temperatura ✓
+   - Completar algoritmos de control de centrifugado ✓
+   - Sistema de centrifugado avanzado con rampa de aceleración ✓
+   - Detección de balance de carga con reintentos automáticos ✓
+   - Secuencias predefinidas (NORMAL, DELICATE, INTENSIVE, QUICK) ✓
+   - Control On/Off del motor (sin PWM) ✓
+   - Secuencias complejas de temperatura y distribución de detergente ✓
+   - Pendiente: Integración con sensores reales para detección de balance
+   - Pendiente: Pruebas con hardware real
 
 3. **Integración de Módulos Físicos (2 días)** - 0% completado
    - Conectar módulos de sensores y actuadores
