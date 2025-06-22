@@ -255,11 +255,21 @@ void UIControllerClass::updateTemperature(float temperatura) {
 }
 
 void UIControllerClass::updateWaterLevel(uint8_t nivel) {
-  // Actualizar texto de nivel
-  Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, "Nivel: " + String(nivel));
+  // Actualizar texto de nivel en pantalla de ejecución
+  Hardware.nextionSetText(NEXTION_COMP_NIVEL_EJECUCION, "Nivel: " + String(nivel));
   
-  // Actualizar indicador visual
-  Hardware.nextionSetValue(NEXTION_COMP_SEL_ROTACION, nivel * 25);  // 0-100%
+  // Actualizar gauge vertical de nivel (barra vertical)
+  // Mapear nivel del sensor (0-4) al rango del gauge en Nextion (0-100)
+  // Esto hace que cada nivel del sensor sea muy visible en la barra
+  uint8_t barValue = nivel * 25; // 0->0, 1->25, 2->50, 3->75, 4->100
+  Hardware.nextionSetValue(NEXTION_COMP_BARRA_NIVEL_EJECUCION, barValue);
+  
+  // Debug para verificar mapeo
+  static uint8_t lastLevel = 255;
+  if (nivel != lastLevel) {
+    Utils.debug("💧 Nivel agua: " + String(nivel) + " -> Barra: " + String(barValue) + "%");
+    lastLevel = nivel;
+  }
 }
 
 void UIControllerClass::updateRotation(uint8_t rotacion) {

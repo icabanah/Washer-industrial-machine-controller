@@ -483,9 +483,27 @@ uint8_t ProgramControllerClass::getTotalSeconds() {
 }
 
 uint8_t ProgramControllerClass::getProgressPercentage() {
+  // Durante preparación de fase, mostrar 0%
+  if (_preparingPhase) {
+    return 0;
+  }
+  
+  // Durante ejecución, calcular progreso basado en tiempo
   if (_totalSeconds == 0) return 0;
+  
   uint16_t remainingTotal = (_remainingMinutes * 60) + _remainingSeconds;
-  return 100 - ((remainingTotal * 100) / _totalSeconds);
+  uint8_t progress = 100 - ((remainingTotal * 100) / _totalSeconds);
+  
+  // Debug ocasional para verificar cálculo
+  static unsigned long lastDebug = 0;
+  if (millis() - lastDebug > 10000) { // Cada 10 segundos
+    Utils.debug("📊 Progreso: " + String(progress) + "% (Restante: " + 
+                String(_remainingMinutes) + ":" + String(_remainingSeconds) + 
+                " / Total: " + String(_totalSeconds) + "s)");
+    lastDebug = millis();
+  }
+  
+  return progress;
 }
 
 /// @brief
