@@ -287,6 +287,10 @@ bool ActuatorsClass::isAutoRotationActive() {
   return _autoRotationActive;
 }
 
+uint8_t ActuatorsClass::getCurrentRotationLevel() {
+  return _currentRotationLevel;
+}
+
 void ActuatorsClass::updateTimers() {
   // Esta función es llamada periódicamente desde Utils.updateTasks()
   // a través del temporizador principal

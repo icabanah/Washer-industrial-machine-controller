@@ -20,7 +20,7 @@
 // Comunicación Serial para Nextion
 #define NEXTION_SERIAL Serial2
 // #define NEXTION_BAUD_RATE 115200
-#define NEXTION_BAUD_RATE 9600
+#define NEXTION_BAUD_RATE 57600
 #define NEXTION_RX_PIN 16 // ESP32 U2_RXD pin conectado al TX de Nextion
 #define NEXTION_TX_PIN 17 // ESP32 U2_TXD pin conectado al RX de Nextion
 
@@ -38,7 +38,7 @@
 #define NIVEL_ACTIVO LOW
 
 // Configuración de la pantalla Nextion
-#define NEXTION_TIMEOUT 100              // Timeout para comunicación Nextion en ms
+#define NEXTION_TIMEOUT 20               // Timeout para comunicación Nextion en ms (optimizado para respuesta rápida)
 #define NEXTION_END_CMD 0xFF, 0xFF, 0xFF // Bytes de finalización de comando
 
 // Configuración de temperatura
@@ -144,8 +144,8 @@
 #define NEXTION_ID_BTN_EDIT 10    // Botón "Editar"
 
 // === IDs ADICIONALES PARA NAVEGACIÓN ===
-#define NEXTION_ID_BTN_PROG_ANTERIOR 12              // Botón "Anterior" en selección de programa
-#define NEXTION_ID_BTN_PROG_SIGUIENTE 13             // Botón "Siguiente" en selección de programa
+#define NEXTION_ID_BTN_PROG_ANTERIOR 12  // Botón "Anterior" en selección de programa
+#define NEXTION_ID_BTN_PROG_SIGUIENTE 13 // Botón "Siguiente" en selección de programa
 
 // === COMPONENTES PÁGINA 2 - EJECUCIÓN ===
 #define NEXTION_COMP_PROG_EJECUCION "progr_ejec"         // Programa en ejecución
@@ -153,6 +153,7 @@
 #define NEXTION_COMP_TIEMPO_EJECUCION "tiempo_ejec"      // Tiempo transcurrido en ejecución
 #define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"          // Temperatura en ejecución
 #define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"        // Nivel en ejecución
+#define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_rot"       // Velocidad de motor
 #define NEXTION_COMP_BARRA_PROGRESO "barra_prog"         // Barra de progreso del proceso
 #define NEXTION_COMP_GAUGE_TEMP_EJECUCION "gauge_temp"   // Gauge de temperatura
 #define NEXTION_COMP_BARRA_NIVEL_EJECUCION "barra_nivel" // Gauge de presión (nivel de agua)

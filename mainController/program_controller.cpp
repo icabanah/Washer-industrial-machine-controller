@@ -593,6 +593,10 @@ void ProgramControllerClass::saveEditing() {
   Storage.saveRotation(_editingProgram, _editingPhase, _rotations[_editingProgram][_editingPhase]);
   
   _isEditing = false;
+  
+  // Recargar todos los datos para asegurar consistencia
+  _loadProgramData();
+  
   setState(ESTADO_SELECCION);
   
   // Mostrar pantalla de selección actualizada
@@ -618,6 +622,7 @@ void ProgramControllerClass::endEditing() {
 void ProgramControllerClass::processUserEvent(const String& event) {
   // Verificar si hay un evento táctil válido
   if (!Hardware.hasValidTouchEvent()) {
+    Utils.debug("⚠️ Evento táctil no válido recibido: " + event);
     return; // No hay evento táctil válido
   }
   
@@ -630,16 +635,36 @@ void ProgramControllerClass::processUserEvent(const String& event) {
     return;
   }
   
-  // Utils.debug("🔍 PROCESANDO EVENTO TÁCTIL:");
-  // Utils.debug("   Página: " + String(touchPage) + " (Esperada para edición: " + String(NEXTION_PAGE_EDIT) + ")");
-  // Utils.debug("   Componente: " + String(touchComponent));
-  // Utils.debug("   Estado actual: " + String(_currentState));
+  // Filtro anti-rebote: evitar procesar el mismo evento repetidamente
+  static uint8_t lastPage = 255;
+  static uint8_t lastComponent = 255;
+  static unsigned long lastEventTime = 0;
+  unsigned long currentTime = millis();
+  
+  if (touchPage == lastPage && touchComponent == lastComponent && 
+      (currentTime - lastEventTime) < 200) { // 200ms de anti-rebote
+    return; // Ignorar evento duplicado
+  }
+  
+  lastPage = touchPage;
+  lastComponent = touchComponent;
+  lastEventTime = currentTime;
+  
+  // Debug solo para componentes importantes (botones de control)
+  if (touchComponent == NEXTION_ID_BTN_PARAR || touchComponent == NEXTION_ID_BTN_PAUSAR) {
+    Utils.debug("🎯 Evento botón control - Página: " + String(touchPage) + ", Componente: " + String(touchComponent));
+  }
   
   // Procesar eventos según la página actual
   switch (touchPage) {
     case NEXTION_PAGE_SELECTION:
-      // Utils.debug("📄 Procesando eventos de página de selección");
-      _handleSelectionPageEvents(touchComponent);
+      // Solo procesar eventos de selección si estamos en el estado correcto
+      if (_currentState == ESTADO_SELECCION || _currentState == ESTADO_IDLE) {
+        _handleSelectionPageEvents(touchComponent);
+      } else {
+        // Ignorar eventos de página de selección cuando estamos ejecutando
+        Utils.debug("⚠️ Ignorando evento de selección en estado: " + String(_currentState));
+      }
       break;
       
     case NEXTION_PAGE_EDIT:
@@ -648,12 +673,11 @@ void ProgramControllerClass::processUserEvent(const String& event) {
       break;
       
     case NEXTION_PAGE_EXECUTION:
-      // Utils.debug("📄 Procesando eventos de página de ejecución");
       _handleExecutionPageEvents(touchComponent);
       break;
       
     default:
-      // Utils.debug("⚠️ Página no manejada: " + String(touchPage));
+      Utils.debug("⚠️ Página no manejada: " + String(touchPage));
       break;
   }
 }
@@ -777,9 +801,10 @@ void ProgramControllerClass::_handleExecutionState() {
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
       UIController.updateProgressBar(getProgressPercentage());
       
-      // Actualizar sensores en tiempo real durante ejecución
+      // Actualizar sensores y actuadores en tiempo real durante ejecución
       UIController.updateTemperature(Sensors.getCurrentTemperature());
       UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
+      UIController.updateRotation(Actuators.getCurrentRotationLevel());
       
       lastUIUpdate = millis();
     }

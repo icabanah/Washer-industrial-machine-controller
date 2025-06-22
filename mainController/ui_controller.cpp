@@ -273,11 +273,20 @@ void UIControllerClass::updateWaterLevel(uint8_t nivel) {
 }
 
 void UIControllerClass::updateRotation(uint8_t rotacion) {
-  // Actualizar texto de rotación
-  Hardware.nextionSetText("txtRotacion", "Vel: " + String(rotacion));
+  // Actualizar texto de velocidad de rotación en pantalla de ejecución
+  Hardware.nextionSetText(NEXTION_COMP_VELOCIDAD_EJECUCION, "Vel: " + String(rotacion));
   
-  // Actualizar indicador visual si existe
-  Hardware.nextionSendCommand("motor.val=" + String(rotacion));
+  // Actualizar gauge de velocidad (apuntador)
+  // Mapear nivel de rotación (0-3) al rango del gauge en Nextion (0-100)
+  uint8_t gaugeValue = (rotacion * 100) / 3; // 0->0, 1->33, 2->67, 3->100
+  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_VEL_EJECUCION, gaugeValue);
+  
+  // Debug para verificar mapeo
+  static uint8_t lastRotation = 255;
+  if (rotacion != lastRotation) {
+    Utils.debug("⚙️ Rotación: " + String(rotacion) + " -> Gauge: " + String(gaugeValue) + "%");
+    lastRotation = rotacion;
+  }
 }
 
 void UIControllerClass::updatePhase(uint8_t fase) {

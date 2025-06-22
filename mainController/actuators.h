@@ -96,6 +96,7 @@ public:
   void startAutoRotation(uint8_t level);
   void stopAutoRotation();
   bool isAutoRotationActive();
+  uint8_t getCurrentRotationLevel();
   
   // Gestión de emergencia
   void emergencyStop();
