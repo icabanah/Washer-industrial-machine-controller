@@ -43,7 +43,7 @@ public:
   
   // Métodos para actualizar datos en pantalla
   void updateTime(uint8_t minutos, uint8_t segundos);
-  void updateTemperature(uint8_t temperatura);
+  void updateTemperature(float temperatura);
   void updateWaterLevel(uint8_t nivel);
   void updateRotation(uint8_t rotacion);
   void updatePhase(uint8_t fase);

@@ -238,22 +238,20 @@ void UIControllerClass::updateTime(uint8_t minutos, uint8_t segundos) {
   _formatTimeDisplay(minutos, segundos, timeBuffer);
   Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, timeBuffer);
   
-  // Actualizar barra de progreso si es necesario
-  // (suponiendo fase de 60 minutos máximo)
-  uint8_t progress = (minutos * 60 + segundos) / 36;  // 0-100%
-  updateProgressBar(progress);
+  // No actualizar la barra de progreso aquí para evitar parpadeo
+  // La barra se actualiza por separado en _handleExecution
 }
 
 void UIControllerClass::_formatTimeDisplay(uint8_t minutos, uint8_t segundos, char* buffer) {
   sprintf(buffer, "%02d:%02d", minutos, segundos);
 }
 
-void UIControllerClass::updateTemperature(uint8_t temperatura) {
-  // Actualizar texto de temperatura
-  Hardware.nextionSetText(NEXTION_COMP_SEL_TEMP, String(temperatura) + "°C");
+void UIControllerClass::updateTemperature(float temperatura) {
+  // Actualizar texto de temperatura con 1 decimal
+  Hardware.nextionSetText(NEXTION_COMP_TEMP_EJECUCION, String(temperatura, 1) + "°C");
   
   // Actualizar medidor visual si existe
-  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_TEMP_EJECUCION, temperatura);
+  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_TEMP_EJECUCION, (uint16_t)temperatura);
 }
 
 void UIControllerClass::updateWaterLevel(uint8_t nivel) {

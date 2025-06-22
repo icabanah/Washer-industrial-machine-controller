@@ -758,6 +758,11 @@ void ProgramControllerClass::_handleExecutionState() {
     if (millis() - lastUIUpdate >= 1000) {
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
       UIController.updateProgressBar(getProgressPercentage());
+      
+      // Actualizar sensores en tiempo real durante ejecución
+      UIController.updateTemperature(Sensors.getCurrentTemperature());
+      UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
+      
       lastUIUpdate = millis();
     }
     
