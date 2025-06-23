@@ -178,10 +178,13 @@ void ProgramControllerClass::startProgram() {
   if (_currentState == ESTADO_SELECCION) {
     // === VERIFICACIÓN INICIAL DE PUERTA SEGÚN DOCUMENTO DEL CLIENTE ===
     if (!Sensors.isDoorClosed()) {
-      // Mostrar mensaje de puerta abierta
-      UIController.showMessage("PUERTA ABIERTA - Cierre la puerta para continuar", 5000);
+      // Mostrar advertencia en componente de mensajes de Nextion
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "PUERTA ABIERTA");
       Utils.debug("❌ No se puede iniciar: Puerta abierta");
       return;
+    } else {
+      // Limpiar mensaje si la puerta está cerrada
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "");
     }
     
     setState(ESTADO_EJECUCION);
@@ -453,6 +456,10 @@ void ProgramControllerClass::_completeProgram() {
   Actuators.closeSteamValve();
   Actuators.closeWaterValve();
   Actuators.openDrainValve();
+  
+  // Desbloquear puerta después de completar programa exitosamente
+  Actuators.unlockDoor();
+  Utils.debug("🔓 Puerta desbloqueada - Programa completado exitosamente");
   
   // Incrementar contador de uso
   Storage.incrementUsageCounter();
@@ -1194,9 +1201,24 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     //   break;
       
     case NEXTION_ID_BTN_START:
-      // Iniciar el programa seleccionado
-      Utils.debug("▶️ Iniciando programa " + String(_currentProgram + 22));
-      startProgram();
+      // Verificar estado de puerta para determinar acción
+      if (!Sensors.isDoorClosed()) {
+        // Puerta abierta - bloquear puerta
+        Utils.debug("🔒 Cerrando y bloqueando puerta");
+        Actuators.lockDoor();
+        Hardware.nextionSetText(NEXTION_COMP_MSG, "PUERTA BLOQUEADA");
+        
+        // Actualizar texto del botón después de bloquear
+        Hardware.nextionSetText(NEXTION_COMP_BTN_START, "INICIAR");
+        
+        // Breve pausa para mostrar mensaje
+        delay(1000);
+        Hardware.nextionSetText(NEXTION_COMP_MSG, "");
+      } else {
+        // Puerta cerrada - iniciar programa
+        Utils.debug("▶️ Iniciando programa " + String(_currentProgram + 22));
+        startProgram();
+      }
       break;
       
     case NEXTION_ID_BTN_EDIT:

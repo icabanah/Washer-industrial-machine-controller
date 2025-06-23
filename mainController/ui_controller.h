@@ -76,6 +76,7 @@ public:
   // Métodos de ayuda para interfaz
   void showMessage(const String& message, uint16_t duration = 2000);
   void playSound(uint8_t soundType);
+  void updateStartButtonText(); // Actualizar texto del botón según estado de puerta
 
 private:
   // Variables para controlar estado de UI

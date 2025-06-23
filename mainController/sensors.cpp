@@ -2,6 +2,7 @@
 #include "sensors.h"
 #include "utils.h"
 #include "hardware.h"
+#include "actuators.h"
 
 // Instancia global
 SensorsClass Sensors;
@@ -419,8 +420,13 @@ void SensorsClass::diagnosticTemperatureSensor() {
 }
 
 bool SensorsClass::isDoorClosed() {
+  // Verificar primero si la puerta está bloqueada electrónicamente
+  if (Actuators.isDoorLocked()) {
+    return true; // Si está bloqueada, considerarla cerrada
+  }
+  
+  // Si no está bloqueada, verificar sensor físico
   // Por ahora, usamos el botón de emergencia como sensor de puerta
   // En una implementación real, esto sería un sensor magnético de puerta
-  // Para el documento del cliente: puerta cerrada = botón de emergencia NO presionado
   return !Hardware.isEmergencyButtonPressed();
 }

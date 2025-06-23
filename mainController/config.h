@@ -164,8 +164,8 @@
 #define NEXTION_COMP_GAUGE_VEL_EJECUCION "gauge_vel"     // Gauge de presión (nivel de agua)
 
 // Botones de control
-// #define NEXTION_COMP_BTN_PARAR "btnParar"
-// #define NEXTION_COMP_BTN_PAUSAR "btnPausar"
+#define NEXTION_COMP_BTN_PARAR "btnParar"
+#define NEXTION_COMP_BTN_PAUSAR "btnPausar"
 
 // Información de estado
 #define NEXTION_ID_BTN_PAUSAR 10 // Botón "Pausar"
