@@ -34,12 +34,34 @@ uint8_t TemporizadorLim[3][4] = {
   {15, 20, 25, 15}  // Programa 3
 };
 
+// Nuevos arrays para fase, centrifugado y tipo de agua
+uint8_t FasesPrograma[3][4] = {
+  {1, 2, 3, 4},  // Programa 1: llenado, lavado, drenaje, centrifugado
+  {1, 2, 3, 4},  // Programa 2: llenado, lavado, drenaje, centrifugado
+  {1, 2, 3, 0}   // Programa 3: llenado, lavado, drenaje, sin centrifugado
+};
+
+uint8_t CentrifugadoPrograma[3][4] = {
+  {0, 0, 0, 1},  // Programa 1: centrifugado solo en fase 4
+  {0, 0, 0, 1},  // Programa 2: centrifugado solo en fase 4
+  {0, 0, 0, 0}   // Programa 3: sin centrifugado
+};
+
+uint8_t TipoAguaPrograma[3][4] = {
+  {1, 1, 0, 0},  // Programa 1 (P22): agua caliente en llenado y lavado
+  {0, 0, 0, 0},  // Programa 2 (P23): agua fría en todas las fases
+  {1, 1, 0, 0}   // Programa 3 (P24): agua caliente en llenado y lavado
+};
+
 void UIControllerClass::init() {
   // Obtener referencia a los datos de programa
   _nivelAgua = NivelAgua;
   _rotacionTam = RotacionTam;
   _temperaturaLim = TemperaturaLim;
   _temporizadorLim = TemporizadorLim;
+  _fasesPrograma = FasesPrograma;
+  _centrifugadoPrograma = CentrifugadoPrograma;
+  _tipoAguaPrograma = TipoAguaPrograma;
   
   _userActionPending = false;
   _messageActive = false;
@@ -55,9 +77,10 @@ void UIControllerClass::init() {
   _parametroActual = PARAM_NIVEL;
   _modoEdicionActivo = false;
   _editTimeoutStart = 0;
+  _parameterSaved = false;
   
-  // Inicializar valores temporales
-  for (int i = 0; i < 4; i++) {
+  // Inicializar valores temporales (expandido para 7 parámetros)
+  for (int i = 0; i < 7; i++) {
     _valoresTemporales[i] = 0;
   }
   
@@ -780,15 +803,44 @@ void UIControllerClass::handleEditPageEvent(int componentId) {
       handleCancelEdit();
       break;
       
+    // Nuevos: Selección directa de parámetros
+    case NEXTION_ID_PARAM_NIVEL_EDIT:
+      Serial.println("🔧 Seleccionar parámetro NIVEL (ID: " + String(NEXTION_ID_PARAM_NIVEL_EDIT) + ")");
+      selectParameter(PARAM_NIVEL);
+      break;
+      
+    case NEXTION_ID_PARAM_TEMP_EDIT:
+      Serial.println("🌡️ Seleccionar parámetro TEMPERATURA (ID: " + String(NEXTION_ID_PARAM_TEMP_EDIT) + ")");
+      selectParameter(PARAM_TEMPERATURA);
+      break;
+      
+    case NEXTION_ID_PARAM_TIEMPO_EDIT:
+      Serial.println("⏱️ Seleccionar parámetro TIEMPO (ID: " + String(NEXTION_ID_PARAM_TIEMPO_EDIT) + ")");
+      selectParameter(PARAM_TIEMPO);
+      break;
+      
+    case NEXTION_ID_PARAM_ROTAC_EDIT:
+      Serial.println("🔄 Seleccionar parámetro ROTACIÓN (ID: " + String(NEXTION_ID_PARAM_ROTAC_EDIT) + ")");
+      selectParameter(PARAM_ROTACION);
+      break;
+      
+    case NEXTION_ID_PARAM_FASE_EDIT:
+      Serial.println("📊 Seleccionar parámetro FASE (ID: " + String(NEXTION_ID_PARAM_FASE_EDIT) + ")");
+      selectPhase();
+      break;
+      
+    case NEXTION_ID_PARAM_CENTRIF_EDIT:
+      Serial.println("🌀 Seleccionar parámetro CENTRIFUGADO (ID: " + String(NEXTION_ID_PARAM_CENTRIF_EDIT) + ")");
+      selectCentrifuge();
+      break;
+      
+    case NEXTION_ID_PARAM_AGUA_EDIT:
+      Serial.println("💧 Seleccionar parámetro AGUA (ID: " + String(NEXTION_ID_PARAM_AGUA_EDIT) + ")");
+      selectWater();
+      break;
+      
     default:
       Serial.println("❓ Evento de edición no reconocido: ComponentID=" + String(componentId));
-      // Serial.println("   IDs esperados:");
-      // Serial.println("   - MAS: " + String(NEXTION_ID_BTN_PARAM_MAS));
-      // Serial.println("   - MENOS: " + String(NEXTION_ID_BTN_PARAM_MENOS));
-      // Serial.println("   - SIGUIENTE: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE));
-      // Serial.println("   - ANTERIOR: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR));
-      // Serial.println("   - GUARDAR: " + String(NEXTION_ID_BTN_GUARDAR));
-      // Serial.println("   - CANCELAR: " + String(NEXTION_ID_BTN_CANCELAR));
       break;
   }
 }
@@ -888,31 +940,52 @@ void UIControllerClass::handlePreviousParameter() {
  * @brief Manejar evento del botón "Guardar" (guardar todos los cambios)
  */
 void UIControllerClass::handleSaveParameters() {
-  // Validar todos los parámetros antes de guardar
-  if (!_validateAllParameters()) {
-    // Mostrar mensaje de error
-    showMessage("Error: Valores no válidos", 3000);
-    // playSound(1); // Sonido de advertencia
-    return;
+  if (!_parameterSaved) {
+    // PRIMERA PRESIÓN: Guardar parámetro actual
+    
+    // Validar parámetro actual
+    if (!_validateCurrentParameter()) {
+      showMessage("Error: Valor no válido", 2000);
+      return;
+    }
+    
+    // Guardar parámetro actual en memoria temporal
+    _saveCurrentParameterToTemp();
+    _parameterSaved = true;
+    
+    // Mostrar confirmación
+    showMessage("Parámetro guardado - Presione de nuevo para guardar programa", 3000);
+    Serial.println("💾 Parámetro guardado temporalmente");
+    
+    // Actualizar display para mostrar que está pendiente de guardado final
+    updateParameterDisplay();
+    
+  } else {
+    // SEGUNDA PRESIÓN: Guardar programa completo
+    
+    // Validar todos los parámetros
+    if (!_validateAllParameters()) {
+      showMessage("Error: Valores no válidos", 3000);
+      return;
+    }
+    
+    // Guardar valores en storage permanente
+    _saveParametersToStorage(_programaEnEdicion, _faseEnEdicion);
+    
+    // Mostrar mensaje de confirmación
+    showMessage("Programa guardado exitosamente", 2000);
+    Serial.println("✅ Programa guardado exitosamente - P" + String(_programaEnEdicion + 22) + " F" + String(_faseEnEdicion));
+    
+    // Resetear estado y salir del modo edición
+    _parameterSaved = false;
+    _modoEdicionActivo = false;
+    
+    // Notificar al ProgramController que vuelva al estado de selección
+    ProgramController.endEditing();
+    
+    // Volver a la página de selección
+    safeTransitionToSelection(_programaEnEdicion);
   }
-  
-  // Guardar valores en storage permanente
-  _saveParametersToStorage(_programaEnEdicion, _faseEnEdicion);
-  
-  // Mostrar mensaje de confirmación
-  showMessage("Parámetros guardados exitosamente", 2000);
-  // playSound(0); // Sonido de confirmación
-  
-  // Salir del modo edición
-  _modoEdicionActivo = false;
-  
-  // Notificar al ProgramController que vuelva al estado de selección
-  ProgramController.endEditing();
-  
-  // Volver a la página de selección
-  safeTransitionToSelection(_programaEnEdicion);
-  
-  Serial.println("Parámetros guardados exitosamente - P" + String(_programaEnEdicion + 22) + " F" + String(_faseEnEdicion));
 }
 /**
  * @brief Manejar evento del botón "Cancelar" (descartar cambios y volver)
@@ -924,6 +997,7 @@ void UIControllerClass::handleCancelEdit() {
   
   // Salir del modo edición sin guardar
   _modoEdicionActivo = false;
+  _parameterSaved = false;
   
   // Notificar al ProgramController que vuelva al estado de selección
   ProgramController.endEditing();
@@ -1104,12 +1178,11 @@ void UIControllerClass::updateErrorDisplay(bool blinkState) {
 void UIControllerClass::updateProgramInfo(uint8_t programa) {
   if (_currentPage != NEXTION_PAGE_SELECTION) return;
   
-  // Actualizar texto descriptivo del programa
+  // Actualizar texto descriptivo del programa usando componente mensaje común
   char buffer[100];
   generarTextoPrograma(programa, buffer, sizeof(buffer));
   
-  String cmd = "tDescripcion.txt=\"" + String(buffer) + "\"";
-  Hardware.nextionSendCommand(cmd);
+  Hardware.nextionSetText(NEXTION_COMP_MSG, String(buffer));
 }
 
 /**
@@ -1119,15 +1192,11 @@ void UIControllerClass::updateProgramInfo(uint8_t programa) {
 void UIControllerClass::updatePreparationStatus(unsigned long prepTime) {
   if (_currentPage != NEXTION_PAGE_EXECUTION) return;
   
-  // Mostrar tiempo de preparación y estado
+  // Mostrar tiempo de preparación y estado usando el componente mensaje común
   char timeBuffer[10];
   snprintf(timeBuffer, sizeof(timeBuffer), "%02lu:%02lu", prepTime / 60, prepTime % 60);
   
-  String cmd = "tPreparacion.txt=\"Preparando... " + String(timeBuffer) + "\"";
-  Hardware.nextionSendCommand(cmd);
-  
-  // Hacer visible el texto de preparación
-  Hardware.nextionSendCommand("vis tPreparacion,1");
+  Hardware.nextionSetText(NEXTION_COMP_MSG, "Preparando... " + String(timeBuffer));
 }
 
 /**
@@ -1136,7 +1205,96 @@ void UIControllerClass::updatePreparationStatus(unsigned long prepTime) {
 void UIControllerClass::clearPreparationStatus() {
   if (_currentPage != NEXTION_PAGE_EXECUTION) return;
   
-  // Ocultar texto de preparación
-  Hardware.nextionSendCommand("vis tPreparacion,0");
-  Hardware.nextionSendCommand("tPreparacion.txt=\"\"");
+  // Limpiar mensaje de preparación
+  Hardware.nextionSetText(NEXTION_COMP_MSG, "");
+}
+
+// === NUEVAS FUNCIONES PARA SELECCIÓN DIRECTA DE PARÁMETROS ===
+
+/**
+ * @brief Selecciona directamente un parámetro específico para edición
+ * @param param Tipo de parámetro (PARAM_NIVEL, PARAM_TEMPERATURA, etc.)
+ */
+void UIControllerClass::selectParameter(uint8_t param) {
+  if (!_modoEdicionActivo) return;
+  
+  _parametroActual = param;
+  
+  // Cargar valor actual del parámetro seleccionado
+  switch (param) {
+    case PARAM_NIVEL:
+      Serial.println("📝 Seleccionado parámetro: NIVEL");
+      break;
+    case PARAM_TEMPERATURA:
+      Serial.println("📝 Seleccionado parámetro: TEMPERATURA");
+      break;
+    case PARAM_TIEMPO:
+      Serial.println("📝 Seleccionado parámetro: TIEMPO");
+      break;
+    case PARAM_ROTACION:
+      Serial.println("📝 Seleccionado parámetro: ROTACIÓN");
+      break;
+  }
+  
+  // Actualizar display para mostrar parámetro activo
+  updateParameterDisplay();
+  updateRightPanel();
+  
+  // Reset timeout
+  _resetEditTimeout();
+}
+
+/**
+ * @brief Selecciona la fase para edición
+ */
+void UIControllerClass::selectPhase() {
+  if (!_modoEdicionActivo) return;
+  
+  Serial.println("📊 Funcionalidad de selección de fase - Por implementar");
+  // Aquí puedes agregar lógica para cambiar entre fases
+  _resetEditTimeout();
+}
+
+/**
+ * @brief Selecciona parámetros de centrifugado
+ */
+void UIControllerClass::selectCentrifuge() {
+  if (!_modoEdicionActivo) return;
+  
+  Serial.println("🌀 Funcionalidad de centrifugado - Por implementar");
+  // Aquí puedes agregar lógica para parámetros de centrifugado
+  _resetEditTimeout();
+}
+
+/**
+ * @brief Selecciona parámetros de agua
+ */
+void UIControllerClass::selectWater() {
+  if (!_modoEdicionActivo) return;
+  
+  Serial.println("💧 Funcionalidad de agua - Por implementar");
+  // Aquí puedes agregar lógica para parámetros de agua
+  _resetEditTimeout();
+}
+
+// === FUNCIONES AUXILIARES PARA DOBLE GUARDADO ===
+
+/**
+ * @brief Valida solo el parámetro actualmente seleccionado
+ */
+bool UIControllerClass::_validateCurrentParameter() {
+  int value = _valoresTemporales[_parametroActual];
+  return esParametroValido(_parametroActual, value);
+}
+
+/**
+ * @brief Guarda el parámetro actual en memoria temporal (sin persistir)
+ */
+void UIControllerClass::_saveCurrentParameterToTemp() {
+  // El valor ya está en _valoresTemporales[_parametroActual]
+  // Solo mostramos confirmación
+  String paramName = String(obtenerTextoParametro(_parametroActual));
+  int value = _valoresTemporales[_parametroActual];
+  
+  Serial.println("💾 Guardando temporalmente " + paramName + ": " + String(value));
 }

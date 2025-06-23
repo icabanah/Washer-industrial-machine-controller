@@ -32,6 +32,16 @@ public:
   void handleSaveParameters();
   void handleCancelEdit();
   
+  // Nuevas funciones para selección directa de parámetros
+  void selectParameter(uint8_t param);
+  void selectPhase();
+  void selectCentrifuge(); 
+  void selectWater();
+  
+  // Funciones auxiliares para doble guardado
+  bool _validateCurrentParameter();
+  void _saveCurrentParameterToTemp();
+  
   // Métodos de transición con limpieza garantizada de eventos
   void safeTransitionToSelection(uint8_t programa = 0);
   void safeTransitionToExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion);
@@ -86,15 +96,19 @@ private:
   uint8_t _programaEnEdicion;      // Programa siendo editado (0, 1, 2)
   uint8_t _faseEnEdicion;          // Fase siendo editada (1-4)
   int _parametroActual;            // Parámetro actualmente seleccionado (PARAM_NIVEL, etc.)
-  int _valoresTemporales[4];       // Valores temporales: [nivel, temp, tiempo, rotacion]
+  int _valoresTemporales[7];       // Valores temporales: [nivel, temp, tiempo, rotacion, fase, centrif, agua]
   bool _modoEdicionActivo;         // Indica si estamos en modo edición
   unsigned long _editTimeoutStart; // Para timeout automático de edición
+  bool _parameterSaved;            // Control para doble guardado: parámetro -> programa
   
   // Referencia a los datos del programa para visualización
   uint8_t (*_nivelAgua)[4];
   uint8_t (*_rotacionTam)[4];
   uint8_t (*_temperaturaLim)[4];
   uint8_t (*_temporizadorLim)[4];
+  uint8_t (*_fasesPrograma)[4];
+  uint8_t (*_centrifugadoPrograma)[4];
+  uint8_t (*_tipoAguaPrograma)[4];
   
   // Métodos internos para procesar componentes
   void _handleNextionEvent(const String& event);  // Método obsoleto mantenido por compatibilidad

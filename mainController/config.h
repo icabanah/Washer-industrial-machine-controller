@@ -114,12 +114,11 @@
 #define NEXTION_COMP_SET_NIVEL "val_nivel"     // Valor del nivel de agua
 #define NEXTION_COMP_SET_TEMP "val_temp"       // Valor de temperatura
 #define NEXTION_COMP_SET_TIEMPO "val_tiempo"   // Valor del tiempo
-#define NEXTION_COMP_SET_ROTACION "val_rotac"  // Valor de rotación
-#define NEXTION_COMP_SET_FASE "val_fase"       // Valor de fase
-#define NEXTION_COMP_SET_CENTRIF "val_centrif" // Valor de fase
-#define NEXTION_COMP_SET_AGUA "val_agua"       // Valor de fase
+#define NEXTION_COMP_SET_ROTACION "val_rotac"  // Nivel de rotación (suave, media o intensa)
+#define NEXTION_COMP_SET_FASE "val_fase"       // Fase de programa (llenado, lavado, Drenaje, Centrifugado (opcional))
+#define NEXTION_COMP_SET_CENTRIF "val_centrif" // Centrifugado activo (1) o inactivo (0)
+#define NEXTION_COMP_SET_AGUA "val_agua"       // tipo de agua (caliente o fria)
 #define NEXTION_COMP_MSG "mensaje"             // Texto del mensaje temporal
-
 
 // === COMPONENTES PÁGINA 0 - BIENVENIDA ===
 #define NEXTION_COMP_TITULO "lbl_titulo"       // Título principal "RH Electronics"
@@ -137,6 +136,14 @@
 #define NEXTION_COMP_BTN_EDIT "btnEditar"
 #define NEXTION_COMP_PROGRAMA_SEL "val_prog" // Texto del programa seleccionado (ej: "P22")
 
+// Componentes de selección (usar los comunes para compatibilidad)
+#define NEXTION_COMP_SEL_NIVEL NEXTION_COMP_SET_NIVEL       // "val_nivel"
+#define NEXTION_COMP_SEL_TEMP NEXTION_COMP_SET_TEMP         // "val_temp"
+#define NEXTION_COMP_SEL_TIEMPO NEXTION_COMP_SET_TIEMPO     // "val_tiempo"
+#define NEXTION_COMP_SEL_ROTACION NEXTION_COMP_SET_ROTACION // "val_rotac"
+#define NEXTION_COMP_MSG_TEXT NEXTION_COMP_MSG              // "mensaje"
+#define NEXTION_COMP_INFO_FASES NEXTION_COMP_MSG            // "mensaje" para info adicional
+
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
 #define NEXTION_ID_BTN_PROGRAM2 2 // Botón "P23" para programa 2
@@ -145,6 +152,7 @@
 #define NEXTION_ID_BTN_EDIT 6     // Botón "Editar"
 
 // === COMPONENTES PÁGINA 2 - EJECUCIÓN ===
+#define NEXTION_COMP_PROG_EJECUCION "progr_ejec"         // Programa en ejecución
 #define NEXTION_COMP_FASE_EJECUCION "fase_ejec"          // Fase actual en ejecución
 #define NEXTION_COMP_TIEMPO_EJECUCION "tiempo_ejec"      // Tiempo transcurrido en ejecución
 #define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"          // Temperatura en ejecución
@@ -156,8 +164,8 @@
 #define NEXTION_COMP_GAUGE_VEL_EJECUCION "gauge_vel"     // Gauge de presión (nivel de agua)
 
 // Botones de control
-#define NEXTION_COMP_BTN_PARAR "btnParar"
-#define NEXTION_COMP_BTN_PAUSAR "btnPausar"
+// #define NEXTION_COMP_BTN_PARAR "btnParar"
+// #define NEXTION_COMP_BTN_PAUSAR "btnPausar"
 
 // Información de estado
 #define NEXTION_ID_BTN_PAUSAR 10 // Botón "Pausar"
@@ -165,12 +173,19 @@
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 // Etiquetas de parámetros principales
-// #define NEXTION_COMP_PROG_EDICION "progr_edic"    // Visualización del programa actual en edición
-// #define NEXTION_COMP_FASE_EDICION "fase_edic"     // Visualización del valor de fase de programa en edición
-// #define NEXTION_COMP_TIEMPO_EDICION "tiempo_edic" // Visualización del valor de temporizador de programa en edición
-// #define NEXTION_COMP_TEMP_EDICION "temp_edic"     // Visualización del valor de temperatura de programa en edición
-// #define NEXTION_COMP_NIVEL_EDICION "nivel_edic"   // Visualización del valor de nivel de programa en edición
+#define NEXTION_COMP_PROG_EDICION NEXTION_COMP_SET_PROG // "progr_sel" - Usar componente común
+#define NEXTION_COMP_FASE_EDICION NEXTION_COMP_SET_FASE // "val_fase" - Usar componente común
 
+// Componentes de edición
+#define NEXTION_COMP_PARAM_EDITAR "param"             // Texto del parámetro en edición
+#define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Valor del parámetro en edición
+
+// Panel derecho - usar componentes comunes para mostrar valores
+#define NEXTION_COMP_VAL_NIVEL_EDIT NEXTION_COMP_SET_NIVEL    // "val_nivel"
+#define NEXTION_COMP_VAL_TEMP_EDIT NEXTION_COMP_SET_TEMP      // "val_temp"
+#define NEXTION_COMP_VAL_TIEMPO_EDIT NEXTION_COMP_SET_TIEMPO  // "val_tiempo"
+#define NEXTION_COMP_VAL_ROTAC_EDIT NEXTION_COMP_SET_ROTACION // "val_rotac"
+#define NEXTION_COMP_VAL_FASE_EDIT NEXTION_COMP_SET_FASE      // "val_fase"
 
 // === IDs ADICIONALES PARA NAVEGACIÓN ===
 // #define NEXTION_ID_BTN_PROG_ANTERIOR 8  // Botón "Anterior" en selección de programa
@@ -185,8 +200,8 @@
 // #define NEXTION_COMP_BTN_MENOS "btnMenos"             // Botón "Menos" para editar parámetro
 // #define NEXTION_COMP_BTN_GUARDAR "btnGuardar"         // Botón "Guardar" para guardar parámetro
 // #define NEXTION_COMP_BTN_CANCELAR "btnCancelar"       // Botón "Cancelar" para cancelar la edición de parámetro
-// #define NEXTION_COMP_PARAM_EDITAR "param"             // Texto "param" para editar un parámetro en específico
-// #define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Texto "param" para editar parámetro
+#define NEXTION_COMP_PARAM_EDITAR "param"             // Texto "param" para editar un parámetro en específico
+#define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Texto "param" para editar parámetro
 
 #define NEXTION_ID_BTN_PARAM_MENOS 7     // ID de Botón "-" para disminuir parámetro
 #define NEXTION_ID_BTN_PARAM_MAS 6       // ID de Botón "+" para aumentar parámetro
@@ -196,14 +211,22 @@
 #define NEXTION_ID_BTN_CANCELAR 4        // ID de Botón "Cancelar"
 
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
-#define NEXTION_ID_PARAM_NIVEL_EDIT 15   // Valor actual del nivel en panel derecho
-#define NEXTION_ID_PARAM_TEMP_EDIT 16     // Valor actual de temperatura en panel derecho
-#define NEXTION_ID_PARAM_TIEMPO_EDIT 17 // Valor actual del tiempo en panel derecho
-#define NEXTION_ID_PARAM_ROTAC_EDIT 18   // Valor actual de rotación en panel derecho
-#define NEXTION_ID_PARAM_FASE_EDIT 20     // Valor actual de fase en panel derecho
-#define NEXTION_ID_PARAM_CENTRIF_EDIT 22     // Valor actual de fase en panel derecho
-#define NEXTION_ID_PARAM_AGUA_EDIT 24     // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_NIVEL_EDIT 18   // Valor actual del nivel en panel derecho
+#define NEXTION_ID_PARAM_TEMP_EDIT 19    // Valor actual de temperatura en panel derecho
+#define NEXTION_ID_PARAM_TIEMPO_EDIT 20  // Valor actual del tiempo en panel derecho
+#define NEXTION_ID_PARAM_ROTAC_EDIT 21   // Valor actual de rotación en panel derecho
+#define NEXTION_ID_PARAM_FASE_EDIT 22    // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_CENTRIF_EDIT 23 // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_AGUA_EDIT 24    // Valor actual de fase en panel derecho
 
+// === PARÁMETROS EDITABLES ===
+#define PARAM_NIVEL 0
+#define PARAM_TEMPERATURA 1
+#define PARAM_TIEMPO 2
+#define PARAM_ROTACION 3
+#define PARAM_FASE 4
+#define PARAM_CENTRIF 5
+#define PARAM_AGUA 6
 
 // === LÍMITES DE PARÁMETROS ===
 #define MIN_NIVEL 1
@@ -214,12 +237,30 @@
 #define MAX_TIEMPO 60
 #define MIN_ROTACION 1
 #define MAX_ROTACION 3
+#define MIN_FASE 1 // 1=llenado, 2=lavado, 3=drenaje, 4=centrifugado
+#define MAX_FASE 4
+#define MIN_CENTRIF 0 // 0=inactivo, 1=activo
+#define MAX_CENTRIF 1
+#define MIN_AGUA 0 // 0=fría, 1=caliente
+#define MAX_AGUA 1
 
 // === INCREMENTOS DE EDICIÓN ===
 #define INCREMENT_NIVEL 1    // Incremento para nivel de agua
 #define INCREMENT_TEMP 1     // Incremento para temperatura (°C)
 #define INCREMENT_TIEMPO 1   // Incremento para tiempo (minutos)
 #define INCREMENT_ROTACION 1 // Incremento para rotación
+#define INCREMENT_FASE 1     // Incremento para fase
+#define INCREMENT_CENTRIF 1  // Incremento para centrifugado
+#define INCREMENT_AGUA 1     // Incremento para tipo de agua
+
+// === TEXTOS DE PARÁMETROS ===
+#define TEXT_PARAM_NIVEL "Nivel"
+#define TEXT_PARAM_TEMPERATURA "Temperatura"
+#define TEXT_PARAM_TIEMPO "Tiempo"
+#define TEXT_PARAM_ROTACION "Rotacion"
+#define TEXT_PARAM_FASE "Fase"
+#define TEXT_PARAM_CENTRIF "Centrifugado"
+#define TEXT_PARAM_AGUA "Tipo Agua"
 
 // === CONFIGURACIÓN DE EDICIÓN ===
 #define EDIT_TIMEOUT_MS 30000    // Timeout para salir automáticamente de edición (30 segundos)

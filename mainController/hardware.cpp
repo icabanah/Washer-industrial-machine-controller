@@ -143,12 +143,12 @@ void HardwareClass::nextionSendCommand(const String &command)
   NEXTION_SERIAL.print(command);
   _sendNextionEndCmd();
 
-  // Debug temporal para identificar comandos que causan 0x02
-  static unsigned long lastDebugTime = 0;
-  if (millis() - lastDebugTime > 3000) { // Cada 3 segundos
-    Serial.println("📤 Comando enviado: " + command);
-    lastDebugTime = millis();
-  }
+  // Debug de comandos deshabilitado por performance
+  // static unsigned long lastDebugTime = 0;
+  // if (millis() - lastDebugTime > 3000) { // Cada 3 segundos
+  //   Serial.println("📤 Comando enviado: " + command);
+  //   lastDebugTime = millis();
+  // }
 
   // Pequeña pausa para asegurar envío
   delay(10);

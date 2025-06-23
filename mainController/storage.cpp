@@ -145,6 +145,57 @@ uint8_t StorageClass::loadRotation(uint8_t program, uint8_t phase) {
   return readByte(_getRotationKey(program, phase), 0);
 }
 
+// === FUNCIONES PARA FASE ===
+const char* StorageClass::_getPhaseKey(uint8_t program, uint8_t phase) {
+  static char key[20];
+  snprintf(key, sizeof(key), "fase_%u_%u", program, phase);
+  return key;
+}
+
+void StorageClass::savePhaseType(uint8_t program, uint8_t phase, uint8_t phaseType) {
+  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
+  writeByte(_getPhaseKey(program, phase), phaseType);
+}
+
+uint8_t StorageClass::loadPhaseType(uint8_t program, uint8_t phase) {
+  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 1; // Default: llenado
+  return readByte(_getPhaseKey(program, phase), 1);
+}
+
+// === FUNCIONES PARA CENTRIFUGADO ===
+const char* StorageClass::_getCentrifugadoKey(uint8_t program, uint8_t phase) {
+  static char key[20];
+  snprintf(key, sizeof(key), "centrif_%u_%u", program, phase);
+  return key;
+}
+
+void StorageClass::saveCentrifugado(uint8_t program, uint8_t phase, uint8_t centrifugado) {
+  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
+  writeByte(_getCentrifugadoKey(program, phase), centrifugado);
+}
+
+uint8_t StorageClass::loadCentrifugado(uint8_t program, uint8_t phase) {
+  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0; // Default: inactivo
+  return readByte(_getCentrifugadoKey(program, phase), 0);
+}
+
+// === FUNCIONES PARA TIPO DE AGUA ===
+const char* StorageClass::_getTipoAguaKey(uint8_t program, uint8_t phase) {
+  static char key[20];
+  snprintf(key, sizeof(key), "agua_%u_%u", program, phase);
+  return key;
+}
+
+void StorageClass::saveTipoAgua(uint8_t program, uint8_t phase, uint8_t tipoAgua) {
+  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
+  writeByte(_getTipoAguaKey(program, phase), tipoAgua);
+}
+
+uint8_t StorageClass::loadTipoAgua(uint8_t program, uint8_t phase) {
+  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0; // Default: fría
+  return readByte(_getTipoAguaKey(program, phase), 0);
+}
+
 uint16_t StorageClass::loadUsageCounter() {
   return readWord("contador", 0);
 }
@@ -197,6 +248,27 @@ void StorageClass::resetToDefaults() {
     {1, 2, 1, 2}  // Programa 3
   };
   
+  // Valores por defecto para fases (1=llenado, 2=lavado, 3=drenaje, 4=centrifugado)
+  uint8_t defaultPhases[3][4] = {
+    {1, 2, 3, 4}, // Programa 1: secuencia completa
+    {1, 2, 3, 4}, // Programa 2: secuencia completa
+    {1, 2, 3, 0}  // Programa 3: sin centrifugado (fase 4 = 0)
+  };
+  
+  // Valores por defecto para centrifugado (0=inactivo, 1=activo)
+  uint8_t defaultCentrifugado[3][4] = {
+    {0, 0, 0, 1}, // Programa 1: solo en fase 4
+    {0, 0, 0, 1}, // Programa 2: solo en fase 4
+    {0, 0, 0, 0}  // Programa 3: sin centrifugado
+  };
+  
+  // Valores por defecto para tipo de agua (0=fría, 1=caliente)
+  uint8_t defaultTipoAgua[3][4] = {
+    {1, 1, 0, 0}, // Programa 1 (P22): agua caliente para llenado y lavado
+    {0, 0, 0, 0}, // Programa 2 (P23): agua fría en todas las fases
+    {1, 1, 0, 0}  // Programa 3 (P24): agua caliente para llenado y lavado
+  };
+  
   // Guardar valores por defecto
   for (uint8_t p = 0; p < NUM_PROGRAMAS; p++) {
     for (uint8_t f = 0; f < NUM_FASES; f++) {
@@ -204,6 +276,9 @@ void StorageClass::resetToDefaults() {
       saveTemperature(p, f, defaultTemperatures[p][f]);
       saveTime(p, f, defaultTimes[p][f]);
       saveRotation(p, f, defaultRotations[p][f]);
+      savePhaseType(p, f, defaultPhases[p][f]);
+      saveCentrifugado(p, f, defaultCentrifugado[p][f]);
+      saveTipoAgua(p, f, defaultTipoAgua[p][f]);
     }
   }
 }

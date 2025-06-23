@@ -39,6 +39,14 @@ public:
   void saveRotation(uint8_t program, uint8_t phase, uint8_t rotation);
   uint8_t loadRotation(uint8_t program, uint8_t phase);
   
+  // Nuevos parámetros: fase, centrifugado y tipo de agua
+  void savePhaseType(uint8_t program, uint8_t phase, uint8_t phaseType);
+  uint8_t loadPhaseType(uint8_t program, uint8_t phase);
+  void saveCentrifugado(uint8_t program, uint8_t phase, uint8_t centrifugado);
+  uint8_t loadCentrifugado(uint8_t program, uint8_t phase);
+  void saveTipoAgua(uint8_t program, uint8_t phase, uint8_t tipoAgua);
+  uint8_t loadTipoAgua(uint8_t program, uint8_t phase);
+  
   // Métodos adicionales para integración con módulos
   bool loadAllProgramSettings(uint8_t program, uint8_t (&waterLevels)[NUM_FASES], 
                              uint8_t (&temperatures)[NUM_FASES], 
@@ -71,6 +79,9 @@ private:
   const char* _getTemperatureKey(uint8_t program, uint8_t phase);
   const char* _getTimeKey(uint8_t program, uint8_t phase);
   const char* _getRotationKey(uint8_t program, uint8_t phase);
+  const char* _getPhaseKey(uint8_t program, uint8_t phase);
+  const char* _getCentrifugadoKey(uint8_t program, uint8_t phase);
+  const char* _getTipoAguaKey(uint8_t program, uint8_t phase);
 };
 
 // Instancia global

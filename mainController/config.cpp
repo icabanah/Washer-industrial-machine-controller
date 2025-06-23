@@ -134,6 +134,12 @@ const char* obtenerTextoParametro(int tipoParam) {
             return TEXT_PARAM_TIEMPO;
         case PARAM_ROTACION:
             return TEXT_PARAM_ROTACION;
+        case PARAM_FASE:
+            return TEXT_PARAM_FASE;
+        case PARAM_CENTRIF:
+            return TEXT_PARAM_CENTRIF;
+        case PARAM_AGUA:
+            return TEXT_PARAM_AGUA;
         default:
             return "Desconocido";
     }
@@ -153,6 +159,12 @@ int obtenerValorMinimo(int tipoParam) {
             return MIN_TIEMPO;
         case PARAM_ROTACION:
             return MIN_ROTACION;
+        case PARAM_FASE:
+            return MIN_FASE;
+        case PARAM_CENTRIF:
+            return MIN_CENTRIF;
+        case PARAM_AGUA:
+            return MIN_AGUA;
         default:
             return 0;
     }
@@ -173,6 +185,12 @@ int obtenerValorMaximo(int tipoParam) {
             return MAX_TIEMPO;
         case PARAM_ROTACION:
             return MAX_ROTACION;
+        case PARAM_FASE:
+            return MAX_FASE;
+        case PARAM_CENTRIF:
+            return MAX_CENTRIF;
+        case PARAM_AGUA:
+            return MAX_AGUA;
         default:
             return 100;
     }
@@ -193,6 +211,12 @@ int obtenerIncrementoParametro(int tipoParam) {
             return INCREMENT_TIEMPO;
         case PARAM_ROTACION:
             return INCREMENT_ROTACION;
+        case PARAM_FASE:
+            return INCREMENT_FASE;
+        case PARAM_CENTRIF:
+            return INCREMENT_CENTRIF;
+        case PARAM_AGUA:
+            return INCREMENT_AGUA;
         default:
             return 1;
     }
@@ -254,6 +278,12 @@ int obtenerSiguienteParametro(int tipoActual) {
         case PARAM_TIEMPO:
             return PARAM_ROTACION;
         case PARAM_ROTACION:
+            return PARAM_FASE;
+        case PARAM_FASE:
+            return PARAM_CENTRIF;
+        case PARAM_CENTRIF:
+            return PARAM_AGUA;
+        case PARAM_AGUA:
             return PARAM_NIVEL; // Vuelve al inicio
         default:
             return PARAM_NIVEL;
@@ -267,13 +297,19 @@ int obtenerSiguienteParametro(int tipoActual) {
 int obtenerAnteriorParametro(int tipoActual) {
     switch (tipoActual) {
         case PARAM_NIVEL:
-            return PARAM_ROTACION; // Va al final
+            return PARAM_AGUA; // Va al final
         case PARAM_TEMPERATURA:
             return PARAM_NIVEL;
         case PARAM_TIEMPO:
             return PARAM_TEMPERATURA;
         case PARAM_ROTACION:
             return PARAM_TIEMPO;
+        case PARAM_FASE:
+            return PARAM_ROTACION;
+        case PARAM_CENTRIF:
+            return PARAM_FASE;
+        case PARAM_AGUA:
+            return PARAM_CENTRIF;
         default:
             return PARAM_NIVEL;
     }
@@ -301,6 +337,21 @@ void formatearParametroConUnidad(int tipoParam, int valor, char* buffer, int tam
             break;
         case PARAM_ROTACION:
             snprintf(buffer, tamanioBuffer, "Vel %d", valor);
+            break;
+        case PARAM_FASE:
+            switch (valor) {
+                case 1: snprintf(buffer, tamanioBuffer, "Llenado"); break;
+                case 2: snprintf(buffer, tamanioBuffer, "Lavado"); break;
+                case 3: snprintf(buffer, tamanioBuffer, "Drenaje"); break;
+                case 4: snprintf(buffer, tamanioBuffer, "Centrifugado"); break;
+                default: snprintf(buffer, tamanioBuffer, "Fase %d", valor); break;
+            }
+            break;
+        case PARAM_CENTRIF:
+            snprintf(buffer, tamanioBuffer, valor ? "Activo" : "Inactivo");
+            break;
+        case PARAM_AGUA:
+            snprintf(buffer, tamanioBuffer, valor ? "Caliente" : "Fria");
             break;
         default:
             snprintf(buffer, tamanioBuffer, "%d", valor);
