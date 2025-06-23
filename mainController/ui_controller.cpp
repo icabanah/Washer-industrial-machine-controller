@@ -1027,12 +1027,18 @@ void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fas
   _valoresTemporales[PARAM_TEMPERATURA] = Storage.loadTemperature(programa, fase);
   _valoresTemporales[PARAM_TIEMPO] = Storage.loadTime(programa, fase);
   _valoresTemporales[PARAM_ROTACION] = Storage.loadRotation(programa, fase);
+  _valoresTemporales[PARAM_FASE] = Storage.loadPhaseType(programa, fase);
+  _valoresTemporales[PARAM_CENTRIF] = Storage.loadCentrifugado(programa, fase);
+  _valoresTemporales[PARAM_AGUA] = Storage.loadTipoAgua(programa, fase);
   
   Serial.println("Valores cargados desde Storage:");
   Serial.println("  Nivel: " + String(_valoresTemporales[PARAM_NIVEL]));
   Serial.println("  Temperatura: " + String(_valoresTemporales[PARAM_TEMPERATURA]) + "°C");
   Serial.println("  Tiempo: " + String(_valoresTemporales[PARAM_TIEMPO]) + " min");
   Serial.println("  Rotación: " + String(_valoresTemporales[PARAM_ROTACION]));
+  Serial.println("  Fase: " + String(_valoresTemporales[PARAM_FASE]));
+  Serial.println("  Centrifugado: " + String(_valoresTemporales[PARAM_CENTRIF]));
+  Serial.println("  Tipo Agua: " + String(_valoresTemporales[PARAM_AGUA]));
   Serial.println("=== FIN _loadParametersFromStorage ===");
 }
 
@@ -1053,12 +1059,18 @@ void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase)
   Storage.saveTemperature(programa, fase, _valoresTemporales[PARAM_TEMPERATURA]);
   Storage.saveTime(programa, fase, _valoresTemporales[PARAM_TIEMPO]);
   Storage.saveRotation(programa, fase, _valoresTemporales[PARAM_ROTACION]);
+  Storage.savePhaseType(programa, fase, _valoresTemporales[PARAM_FASE]);
+  Storage.saveCentrifugado(programa, fase, _valoresTemporales[PARAM_CENTRIF]);
+  Storage.saveTipoAgua(programa, fase, _valoresTemporales[PARAM_AGUA]);
   
   // Actualizar matrices estáticas también para mantener consistencia
   _nivelAgua[programa][fase] = _valoresTemporales[PARAM_NIVEL];
   _temperaturaLim[programa][fase] = _valoresTemporales[PARAM_TEMPERATURA];
   _temporizadorLim[programa][fase] = _valoresTemporales[PARAM_TIEMPO];
   _rotacionTam[programa][fase] = _valoresTemporales[PARAM_ROTACION];
+  _fasesPrograma[programa][fase] = _valoresTemporales[PARAM_FASE];
+  _centrifugadoPrograma[programa][fase] = _valoresTemporales[PARAM_CENTRIF];
+  _tipoAguaPrograma[programa][fase] = _valoresTemporales[PARAM_AGUA];
   
   Serial.println("Parámetros guardados en Storage - P" + String(programa + 22) + " F" + String(fase));
 }
@@ -1234,6 +1246,15 @@ void UIControllerClass::selectParameter(uint8_t param) {
     case PARAM_ROTACION:
       Serial.println("📝 Seleccionado parámetro: ROTACIÓN");
       break;
+    case PARAM_FASE:
+      Serial.println("📝 Seleccionado parámetro: FASE");
+      break;
+    case PARAM_CENTRIF:
+      Serial.println("📝 Seleccionado parámetro: CENTRIFUGADO");
+      break;
+    case PARAM_AGUA:
+      Serial.println("📝 Seleccionado parámetro: TIPO AGUA");
+      break;
   }
   
   // Actualizar display para mostrar parámetro activo
@@ -1250,8 +1271,14 @@ void UIControllerClass::selectParameter(uint8_t param) {
 void UIControllerClass::selectPhase() {
   if (!_modoEdicionActivo) return;
   
-  Serial.println("📊 Funcionalidad de selección de fase - Por implementar");
-  // Aquí puedes agregar lógica para cambiar entre fases
+  _parametroActual = PARAM_FASE;
+  Serial.println("📊 Seleccionado parámetro: FASE");
+  
+  // Actualizar display para mostrar parámetro activo
+  updateParameterDisplay();
+  updateRightPanel();
+  
+  // Reset timeout
   _resetEditTimeout();
 }
 
@@ -1261,8 +1288,14 @@ void UIControllerClass::selectPhase() {
 void UIControllerClass::selectCentrifuge() {
   if (!_modoEdicionActivo) return;
   
-  Serial.println("🌀 Funcionalidad de centrifugado - Por implementar");
-  // Aquí puedes agregar lógica para parámetros de centrifugado
+  _parametroActual = PARAM_CENTRIF;
+  Serial.println("🌀 Seleccionado parámetro: CENTRIFUGADO");
+  
+  // Actualizar display para mostrar parámetro activo
+  updateParameterDisplay();
+  updateRightPanel();
+  
+  // Reset timeout
   _resetEditTimeout();
 }
 
@@ -1272,8 +1305,14 @@ void UIControllerClass::selectCentrifuge() {
 void UIControllerClass::selectWater() {
   if (!_modoEdicionActivo) return;
   
-  Serial.println("💧 Funcionalidad de agua - Por implementar");
-  // Aquí puedes agregar lógica para parámetros de agua
+  _parametroActual = PARAM_AGUA;
+  Serial.println("💧 Seleccionado parámetro: TIPO AGUA");
+  
+  // Actualizar display para mostrar parámetro activo
+  updateParameterDisplay();
+  updateRightPanel();
+  
+  // Reset timeout
   _resetEditTimeout();
 }
 

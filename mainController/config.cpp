@@ -336,7 +336,7 @@ void formatearParametroConUnidad(int tipoParam, int valor, char* buffer, int tam
             snprintf(buffer, tamanioBuffer, "%d min", valor);
             break;
         case PARAM_ROTACION:
-            snprintf(buffer, tamanioBuffer, "Vel %d", valor);
+            snprintf(buffer, tamanioBuffer, "%d", valor);
             break;
         case PARAM_FASE:
             switch (valor) {
