@@ -175,8 +175,8 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   // Mostrar información del programa usando los componentes correctos de la documentación
   Hardware.nextionSetText(NEXTION_COMP_PROG_EJECUCION, "P" + String(programa + 22));
 
-  // Establecer valores iniciales
-  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, "Fase: " + String(fase));
+  // Establecer valores iniciales (solo el número, sin prefijo)
+  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, String(fase));
   Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00"); // Tiempo inicial
 
   // Actualizar indicadores usando los componentes existentes que funcionan correctamente
@@ -559,6 +559,13 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   uint8_t temp = Storage.loadTemperature(programa, 0);
   uint8_t tiempo = Storage.loadTime(programa, 0);
   uint8_t rotacion = Storage.loadRotation(programa, 0);
+  
+  // Debug para verificar valores cargados
+  Serial.println("📊 Actualizando info P" + String(programa + 22) + " desde Storage:");
+  Serial.println("   Nivel: " + String(nivel));
+  Serial.println("   Temp: " + String(temp));
+  Serial.println("   Tiempo: " + String(tiempo));
+  Serial.println("   Rotación: " + String(rotacion));
 
   // Mostrar valores actualizados
   Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, String(nivel));
@@ -824,8 +831,20 @@ void UIControllerClass::updateEditDisplay()
   // Actualizar parámetro actual y panel derecho
   updateParameterDisplay();
   updateRightPanel();
+  
+  // Deshabilitar edición de fase para P22 y P23 (solo P24 permite editar fases)
+  if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
+    // Programas 22 y 23 - deshabilitar componente de fase
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",0"); // Deshabilitar touch
+    // Opcional: cambiar color para indicar que está deshabilitado
+    // Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=33840"); // Color gris
+  } else {
+    // Programa 24 - habilitar componente de fase
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",1"); // Habilitar touch
+    // Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=65535"); // Color normal
+  }
 
-  Serial.println("Pantalla de edición actualizada");
+  Serial.println("Pantalla de edición actualizada (fase " + String(_programaEnEdicion == 2 ? "habilitada" : "deshabilitada") + " para P" + String(_programaEnEdicion + 22) + ")");
 }
 
 /// @brief
@@ -873,11 +892,19 @@ void UIControllerClass::updateRightPanel()
   snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_ROTACION]);
   Hardware.nextionSetText(NEXTION_COMP_VAL_ROTAC_EDIT, buffer);
 
-  // Actualizar fase en panel derecho
-  snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion + 1); // Mostrar F1, F2, F3, F4 al usuario
+  // Actualizar fase en panel derecho (valor del parámetro fase, no la fase en edición)
+  formatearParametroConUnidad(PARAM_FASE, _valoresTemporales[PARAM_FASE], buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_VAL_FASE_EDIT, buffer);
+  
+  // Actualizar centrifugado en panel derecho
+  formatearParametroConUnidad(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_VAL_CENTRIF_EDIT, buffer);
+  
+  // Actualizar tipo de agua en panel derecho
+  formatearParametroConUnidad(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_VAL_AGUA_EDIT, buffer);
 
-  Serial.println("Panel derecho actualizado");
+  Serial.println("Panel derecho actualizado (7 parámetros)");
 }
 
 // ===== MANEJO DE EVENTOS DE EDICIÓN =====
@@ -1030,6 +1057,12 @@ void UIControllerClass::handleNextParameter()
   // Obtener el siguiente parámetro en el ciclo usando las funciones de config.cpp
   int parametroAnterior = _parametroActual;
   _parametroActual = obtenerSiguienteParametro(_parametroActual);
+  
+  // Saltar parámetro FASE en P22 y P23 (solo editable en P24)
+  if (_parametroActual == PARAM_FASE && (_programaEnEdicion == 0 || _programaEnEdicion == 1)) {
+    _parametroActual = obtenerSiguienteParametro(_parametroActual); // Saltar al siguiente
+    Serial.println("   ⏭️ Saltando parámetro FASE (no editable en P" + String(_programaEnEdicion + 22) + ")");
+  }
 
   Serial.println("   Parámetro anterior: " + String(obtenerTextoParametro(parametroAnterior)));
   Serial.println("   Parámetro nuevo: " + String(obtenerTextoParametro(_parametroActual)));
@@ -1053,6 +1086,12 @@ void UIControllerClass::handlePreviousParameter()
   // Obtener el parámetro anterior en el ciclo usando las funciones de config.cpp
   int parametroAnterior = _parametroActual;
   _parametroActual = obtenerAnteriorParametro(_parametroActual);
+  
+  // Saltar parámetro FASE en P22 y P23 (solo editable en P24)
+  if (_parametroActual == PARAM_FASE && (_programaEnEdicion == 0 || _programaEnEdicion == 1)) {
+    _parametroActual = obtenerAnteriorParametro(_parametroActual); // Saltar al anterior
+    Serial.println("   ⏮️ Saltando parámetro FASE (no editable en P" + String(_programaEnEdicion + 22) + ")");
+  }
 
   Serial.println("   Parámetro anterior: " + String(obtenerTextoParametro(parametroAnterior)));
   Serial.println("   Parámetro nuevo: " + String(obtenerTextoParametro(_parametroActual)));
@@ -1105,7 +1144,20 @@ void UIControllerClass::handleSaveParameters()
     }
 
     // Guardar valores en storage permanente
+    Serial.println("💾 Guardando en Storage - P" + String(_programaEnEdicion + 22) + " F" + String(_faseEnEdicion + 1));
+    Serial.println("   Programa índice: " + String(_programaEnEdicion) + ", Fase índice: " + String(_faseEnEdicion));
+    Serial.println("   Valores a guardar:");
+    for (int i = 0; i < 7; i++) {
+      Serial.println("   " + String(obtenerTextoParametro(i)) + ": " + String(_valoresTemporales[i]));
+    }
     _saveParametersToStorage(_programaEnEdicion, _faseEnEdicion);
+
+    // Verificar que se guardó correctamente
+    Serial.println("🔍 Verificando guardado:");
+    Serial.println("   Nivel: " + String(Storage.loadWaterLevel(_programaEnEdicion, _faseEnEdicion)));
+    Serial.println("   Temp: " + String(Storage.loadTemperature(_programaEnEdicion, _faseEnEdicion)));
+    Serial.println("   Tiempo: " + String(Storage.loadTime(_programaEnEdicion, _faseEnEdicion)));
+    Serial.println("   Rotacion: " + String(Storage.loadRotation(_programaEnEdicion, _faseEnEdicion)));
 
     // Mostrar mensaje de confirmación
     showMessage("Programa guardado exitosamente", 2000);
@@ -1217,7 +1269,7 @@ void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase)
  */
 bool UIControllerClass::_validateAllParameters()
 {
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 7; i++)  // Ahora validamos los 7 parámetros (0-6)
   {
     if (!esParametroValido(i, _valoresTemporales[i]))
     {
@@ -1426,9 +1478,17 @@ void UIControllerClass::selectPhase()
 {
   if (!_modoEdicionActivo)
     return;
+    
+  // P22 y P23 tienen secuencias fijas, solo P24 permite editar fases
+  if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
+    // Programas 22 y 23 - no permitir edición de fase
+    showMessage("P" + String(_programaEnEdicion + 22) + " tiene secuencia fija", 2000);
+    Serial.println("❌ Edición de fase bloqueada para P" + String(_programaEnEdicion + 22));
+    return;
+  }
 
   _parametroActual = PARAM_FASE;
-  Serial.println("📊 Seleccionado parámetro: FASE");
+  Serial.println("📊 Seleccionado parámetro: FASE (solo P24)");
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();

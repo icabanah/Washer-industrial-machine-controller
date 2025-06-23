@@ -54,6 +54,39 @@ int validarRotacion(int valor) {
     return valor;
 }
 
+/**
+ * @brief Valida y limita el valor de fase dentro de los rangos permitidos
+ * @param valor Valor de fase a validar
+ * @return int Valor limitado dentro del rango MIN_FASE - MAX_FASE
+ */
+int validarFase(int valor) {
+    if (valor < MIN_FASE) return MIN_FASE;
+    if (valor > MAX_FASE) return MAX_FASE;
+    return valor;
+}
+
+/**
+ * @brief Valida y limita el valor de centrifugado dentro de los rangos permitidos
+ * @param valor Valor de centrifugado a validar (0=inactivo, 1=activo)
+ * @return int Valor limitado dentro del rango MIN_CENTRIF - MAX_CENTRIF
+ */
+int validarCentrifugado(int valor) {
+    if (valor < MIN_CENTRIF) return MIN_CENTRIF;
+    if (valor > MAX_CENTRIF) return MAX_CENTRIF;
+    return valor;
+}
+
+/**
+ * @brief Valida y limita el valor de tipo de agua dentro de los rangos permitidos
+ * @param valor Valor de tipo de agua a validar (0=fría, 1=caliente)
+ * @return int Valor limitado dentro del rango MIN_AGUA - MAX_AGUA
+ */
+int validarTipoAgua(int valor) {
+    if (valor < MIN_AGUA) return MIN_AGUA;
+    if (valor > MAX_AGUA) return MAX_AGUA;
+    return valor;
+}
+
 // ===== FUNCIONES DE INCREMENTO DE PARÁMETROS =====
 
 /**
@@ -81,6 +114,18 @@ int incrementarParametro(int tipoParam, int valorActual) {
         case PARAM_ROTACION:
             nuevoValor += INCREMENT_ROTACION;
             return validarRotacion(nuevoValor);
+            
+        case PARAM_FASE:
+            nuevoValor += INCREMENT_FASE;
+            return validarFase(nuevoValor);
+            
+        case PARAM_CENTRIF:
+            nuevoValor += INCREMENT_CENTRIF;
+            return validarCentrifugado(nuevoValor);
+            
+        case PARAM_AGUA:
+            nuevoValor += INCREMENT_AGUA;
+            return validarTipoAgua(nuevoValor);
             
         default:
             return valorActual; // No se modifica si el tipo no es válido
@@ -111,6 +156,18 @@ int incrementarParametro(int tipoParam, int valorActual) {
         case PARAM_ROTACION:
             nuevoValor -= INCREMENT_ROTACION;
             return validarRotacion(nuevoValor);
+            
+        case PARAM_FASE:
+            nuevoValor -= INCREMENT_FASE;
+            return validarFase(nuevoValor);
+            
+        case PARAM_CENTRIF:
+            nuevoValor -= INCREMENT_CENTRIF;
+            return validarCentrifugado(nuevoValor);
+            
+        case PARAM_AGUA:
+            nuevoValor -= INCREMENT_AGUA;
+            return validarTipoAgua(nuevoValor);
             
         default:
             return valorActual; // No se modifica si el tipo no es válido

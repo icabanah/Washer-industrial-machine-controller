@@ -181,11 +181,13 @@
 #define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Valor del parámetro en edición
 
 // Panel derecho - usar componentes comunes para mostrar valores
-#define NEXTION_COMP_VAL_NIVEL_EDIT NEXTION_COMP_SET_NIVEL    // "val_nivel"
-#define NEXTION_COMP_VAL_TEMP_EDIT NEXTION_COMP_SET_TEMP      // "val_temp"
-#define NEXTION_COMP_VAL_TIEMPO_EDIT NEXTION_COMP_SET_TIEMPO  // "val_tiempo"
-#define NEXTION_COMP_VAL_ROTAC_EDIT NEXTION_COMP_SET_ROTACION // "val_rotac"
-#define NEXTION_COMP_VAL_FASE_EDIT NEXTION_COMP_SET_FASE      // "val_fase"
+#define NEXTION_COMP_VAL_NIVEL_EDIT NEXTION_COMP_SET_NIVEL      // "val_nivel"
+#define NEXTION_COMP_VAL_TEMP_EDIT NEXTION_COMP_SET_TEMP        // "val_temp"
+#define NEXTION_COMP_VAL_TIEMPO_EDIT NEXTION_COMP_SET_TIEMPO    // "val_tiempo"
+#define NEXTION_COMP_VAL_ROTAC_EDIT NEXTION_COMP_SET_ROTACION   // "val_rotac"
+#define NEXTION_COMP_VAL_FASE_EDIT NEXTION_COMP_SET_FASE        // "val_fase"
+#define NEXTION_COMP_VAL_CENTRIF_EDIT NEXTION_COMP_SET_CENTRIF  // "val_centrif"
+#define NEXTION_COMP_VAL_AGUA_EDIT NEXTION_COMP_SET_AGUA        // "val_agua"
 
 // === IDs ADICIONALES PARA NAVEGACIÓN ===
 // #define NEXTION_ID_BTN_PROG_ANTERIOR 8  // Botón "Anterior" en selección de programa
@@ -273,6 +275,9 @@ int validarNivel(int valor);
 int validarTemperatura(int valor);
 int validarTiempo(int valor);
 int validarRotacion(int valor);
+int validarFase(int valor);
+int validarCentrifugado(int valor);
+int validarTipoAgua(int valor);
 
 // Funciones de incremento/decremento
 int incrementarParametro(int tipoParam, int valorActual);
