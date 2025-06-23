@@ -47,6 +47,8 @@ void ProgramControllerClass::_loadProgramData() {
       _temperatures[p][f] = Storage.loadTemperature(p, f);
       _times[p][f] = Storage.loadTime(p, f);
       _rotations[p][f] = Storage.loadRotation(p, f);
+      _tipoAguaPrograma[p][f] = Storage.loadTipoAgua(p, f);
+      _centrifugadoPrograma[p][f] = Storage.loadCentrifugado(p, f);
     }
   }
   
@@ -174,6 +176,14 @@ uint8_t ProgramControllerClass::getCurrentProgram() {
 
 void ProgramControllerClass::startProgram() {
   if (_currentState == ESTADO_SELECCION) {
+    // === VERIFICACIÓN INICIAL DE PUERTA SEGÚN DOCUMENTO DEL CLIENTE ===
+    if (!Sensors.isDoorClosed()) {
+      // Mostrar mensaje de puerta abierta
+      UIController.showMessage("PUERTA ABIERTA - Cierre la puerta para continuar", 5000);
+      Utils.debug("❌ No se puede iniciar: Puerta abierta");
+      return;
+    }
+    
     setState(ESTADO_EJECUCION);
     Utils.debug("ProgramControllerClass::startProgram| Programa iniciado: " + String(_currentProgram));
   }
@@ -216,6 +226,15 @@ uint8_t ProgramControllerClass::getCurrentPhase() {
 void ProgramControllerClass::nextPhase() {
   if (_currentPhase < NUM_FASES - 1) {
     _currentPhase++;
+    
+    // === VERIFICAR SI LA SIGUIENTE FASE ES CENTRIFUGADO Y ESTÁ DESHABILITADA ===
+    if (_currentPhase == 3 && !_isCentrifugadoEnabled(_currentProgram, _currentPhase)) {
+      // Fase 4 (centrifugado) está deshabilitada, saltar al final
+      Utils.debug("⏭️ Saltando centrifugado (deshabilitado) - Completando programa");
+      _completeProgram();
+      return;
+    }
+    
     Storage.savePhase(_currentPhase);
     _updatePhaseParameters();
     Utils.debugValue("ProgramControllerClass::nextPhase| Avanzado a la fase: ", _currentPhase);
@@ -390,6 +409,34 @@ void ProgramControllerClass::_completePhase() {
   Actuators.closeSteamValve();
   Actuators.closeWaterValve();
   
+  // === SISTEMA DE TANDAS PARA PROGRAMA 24 SEGÚN DOCUMENTO DEL CLIENTE ===
+  if (_currentProgram == 2 && isLastPhase()) { // P24 en última fase
+    // Verificar si hay más tandas pendientes
+    if (_tandaCounter < _maxTandas - 1) {
+      _tandaCounter++;
+      Utils.debug("🔄 P24 - Completando tanda " + String(_tandaCounter) + " de " + String(_maxTandas));
+      
+      // Reiniciar desde la primera fase para nueva tanda
+      _currentPhase = 0;
+      Storage.savePhase(_currentPhase);
+      
+      // Reinicializar para nueva tanda
+      _updatePhaseParameters();
+      _preparingPhase = true;
+      _phaseStartTime = millis();
+      
+      Utils.debug("🔄 Iniciando tanda " + String(_tandaCounter + 1) + " - Volviendo a Fase 1");
+      
+      // Mostrar progreso de tandas en UI
+      String tandaMsg = "Tanda " + String(_tandaCounter + 1) + "/" + String(_maxTandas);
+      UIController.showMessage(tandaMsg, 3000);
+      
+      return;
+    } else {
+      Utils.debug("✅ P24 - Todas las tandas completadas (" + String(_maxTandas) + " tandas)");
+    }
+  }
+  
   // Avanzar a la siguiente fase o completar el programa
   if (isLastPhase()) {
     _completeProgram();
@@ -415,23 +462,155 @@ void ProgramControllerClass::_completeProgram() {
 }
 
 void ProgramControllerClass::_initializeProgram() {
-  // Inicializar temporizador para la fase actual
+  // === INICIALIZACIÓN SEGÚN DOCUMENTO DEL CLIENTE ===
+  
+  // 1. Bloquear puerta (ya verificada en startProgram)
+  Actuators.lockDoor();
+  Utils.debug("🔒 Puerta bloqueada");
+  
+  // 2. Inicializar variables del programa
   _totalMinutes = _times[_currentProgram][_currentPhase];
   _totalSeconds = _totalMinutes * 60;
   _remainingMinutes = _totalMinutes;
   _remainingSeconds = 0;
-  _timerRunning = false; // Se activará cuando se alcancen las condiciones necesarias
+  _timerRunning = false;
   
-  // Inicializar estado de preparación
+  // 3. Cargar parámetros del programa según tipo
+  _configureProgramType();
+  
+  // 4. Inicializar estado de preparación
   _preparingPhase = true;
   _phaseStartTime = millis();
   
-  // Preparar el sistema para el inicio del programa
-  Actuators.lockDoor();
+  // 5. Inicializar contador de tandas para P24
+  if (_currentProgram == 2) { // Programa 24 (índice 2)
+    _tandaCounter = 0;
+    _maxTandas = 3; // Configurable según necesidades del cliente
+  }
   
   Utils.debug("ProgramControllerClass::_initializeProgram| Programa inicializado");
+  Utils.debug("📋 Programa: P" + String(_currentProgram + 22) + " | Fase: " + String(_currentPhase + 1));
   Utils.debug("⏳ Esperando condiciones: Nivel=" + String(_waterLevels[_currentProgram][_currentPhase]) + 
               ", Temp=" + String(_temperatures[_currentProgram][_currentPhase]) + "°C");
+}
+
+void ProgramControllerClass::_configureProgramType() {
+  // === CONFIGURACIÓN DE PROGRAMAS SEGÚN DOCUMENTO DEL CLIENTE ===
+  
+  switch (_currentProgram) {
+    case 0: // Programa 22 - Agua Caliente
+      Utils.debug("🔥 Configurando Programa 22 - Agua Caliente");
+      // Activar gestión de temperatura activa para todas las fases
+      // P22 usa agua caliente con control de temperatura estricto
+      break;
+      
+    case 1: // Programa 23 - Agua Fría  
+      Utils.debug("❄️ Configurando Programa 23 - Agua Fría");
+      // Desactivar gestión de temperatura (solo agua fría)
+      // P23 usa agua fría sin calentamiento
+      break;
+      
+    case 2: // Programa 24 - Multi-ciclo configurable
+      Utils.debug("🔄 Configurando Programa 24 - Multi-ciclo");
+      // Configurar según tipo de agua seleccionado por el usuario
+      // El tipo de agua se define por fase en los arrays de configuración
+      break;
+      
+    default:
+      Utils.debug("❓ Programa desconocido: " + String(_currentProgram));
+      break;
+  }
+  
+  Utils.debug("✅ Configuración de programa completada");
+}
+
+void ProgramControllerClass::_handleTemperatureControl() {
+  // === CONTROL DE TEMPERATURA CON DRENAJE PARCIAL SEGÚN DOCUMENTO DEL CLIENTE ===
+  
+  // Solo para programas que requieren control de temperatura
+  bool requiresTempControl = false;
+  uint8_t tipoAgua = 0; // 0=fría, 1=caliente
+  
+  // Determinar si se requiere control según programa y fase
+  switch (_currentProgram) {
+    case 0: // P22 - Agua caliente
+      requiresTempControl = true;
+      tipoAgua = 1;
+      break;
+      
+    case 1: // P23 - Agua fría
+      requiresTempControl = false;
+      tipoAgua = 0;
+      break;
+      
+    case 2: // P24 - Configurable por fase
+      // Verificar el tipo de agua configurado para esta fase
+      tipoAgua = _tipoAguaPrograma[_currentProgram][_currentPhase];
+      requiresTempControl = (tipoAgua == 1); // Solo si usa agua caliente
+      break;
+  }
+  
+  if (!requiresTempControl) {
+    return; // No necesita control de temperatura
+  }
+  
+  float currentTemp = Sensors.getCurrentTemperature();
+  float targetTemp = _temperatures[_currentProgram][_currentPhase];
+  
+  // === CONTROL CON DRENAJE PARCIAL SEGÚN DOCUMENTO ===
+  if (currentTemp < targetTemp - 2) {
+    Utils.debug("🌡️ Temperatura baja: " + String(currentTemp) + "°C, objetivo: " + String(targetTemp) + "°C");
+    
+    // Paso 1: Drenar parcialmente para hacer espacio al agua caliente
+    if (Sensors.getCurrentWaterLevel() > 1) {
+      Utils.debug("💧 Drenando parcialmente para renovar agua...");
+      Actuators.openDrainValve();
+      
+      // Esperar a que baje el nivel (implementación simplificada)
+      static unsigned long drainStartTime = millis();
+      if (millis() - drainStartTime > 5000) { // 5 segundos de drenaje
+        Actuators.closeDrainValve();
+        
+        // Paso 2: Abrir válvula de agua caliente
+        Utils.debug("🔥 Abriendo válvula de agua caliente...");
+        Actuators.openWaterValve();
+        
+        // Paso 3: Activar vapor si es necesario
+        if (!Actuators.isSteamValveOpen()) {
+          Actuators.openSteamValve();
+          Utils.debug("🔥 Activando vapor para acelerar calentamiento");
+        }
+        
+        drainStartTime = millis(); // Reset timer
+      }
+    } else {
+      // Si el nivel ya es bajo, solo activar calentamiento
+      if (!Actuators.isSteamValveOpen()) {
+        Actuators.openSteamValve();
+        Utils.debug("🔥 Activando calentamiento directo");
+      }
+    }
+  } else if (currentTemp > targetTemp + 2) {
+    // Temperatura alta - detener calentamiento
+    if (Actuators.isSteamValveOpen()) {
+      Actuators.closeSteamValve();
+      Utils.debug("❄️ Deteniendo calentamiento - Temp OK");
+    }
+  }
+  
+  // Cerrar válvula de agua si se alcanzó el nivel objetivo
+  uint8_t targetLevel = _waterLevels[_currentProgram][_currentPhase];
+  if (Sensors.getCurrentWaterLevel() >= targetLevel) {
+    Actuators.closeWaterValve();
+  }
+}
+
+bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa, uint8_t fase) {
+  // Verificar si el centrifugado está habilitado para este programa y fase
+  if (programa >= NUM_PROGRAMAS || fase >= NUM_FASES) {
+    return false;
+  }
+  return _centrifugadoPrograma[programa][fase] == 1;
 }
 
 void ProgramControllerClass::_configureActuatorsForPhase() {
@@ -815,27 +994,8 @@ void ProgramControllerClass::_handleExecutionState() {
     }
   }
   
-  // 4. Control de temperatura para programas con agua caliente
-  if (_currentProgram == 0 && _temperatures[_currentProgram][_currentPhase] > 0) {
-    // Programa 22 con agua caliente - mantener temperatura
-    float currentTemp = Sensors.getCurrentTemperature();
-    float targetTemp = _temperatures[_currentProgram][_currentPhase];
-    
-    // Histéresis de ±2°C para evitar oscilaciones
-    if (currentTemp < targetTemp - 2) {
-      // Temperatura baja - activar calentamiento
-      if (!Actuators.isSteamValveOpen()) {
-        Actuators.openSteamValve();
-        Utils.debug("🔥 Activando calentamiento - Temp: " + String(currentTemp) + "°C");
-      }
-    } else if (currentTemp > targetTemp + 2) {
-      // Temperatura alta - detener calentamiento
-      if (Actuators.isSteamValveOpen()) {
-        Actuators.closeSteamValve();
-        Utils.debug("❄️ Deteniendo calentamiento - Temp: " + String(currentTemp) + "°C");
-      }
-    }
-  }
+  // 4. Control de temperatura con drenaje parcial según documento del cliente
+  _handleTemperatureControl();
   
   // 5. Control del motor según nivel de rotación
   if (_rotations[_currentProgram][_currentPhase] > 0) {

@@ -66,6 +66,9 @@ public:
   bool isTemperatureReached(uint8_t targetTemp);  
   bool isWaterLevelReached(uint8_t targetLevel);
   
+  // Verificación de puerta
+  bool isDoorClosed();
+  
   // Control de sensores
   void setTemperatureResolution(uint8_t resolution);
   void resetPressureCalibration();

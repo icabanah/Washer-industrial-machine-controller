@@ -8,49 +8,54 @@
 // Definición de la instancia global
 UIControllerClass UIController;
 
-// Definición de variables para almacenar datos de programa
-// Estas variables simulan los datos que vendrían de Program Controller
+// === CONFIGURACIÓN SEGÚN DOCUMENTO DEL CLIENTE ===
+// Programa 22 (P22): Agua Caliente - 3 fases + centrifugado
+// Programa 23 (P23): Agua Fría - 3 fases + centrifugado  
+// Programa 24 (P24): Multi-ciclo configurable - 3 fases, sin centrifugado
+
 uint8_t NivelAgua[3][4] = {
-  {2, 3, 4, 1},  // Programa 1
-  {3, 2, 4, 2},  // Programa 2
-  {4, 3, 2, 1}   // Programa 3
+  {3, 4, 2, 1}, // P22: Llenado alto, Lavado máximo, Drenaje bajo, Centrifugado mínimo
+  {3, 4, 2, 1}, // P23: Igual que P22 pero con agua fría
+  {2, 3, 2, 0}  // P24: Multi-ciclo, sin centrifugado (fase 4 = 0)
 };
 
 uint8_t RotacionTam[3][4] = {
-  {1, 2, 1, 3},  // Programa 1
-  {2, 1, 3, 2},  // Programa 2
-  {3, 2, 1, 2}   // Programa 3
+  {0, 2, 0, 3}, // P22: Sin rotación en llenado/drenaje, media en lavado, rápida en centrifugado
+  {0, 2, 0, 3}, // P23: Igual que P22
+  {0, 2, 0, 0}  // P24: Sin centrifugado
 };
 
 uint8_t TemperaturaLim[3][4] = {
-  {30, 40, 50, 40},  // Programa 1
-  {35, 45, 55, 45},  // Programa 2
-  {40, 50, 60, 50}   // Programa 3
+  {60, 65, 40, 25}, // P22: Caliente para llenado/lavado, templado para drenaje
+  {25, 25, 25, 25}, // P23: Temperatura ambiente (agua fría)
+  {45, 50, 30, 25}  // P24: Configurable (por defecto tibio)
 };
 
 uint8_t TemporizadorLim[3][4] = {
-  {5, 10, 15, 5},   // Programa 1
-  {10, 15, 20, 10}, // Programa 2
-  {15, 20, 25, 15}  // Programa 3
+  {8, 15, 5, 4},  // P22: Llenado 8min, Lavado 15min, Drenaje 5min, Centrifugado 4min
+  {8, 15, 5, 4},  // P23: Mismos tiempos que P22
+  {6, 12, 4, 0}   // P24: Ciclo más corto, sin centrifugado
 };
 
-// Nuevos arrays para fase, centrifugado y tipo de agua
+// Fases según documento: 1=Llenado, 2=Lavado, 3=Drenaje, 4=Centrifugado
 uint8_t FasesPrograma[3][4] = {
-  {1, 2, 3, 4},  // Programa 1: llenado, lavado, drenaje, centrifugado
-  {1, 2, 3, 4},  // Programa 2: llenado, lavado, drenaje, centrifugado
-  {1, 2, 3, 0}   // Programa 3: llenado, lavado, drenaje, sin centrifugado
+  {1, 2, 3, 4}, // P22: Secuencia completa con centrifugado
+  {1, 2, 3, 4}, // P23: Secuencia completa con centrifugado
+  {1, 2, 3, 0}  // P24: Solo 3 fases, sin centrifugado
 };
 
+// Centrifugado opcional en todos los programas (según configuración)
 uint8_t CentrifugadoPrograma[3][4] = {
-  {0, 0, 0, 1},  // Programa 1: centrifugado solo en fase 4
-  {0, 0, 0, 1},  // Programa 2: centrifugado solo en fase 4
-  {0, 0, 0, 0}   // Programa 3: sin centrifugado
+  {0, 0, 0, 1}, // P22: Centrifugado configurable (por defecto habilitado al final)
+  {0, 0, 0, 1}, // P23: Centrifugado configurable (por defecto habilitado al final)
+  {0, 0, 0, 0}  // P24: Centrifugado configurable (por defecto deshabilitado)
 };
 
+// Tipo de agua según especificaciones del cliente
 uint8_t TipoAguaPrograma[3][4] = {
-  {1, 1, 0, 0},  // Programa 1 (P22): agua caliente en llenado y lavado
-  {0, 0, 0, 0},  // Programa 2 (P23): agua fría en todas las fases
-  {1, 1, 0, 0}   // Programa 3 (P24): agua caliente en llenado y lavado
+  {1, 1, 1, 0}, // P22: Agua caliente en todas las fases activas
+  {0, 0, 0, 0}, // P23: Agua fría en todas las fases
+  {1, 1, 0, 0}  // P24: Configurable (defecto: caliente para llenado/lavado)
 };
 
 void UIControllerClass::init() {
@@ -313,7 +318,8 @@ void UIControllerClass::updateRotation(uint8_t rotacion) {
 }
 
 void UIControllerClass::updatePhase(uint8_t fase) {
-  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, "Fase: " + String(fase));
+  // Solo enviar el número de fase, el label "Fase" ya existe en la interfaz Nextion
+  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, String(fase));
 }
 
 void UIControllerClass::updateProgressBar(uint8_t progress) {

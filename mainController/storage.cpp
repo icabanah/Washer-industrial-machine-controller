@@ -223,50 +223,54 @@ void StorageClass::resetToDefaults() {
   // Reiniciar el contador de uso
   writeWord("contador", 0);
   
-  // Valores por defecto para el programa 1
+  // === CONFIGURACIÓN SEGÚN DOCUMENTO DEL CLIENTE ===
+  // Programa 22 (P22): Agua Caliente - 3 fases + centrifugado
+  // Programa 23 (P23): Agua Fría - 3 fases + centrifugado  
+  // Programa 24 (P24): Multi-ciclo configurable - 3 fases, sin centrifugado
+  
   uint8_t defaultWaterLevels[3][4] = {
-    {2, 3, 2, 1}, // Programa 1
-    {3, 3, 2, 1}, // Programa 2
-    {2, 2, 2, 1}  // Programa 3
+    {3, 4, 2, 1}, // P22: Llenado alto, Lavado máximo, Drenaje bajo, Centrifugado mínimo
+    {3, 4, 2, 1}, // P23: Igual que P22 pero con agua fría
+    {2, 3, 2, 0}  // P24: Multi-ciclo, sin centrifugado (fase 4 = 0)
   };
   
   uint8_t defaultTemperatures[3][4] = {
-    {40, 60, 40, 30}, // Programa 1
-    {45, 70, 45, 30}, // Programa 2
-    {30, 50, 40, 30}  // Programa 3
+    {60, 65, 40, 25}, // P22: Caliente para llenado/lavado, templado para drenaje
+    {25, 25, 25, 25}, // P23: Temperatura ambiente (agua fría)
+    {45, 50, 30, 25}  // P24: Configurable (por defecto tibio)
   };
   
   uint8_t defaultTimes[3][4] = {
-    {5, 10, 5, 3}, // Programa 1
-    {6, 12, 6, 3}, // Programa 2
-    {4, 8, 4, 3}   // Programa 3
+    {8, 15, 5, 4},  // P22: Llenado 8min, Lavado 15min, Drenaje 5min, Centrifugado 4min
+    {8, 15, 5, 4},  // P23: Mismos tiempos que P22
+    {6, 12, 4, 0}   // P24: Ciclo más corto, sin centrifugado
   };
   
   uint8_t defaultRotations[3][4] = {
-    {1, 2, 1, 3}, // Programa 1
-    {2, 3, 2, 3}, // Programa 2
-    {1, 2, 1, 2}  // Programa 3
+    {0, 2, 0, 3}, // P22: Sin rotación en llenado/drenaje, media en lavado, rápida en centrifugado
+    {0, 2, 0, 3}, // P23: Igual que P22
+    {0, 2, 0, 0}  // P24: Sin centrifugado
   };
   
-  // Valores por defecto para fases (1=llenado, 2=lavado, 3=drenaje, 4=centrifugado)
+  // Fases según documento: 1=Llenado, 2=Lavado, 3=Drenaje, 4=Centrifugado
   uint8_t defaultPhases[3][4] = {
-    {1, 2, 3, 4}, // Programa 1: secuencia completa
-    {1, 2, 3, 4}, // Programa 2: secuencia completa
-    {1, 2, 3, 0}  // Programa 3: sin centrifugado (fase 4 = 0)
+    {1, 2, 3, 4}, // P22: Secuencia completa con centrifugado
+    {1, 2, 3, 4}, // P23: Secuencia completa con centrifugado
+    {1, 2, 3, 0}  // P24: Solo 3 fases, sin centrifugado
   };
   
-  // Valores por defecto para centrifugado (0=inactivo, 1=activo)
+  // Centrifugado opcional en todos los programas (según configuración)
   uint8_t defaultCentrifugado[3][4] = {
-    {0, 0, 0, 1}, // Programa 1: solo en fase 4
-    {0, 0, 0, 1}, // Programa 2: solo en fase 4
-    {0, 0, 0, 0}  // Programa 3: sin centrifugado
+    {0, 0, 0, 1}, // P22: Centrifugado configurable (por defecto habilitado al final)
+    {0, 0, 0, 1}, // P23: Centrifugado configurable (por defecto habilitado al final)  
+    {0, 0, 0, 0}  // P24: Centrifugado configurable (por defecto deshabilitado)
   };
   
-  // Valores por defecto para tipo de agua (0=fría, 1=caliente)
+  // Tipo de agua según especificaciones del cliente
   uint8_t defaultTipoAgua[3][4] = {
-    {1, 1, 0, 0}, // Programa 1 (P22): agua caliente para llenado y lavado
-    {0, 0, 0, 0}, // Programa 2 (P23): agua fría en todas las fases
-    {1, 1, 0, 0}  // Programa 3 (P24): agua caliente para llenado y lavado
+    {1, 1, 1, 0}, // P22: Agua caliente en todas las fases activas
+    {0, 0, 0, 0}, // P23: Agua fría en todas las fases
+    {1, 1, 0, 0}  // P24: Configurable (defecto: caliente para llenado/lavado)
   };
   
   // Guardar valores por defecto

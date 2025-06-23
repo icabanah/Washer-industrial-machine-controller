@@ -77,6 +77,10 @@ private:
   bool _preparingPhase;
   unsigned long _phaseStartTime;
   
+  // Variables para sistema de tandas (Programa 24)
+  uint8_t _tandaCounter;
+  uint8_t _maxTandas;
+  
   // Variables para edición
   uint8_t _editingProgram;
   uint8_t _editingPhase;
@@ -89,6 +93,8 @@ private:
   uint8_t _temperatures[NUM_PROGRAMAS][NUM_FASES];
   uint8_t _times[NUM_PROGRAMAS][NUM_FASES];
   uint8_t _rotations[NUM_PROGRAMAS][NUM_FASES];
+  uint8_t _tipoAguaPrograma[NUM_PROGRAMAS][NUM_FASES];
+  uint8_t _centrifugadoPrograma[NUM_PROGRAMAS][NUM_FASES];
   
   void _loadProgramData();
   void _updatePhaseParameters();
@@ -118,9 +124,12 @@ private:
   void _initializeProgram();
   void _completePhase();
   void _completeProgram();
+  void _configureProgramType();
   
   // Control de actuadores según fase
   void _configureActuatorsForPhase();
+  void _handleTemperatureControl();
+  bool _isCentrifugadoEnabled(uint8_t programa, uint8_t fase);
   
   // Manejo de errores
   void _triggerError(uint8_t errorCode, const String& errorMessage);
