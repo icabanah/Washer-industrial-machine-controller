@@ -18,6 +18,10 @@ void ProgramControllerClass::init() {
   _totalSeconds = 0;
   _timerRunning = false;
   
+  // Inicializar variables de pausa
+  _pausedMinutes = 0;
+  _pausedSeconds = 0;
+  
   // Inicializar variables de estado de fase
   _preparingPhase = false;
   _phaseStartTime = 0;
@@ -188,21 +192,52 @@ void ProgramControllerClass::startProgram() {
     }
     
     setState(ESTADO_EJECUCION);
+    
+    // Asegurar que el botón pausar muestre "PAUSAR" al iniciar
+    Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "PAUSAR");
+    
     Utils.debug("ProgramControllerClass::startProgram| Programa iniciado: " + String(_currentProgram));
   }
 }
 
 void ProgramControllerClass::pauseProgram() {
   if (_currentState == ESTADO_EJECUCION) {
+    // Preservar tiempo restante para continuar después
+    _pausedMinutes = _remainingMinutes;
+    _pausedSeconds = _remainingSeconds;
+    
+    // Detener temporizador
+    _timerRunning = false;
+    
+    // Cambiar estado a pausa
     setState(ESTADO_PAUSA);
-    Utils.debug("ProgramControllerClass::startProgram| Programa pausado: " + String(_currentProgram));
+    
+    // Cambiar texto del botón a "REANUDAR"
+    Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "REANUDAR");
+    
+    Utils.debug("⏸️ Programa pausado - Tiempo preservado: " + String(_pausedMinutes) + ":" + String(_pausedSeconds));
   }
 }
 
 void ProgramControllerClass::resumeProgram() {
   if (_currentState == ESTADO_PAUSA) {
+    // Restaurar tiempo restante desde donde se pausó
+    _remainingMinutes = _pausedMinutes;
+    _remainingSeconds = _pausedSeconds;
+    
+    // Reactivar temporizador
+    _timerRunning = true;
+    
+    // Cambiar estado a ejecución
     setState(ESTADO_EJECUCION);
-    Utils.debug("ProgramControllerClass::startProgram| Programa reanudado: " + String(_currentProgram));
+    
+    // Cambiar texto del botón de vuelta a "PAUSAR"
+    Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "PAUSAR");
+    
+    // Actualizar display con tiempo restaurado
+    UIController.updateTime(_remainingMinutes, _remainingSeconds);
+    
+    Utils.debug("▶️ Programa reanudado - Tiempo restaurado: " + String(_remainingMinutes) + ":" + String(_remainingSeconds));
   }
 }
 

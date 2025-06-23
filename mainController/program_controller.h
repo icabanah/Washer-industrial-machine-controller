@@ -73,6 +73,10 @@ private:
   uint8_t _totalSeconds;
   bool _timerRunning;
   
+  // Variables para pausa
+  uint8_t _pausedMinutes;
+  uint8_t _pausedSeconds;
+  
   // Variables de estado de fase
   bool _preparingPhase;
   unsigned long _phaseStartTime;
