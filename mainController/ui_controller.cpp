@@ -248,10 +248,10 @@ void UIControllerClass::showEmergencyScreen() {
   Hardware.nextionSetText("txtMensajeEmerg", "Sistema detenido por seguridad");
   
   // Activar indicador visual de emergencia
-  Hardware.nextionSendCommand("alarm.en=1");
+  // Hardware.nextionSendCommand("alarm.en=1");
   
   // Reproducir sonido de alarma
-  playSound(2);  // Código 2 para sonido de alarma
+  // playSound(2);  // Código 2 para sonido de alarma
   
   Serial.println("EMERGENCIA: Sistema detenido");
 }
@@ -279,7 +279,7 @@ void UIControllerClass::updateTemperature(float temperatura) {
 
 void UIControllerClass::updateWaterLevel(uint8_t nivel) {
   // Actualizar texto de nivel en pantalla de ejecución
-  Hardware.nextionSetText(NEXTION_COMP_NIVEL_EJECUCION, "Nivel: " + String(nivel));
+  Hardware.nextionSetText(NEXTION_COMP_NIVEL_EJECUCION, String(nivel));
   
   // Actualizar gauge vertical de nivel (barra vertical)
   // Mapear nivel del sensor (0-4) al rango del gauge en Nextion (0-100)
@@ -297,11 +297,11 @@ void UIControllerClass::updateWaterLevel(uint8_t nivel) {
 
 void UIControllerClass::updateRotation(uint8_t rotacion) {
   // Actualizar texto de velocidad de rotación en pantalla de ejecución
-  Hardware.nextionSetText(NEXTION_COMP_VELOCIDAD_EJECUCION, "Vel: " + String(rotacion));
+  Hardware.nextionSetText(NEXTION_COMP_VELOCIDAD_EJECUCION, String(rotacion));
   
   // Actualizar gauge de velocidad (apuntador)
-  // Mapear nivel de rotación (0-3) al rango del gauge en Nextion (0-100)
-  uint8_t gaugeValue = (rotacion * 100) / 3; // 0->0, 1->33, 2->67, 3->100
+  // Mapear nivel de rotación (0-4) al rango del gauge en Nextion (0-100)
+  uint8_t gaugeValue = rotacion * 25; // 0->0, 1->25, 2->50, 3->75, 4->100
   Hardware.nextionSetValue(NEXTION_COMP_GAUGE_VEL_EJECUCION, gaugeValue);
   
   // Debug para verificar mapeo
@@ -747,7 +747,7 @@ void UIControllerClass::updateRightPanel() {
   Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO_EDIT, buffer);
   
   // Actualizar rotación en panel derecho
-  snprintf(buffer, sizeof(buffer), "Vel %d", _valoresTemporales[PARAM_ROTACION]);
+  snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_ROTACION]);
   Hardware.nextionSetText(NEXTION_COMP_VAL_ROTAC_EDIT, buffer);
   
   // Actualizar fase en panel derecho
