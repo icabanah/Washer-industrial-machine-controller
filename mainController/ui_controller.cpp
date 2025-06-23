@@ -723,6 +723,11 @@ void UIControllerClass::safeTransitionToSelection(uint8_t programa)
 
   // Ahora mostrar la pantalla objetivo con eventos limpios
   showSelectionScreen(programa);
+  
+  // Forzar actualización de información del programa para reflejar cambios
+  Serial.println("🔄 Forzando actualización de información del programa P" + String(programa + 22));
+  delay(100); // Breve pausa para asegurar que Nextion procesó el cambio de página
+  _updateProgramInfo(programa);
 
   Serial.println("Transición segura a pantalla de selección completada");
 }
@@ -1242,6 +1247,10 @@ void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fas
 /// Número de fase (0-3)
 void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase)
 {
+  Serial.println("💾 _saveParametersToStorage iniciado:");
+  Serial.println("   Guardando en programa índice " + String(programa) + " (P" + String(programa + 22) + ")");
+  Serial.println("   Guardando en fase índice " + String(fase) + " (F" + String(fase + 1) + ")");
+  
   // Guardar valores directamente en Storage
   Storage.saveWaterLevel(programa, fase, _valoresTemporales[PARAM_NIVEL]);
   Storage.saveTemperature(programa, fase, _valoresTemporales[PARAM_TEMPERATURA]);
@@ -1260,7 +1269,7 @@ void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase)
   _centrifugadoPrograma[programa][fase] = _valoresTemporales[PARAM_CENTRIF];
   _tipoAguaPrograma[programa][fase] = _valoresTemporales[PARAM_AGUA];
 
-  Serial.println("Parámetros guardados en Storage - P" + String(programa + 22) + " F" + String(fase));
+  Serial.println("✅ Parámetros guardados en Storage - P" + String(programa + 22) + " F" + String(fase + 1));
 }
 
 /**

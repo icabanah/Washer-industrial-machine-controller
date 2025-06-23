@@ -316,7 +316,7 @@ bool HardwareClass::_readNextionResponse()
       _touchEventType = rawBytes[3];
 
       Serial.println("✅ EVENTO TÁCTIL DETECTADO:");
-      Serial.println("   Página: " + String(_touchPage));
+      Serial.print("   Página: " + String(_touchPage));
       Serial.println("   Componente: " + String(_touchComponent));
       Serial.println("   Tipo: " + String(_touchEventType) + (_touchEventType == 1 ? " (PRESIONADO)" : " (LIBERADO)"));
 

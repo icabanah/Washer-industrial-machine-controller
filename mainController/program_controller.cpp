@@ -836,8 +836,14 @@ void ProgramControllerClass::cancelEditing() {
 
 void ProgramControllerClass::endEditing() {
   _isEditing = false;
+  
+  // Asegurar que _currentProgram sea el programa que se estaba editando
+  _currentProgram = _editingProgram;
+  
+  Utils.debug("✅ Edición terminada para P" + String(_editingProgram + 22) + ", volviendo a selección");
+  Utils.debug("   Actualizando _currentProgram a: " + String(_currentProgram));
+  
   setState(ESTADO_SELECCION);
-  Utils.debug("✅ Edición terminada, volviendo a estado de selección");
 }
 
 void ProgramControllerClass::processUserEvent(const String& event) {
@@ -964,25 +970,12 @@ void ProgramControllerClass::_handleSelectionState() {
 void ProgramControllerClass::_handleEditingState() {
   // Estado de edición - El usuario está modificando parámetros del programa
   
-  // Verificar timeout de edición (volver a selección después de inactividad)
-  static unsigned long editStartTime = millis();
-  static bool timeoutInitialized = false;
+  // TIMEOUT DE EDICIÓN DESHABILITADO POR SOLICITUD DEL USUARIO
+  // El usuario puede permanecer en edición indefinidamente
+  // Solo sale manualmente con Guardar o Cancelar
   
-  if (!timeoutInitialized) {
-    editStartTime = millis();
-    timeoutInitialized = true;
-  }
-  
-  // Timeout de 30 segundos sin actividad
-  if (millis() - editStartTime > 30000) {
-    Utils.debug("⏱️ Timeout de edición - volviendo a selección");
-    cancelEditing();
-    timeoutInitialized = false;
-    return;
-  }
-  
-  // Resetear timeout en cada interacción (manejado en processUserEvent)
   // El procesamiento principal de edición se hace mediante eventos táctiles
+  // manejados en UIController
 }
 
 void ProgramControllerClass::_handleExecutionState() {
