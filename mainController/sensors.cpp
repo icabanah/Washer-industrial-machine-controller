@@ -163,9 +163,9 @@ void SensorsClass::_setupMonitoring() {
 /// Este método se encarga de leer los valores actuales de los sensores y actualizar las variables internas.
 void SensorsClass::updateSensors() {
   // Para la temperatura, solo iniciamos una nueva lectura si no hay una en progreso
-  if (!_tempConversionInProgress) {
+  // if (!_tempConversionInProgress) {
     updateTemperature();
-  }
+  // }
   
   // La presión se puede leer directamente sin esperas
   updatePressure();
@@ -215,7 +215,9 @@ void SensorsClass::updateTemperature() {
     // Verificar si la conversión ha terminado
     if (_tempSensors.isConversionComplete()) {
       // Leer el resultado
+      // float temp = _tempSensors.getTempC(_tempSensorAddress);
       float temp = _tempSensors.getTempC(_tempSensorAddress);
+      Utils.debug("Lectura de temperatura: " + String(temp) + "°C");
       _tempConversionInProgress = false;
       
       // Verificar si la lectura es válida
@@ -239,11 +241,7 @@ void SensorsClass::updateTemperature() {
         Utils.debug("❌ Error de lectura temperatura: " + String(temp) + " (error #" + String(_tempSensorErrorCount) + ")");
         
         if (_tempSensorErrorCount == 5) {
-          Utils.debug("⚠️ PROBLEMA: Múltiples lecturas fallidas del sensor de temperatura");
-          Utils.debug("Causas posibles:");
-          Utils.debug("- Sensor desconectado del pin " + String(PIN_TEMP_SENSOR));
-          Utils.debug("- Falta resistor pull-up de 4.7kΩ");
-          Utils.debug("- Sensor dañado");
+          Utils.debug("⚠️ Múltiples fallos de lectura (sensor temp.)");
         }
         
         if (_tempSensorErrorCount > 10) {

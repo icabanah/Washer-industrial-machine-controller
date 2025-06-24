@@ -8,13 +8,13 @@
 #include <DallasTemperature.h>
 #include <HX710B.h>
 
-class SensorsClass {
+class SensorsClass
+{
 public:
   // Inicialización
   void init();
-  
 
-  /// @brief 
+  /// @brief
   /// Configura el sensor de temperatura y el sensor de presión.
   /// Este método debe ser llamado al inicio del programa para configurar los sensores.
   /// @details
@@ -24,8 +24,7 @@ public:
   /// Asegúrate de que los pines de los sensores estén correctamente conectados y configurados en `config.h`.
   void startMonitoring();
 
-
-  /// @brief 
+  /// @brief
   /// Detiene el monitoreo de los sensores.
   /// Este método detiene cualquier tarea de monitoreo en curso y libera los recursos asociados.
   /// @details
@@ -37,7 +36,7 @@ public:
   /// No retorna ningún valor, pero detiene el monitoreo de los sensores.
   void stopMonitoring();
 
-  /// @brief 
+  /// @brief
   /// Verifica si el monitoreo de sensores está activo.
   /// Este método comprueba si hay una tarea de monitoreo en curso.
   /// @details
@@ -49,26 +48,26 @@ public:
   /// true si el monitoreo está activo, false si no lo está.
   /// Este valor puede ser utilizado para determinar si se deben realizar lecturas de sensores o no.
   bool isMonitoring();
-  
+
   // Lectura de sensores
   void updateTemperature();
   void updatePressure();
   void updateSensors(); // Método para actualizar todos los sensores
   // void readTemperatureCallback(); // Ya no se usa con el nuevo enfoque
-  
+
   // Obtención de valores actuales
   float getCurrentTemperature();
   uint16_t getCurrentPressureRaw();
   float getCurrentPressurePascal();
   uint8_t getCurrentWaterLevel();
-  
+
   // Verificación de objetivos
-  bool isTemperatureReached(uint8_t targetTemp);  
+  bool isTemperatureReached(uint8_t targetTemp);
   bool isWaterLevelReached(uint8_t targetLevel);
-  
+
   // Verificación de puerta
   bool isDoorClosed();
-  
+
   // Control de sensores
   void setTemperatureResolution(uint8_t resolution);
   void resetPressureCalibration();
@@ -80,24 +79,24 @@ private:
   DallasTemperature _tempSensors;
   DeviceAddress _tempSensorAddress = TEMP_SENSOR_ADDR;
   HX710B _pressureSensor;
-  
+
   // Variables para almacenar lecturas
   float _currentTemperature;
-  uint16_t _currentPressureRaw;  // Mantener para compatibilidad
-  float _currentPressurePascal;  // Almacenar la presión en Pascales
+  uint16_t _currentPressureRaw;           // Mantener para compatibilidad
+  float _currentPressurePascal;           // Almacenar la presión en Pascales
   uint8_t _currentWaterLevel;
-  bool _monitoring;
+  bool _monitoring;                       // Indica si el monitoreo está activo
   uint8_t _tempSensorErrorCount;
   uint8_t _pressureSensorErrorCount;
   bool _pressureSensorCalibrated;
 
   // ID de tareas temporizadas
   int _monitoringTaskId;
-  int _tempReadTaskId;  // ID para el temporizador de lectura de temperatura
-  bool _tempConversionInProgress;  // Flag para evitar solicitudes concurrentes
-  unsigned long _tempConversionStartTime;  // Tiempo cuando se inició la conversión
-  uint8_t _tempReadCount;  // Contador para debug ocasional
-  
+  int _tempReadTaskId;                    // ID para el temporizador de lectura de temperatura
+  bool _tempConversionInProgress;         // Flag para evitar solicitudes concurrentes
+  unsigned long _tempConversionStartTime; // Tiempo cuando se inició la conversión
+  uint8_t _tempReadCount;                 // Contador para debug ocasional
+
   // Métodos internos
   void _setupTemperatureSensor();
   void _setupPressureSensor();

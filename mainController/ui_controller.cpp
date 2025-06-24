@@ -2,6 +2,7 @@
 #include "ui_controller.h"
 #include "program_controller.h"
 #include "storage.h"
+#include "sensors.h"
 #include "Arduino.h"
 #include <stdio.h>
 
@@ -181,7 +182,7 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
 
   // Actualizar indicadores usando los componentes existentes que funcionan correctamente
   updateWaterLevel(nivelAgua);
-  updateTemperature(temperatura);
+  updateTemperature(Sensors.getCurrentTemperature()); // Usar temperatura real del sensor
   updateRotation(rotacion);
 
   // Inicializar barra de progreso
