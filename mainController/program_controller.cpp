@@ -886,12 +886,7 @@ void ProgramControllerClass::processUserEvent(const String& event) {
   switch (touchPage) {
     case NEXTION_PAGE_SELECTION:
       // Solo procesar eventos de selección si estamos en el estado correcto
-      if (_currentState == ESTADO_SELECCION || _currentState == ESTADO_IDLE) {
-        _handleSelectionPageEvents(touchComponent);
-      } else {
-        // Ignorar eventos de página de selección cuando estamos ejecutando
-        Utils.debug("⚠️ Ignorando evento de selección en estado: " + String(_currentState));
-      }
+      _handleSelectionPageEvents(touchComponent);
       break;
       
     case NEXTION_PAGE_EDIT:

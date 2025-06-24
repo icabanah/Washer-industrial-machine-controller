@@ -81,7 +81,7 @@ void setup()
   // Iniciar temporizador principal
   Utils.startMainTimer();
 
-  Serial.println("setup| Sistema inicializado correctamente");
+  Serial.println("Sistema inicializado correctamente");
 }
 
 void loop()

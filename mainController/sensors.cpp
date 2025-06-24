@@ -163,9 +163,7 @@ void SensorsClass::_setupMonitoring() {
 /// Este método se encarga de leer los valores actuales de los sensores y actualizar las variables internas.
 void SensorsClass::updateSensors() {
   // Para la temperatura, solo iniciamos una nueva lectura si no hay una en progreso
-  // if (!_tempConversionInProgress) {
-    updateTemperature();
-  // }
+  updateTemperature();
   
   // La presión se puede leer directamente sin esperas
   updatePressure();

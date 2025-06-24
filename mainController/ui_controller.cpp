@@ -167,8 +167,7 @@ void UIControllerClass::showSelectionScreen(uint8_t programa)
 /// La temperatura actual en grados Celsius (0 a 100).
 /// @param rotacion
 /// La rotación actual del tambor en RPM (0 a 300).
-void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion)
-{
+void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion){
   // Cambiar a la página de ejecución
   Hardware.nextionSetPage(NEXTION_PAGE_EXECUTION);
   _currentPage = NEXTION_PAGE_EXECUTION; // Actualizar página actual
@@ -176,15 +175,14 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   // Mostrar información del programa usando los componentes correctos de la documentación
   Hardware.nextionSetText(NEXTION_COMP_PROG_EJECUCION, "P" + String(programa + 22));
 
-  // Establecer valores iniciales (solo el número, sin prefijo)
   Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, String(fase));
   Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00"); // Tiempo inicial
 
   // Actualizar indicadores usando los componentes existentes que funcionan correctamente
   updateWaterLevel(nivelAgua);
-  updateTemperature(Sensors.getCurrentTemperature()); // Usar temperatura real del sensor
+  updateTemperature(temperatura); // Usar temperatura real del sensor
   updateRotation(rotacion);
-
+  
   // Inicializar barra de progreso
   updateProgressBar(0);
 
@@ -200,8 +198,7 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
 /// La fase del programa a editar (0 a 3).
 /// @note
 /// Asegúrate de que los componentes de la pantalla Nextion estén correctamente configurados con los IDs especificados.
-void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase)
-{
+void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase){
   Serial.println("Programa recibido: " + String(programa) + " (P" + String(programa + 22) + ")");
   Serial.println("Fase recibida: " + String(fase));
 
@@ -406,13 +403,6 @@ void UIControllerClass::processEvents()
   }
 }
 
-// void UIControllerClass::_handleNextionEvent(const String& event) {
-//   // IMPORTANTE: Este método ya no se usa con String events
-//   // Los eventos táctiles ahora se procesan directamente desde Hardware
-//   Serial.println("⚠️ ADVERTENCIA: _handleNextionEvent(String) está obsoleto");
-//   Serial.println("   Use _handleTouchEvent() en su lugar");
-// }
-
 /**
  * @brief Procesar eventos táctiles directamente desde Hardware
  */
@@ -429,12 +419,12 @@ void UIControllerClass::_handleTouchEvent()
   uint8_t componentId = Hardware.getTouchEventComponent();
   uint8_t eventType = Hardware.getTouchEventType();
 
-  Serial.print("🔍 Evento táctil detectado: Página=");
-  Serial.print(pageId);
-  Serial.print(" ComponentID=");
-  Serial.print(componentId);
-  Serial.print(" Tipo=");
-  Serial.println(eventType);
+  // Serial.print("🔍 Evento táctil detectado: Página=");
+  // Serial.print(pageId);
+  // Serial.print(" ComponentID=");
+  // Serial.print(componentId);
+  // Serial.print(" Tipo=");
+  // Serial.println(eventType);
 
   // Solo procesar eventos de presionado (tipo 1)
   if (eventType != 1)
@@ -562,11 +552,11 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   uint8_t rotacion = Storage.loadRotation(programa, 0);
   
   // Debug para verificar valores cargados
-  Serial.println("📊 Actualizando info P" + String(programa + 22) + " desde Storage:");
-  Serial.println("   Nivel: " + String(nivel));
-  Serial.println("   Temp: " + String(temp));
-  Serial.println("   Tiempo: " + String(tiempo));
-  Serial.println("   Rotación: " + String(rotacion));
+  // Serial.println("📊 Actualizando info P" + String(programa + 22) + " desde Storage:");
+  // Serial.println("   Nivel: " + String(nivel));
+  // Serial.println("   Temp: " + String(temp));
+  // Serial.println("   Tiempo: " + String(tiempo));
+  // Serial.println("   Rotación: " + String(rotacion));
 
   // Mostrar valores actualizados
   Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, String(nivel));
@@ -810,12 +800,10 @@ void UIControllerClass::initEditMode(uint8_t programa, uint8_t fase)
   _faseEnEdicion = fase;
   _parametroActual = PARAM_NIVEL; // Comenzar con el primer parámetro
   _modoEdicionActivo = true;
-  _resetEditTimeout();
 
   // Cargar valores actuales desde storage
   _loadParametersFromStorage(programa, fase);
-
-  Serial.println("Modo edición inicializado - P" + String(programa + 22) + " F" + String(fase));
+  showMessage("Modo edición activado para P" + String(programa + 22) + " F" + String(fase + 1), 2000);
 }
 
 /// @brief
@@ -843,18 +831,18 @@ void UIControllerClass::updateEditDisplay()
     // Programas 22 y 23 - deshabilitar componente de fase
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",0"); // Deshabilitar touch
     // Opcional: cambiar color para indicar que está deshabilitado
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=33840"); // Color gris
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=33840"); // Color gris
   } else {
     // Programa 24 - habilitar componente de fase
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",1"); // Habilitar touch
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=65535"); // Color normal
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=65535"); // Color normal
   }
 
   Serial.println("Pantalla de edición actualizada (fase " + String(_programaEnEdicion == 2 ? "habilitada" : "deshabilitada") + " para P" + String(_programaEnEdicion + 22) + ")");
 }
 
 /// @brief
-/// Cargar los parámetros del programa y fase especificados desde Storage
+/// Cargar los valores de los parámetros del programa y fase especificados desde Storage
 void UIControllerClass::updateParameterDisplay()
 {
   if (!_modoEdicionActivo)
@@ -927,75 +915,59 @@ void UIControllerClass::handleEditPageEvent(int componentId)
     return;
   }
 
-  // Resetear timeout al recibir cualquier evento
-  _resetEditTimeout();
-
   switch (componentId)
   {
   case NEXTION_ID_BTN_PARAM_MAS:
-    Serial.println("➕ Botón MAS presionado (ID: " + String(NEXTION_ID_BTN_PARAM_MAS) + ")");
     handleParameterIncrement();
     break;
 
   case NEXTION_ID_BTN_PARAM_MENOS:
-    Serial.println("➖ Botón MENOS presionado (ID: " + String(NEXTION_ID_BTN_PARAM_MENOS) + ")");
     handleParameterDecrement();
     break;
 
   case NEXTION_ID_BTN_PARAM_SIGUIENTE:
-    Serial.println("⏭️ Botón SIGUIENTE presionado (ID: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE) + ")");
     handleNextParameter();
     break;
 
   case NEXTION_ID_BTN_PARAM_ANTERIOR:
-    Serial.println("⏮️ Botón ANTERIOR presionado (ID: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR) + ")");
     handlePreviousParameter();
     break;
 
   case NEXTION_ID_BTN_GUARDAR:
-    Serial.println("💾 Botón GUARDAR presionado (ID: " + String(NEXTION_ID_BTN_GUARDAR) + ")");
     handleSaveParameters();
     break;
 
   case NEXTION_ID_BTN_CANCELAR:
-    Serial.println("❌ Botón CANCELAR presionado (ID: " + String(NEXTION_ID_BTN_CANCELAR) + ")");
     handleCancelEdit();
     break;
 
   // Nuevos: Selección directa de parámetros
   case NEXTION_ID_PARAM_NIVEL_EDIT:
-    Serial.println("🔧 Seleccionar parámetro NIVEL (ID: " + String(NEXTION_ID_PARAM_NIVEL_EDIT) + ")");
     selectParameter(PARAM_NIVEL);
     break;
 
   case NEXTION_ID_PARAM_TEMP_EDIT:
-    Serial.println("🌡️ Seleccionar parámetro TEMPERATURA (ID: " + String(NEXTION_ID_PARAM_TEMP_EDIT) + ")");
     selectParameter(PARAM_TEMPERATURA);
     break;
 
   case NEXTION_ID_PARAM_TIEMPO_EDIT:
-    Serial.println("⏱️ Seleccionar parámetro TIEMPO (ID: " + String(NEXTION_ID_PARAM_TIEMPO_EDIT) + ")");
     selectParameter(PARAM_TIEMPO);
     break;
 
   case NEXTION_ID_PARAM_ROTAC_EDIT:
-    Serial.println("🔄 Seleccionar parámetro ROTACIÓN (ID: " + String(NEXTION_ID_PARAM_ROTAC_EDIT) + ")");
     selectParameter(PARAM_ROTACION);
     break;
 
   case NEXTION_ID_PARAM_FASE_EDIT:
-    Serial.println("📊 Seleccionar parámetro FASE (ID: " + String(NEXTION_ID_PARAM_FASE_EDIT) + ")");
     selectPhase();
     break;
 
   case NEXTION_ID_PARAM_CENTRIF_EDIT:
-    Serial.println("🌀 Seleccionar parámetro CENTRIFUGADO (ID: " + String(NEXTION_ID_PARAM_CENTRIF_EDIT) + ")");
-    selectCentrifuge();
+    selectParameter(PARAM_CENTRIF);
     break;
 
   case NEXTION_ID_PARAM_AGUA_EDIT:
-    Serial.println("💧 Seleccionar parámetro AGUA (ID: " + String(NEXTION_ID_PARAM_AGUA_EDIT) + ")");
-    selectWater();
+    selectParameter(PARAM_AGUA);
     break;
 
   default:
@@ -1008,24 +980,15 @@ void UIControllerClass::handleEditPageEvent(int componentId)
  */
 void UIControllerClass::handleParameterIncrement()
 {
-  Serial.println("🔧 handleParameterIncrement() iniciado");
-
   // Incrementar el valor del parámetro actual usando las funciones de config.cpp
   int valorAnterior = _valoresTemporales[_parametroActual];
   _valoresTemporales[_parametroActual] = incrementarParametro(_parametroActual, _valoresTemporales[_parametroActual]);
-
-  Serial.println("   Parámetro: " + String(obtenerTextoParametro(_parametroActual)));
-  Serial.println("   Valor anterior: " + String(valorAnterior));
-  Serial.println("   Valor nuevo: " + String(_valoresTemporales[_parametroActual]));
 
   // Actualizar pantalla
   updateParameterDisplay();
   updateRightPanel();
 
-  // Mostrar feedback visual/sonoro
-  playSound(0); // Sonido normal
-
-  Serial.println("✅ Parámetro incrementado exitosamente");
+  showMessage("Parámetro incrementado", 1000);
 }
 
 /**
@@ -1033,24 +996,15 @@ void UIControllerClass::handleParameterIncrement()
  */
 void UIControllerClass::handleParameterDecrement()
 {
-  Serial.println("🔧 handleParameterDecrement() iniciado");
-
   // Decrementar el valor del parámetro actual usando las funciones de config.cpp
   int valorAnterior = _valoresTemporales[_parametroActual];
   _valoresTemporales[_parametroActual] = decrementarParametro(_parametroActual, _valoresTemporales[_parametroActual]);
-
-  Serial.println("   Parámetro: " + String(obtenerTextoParametro(_parametroActual)));
-  Serial.println("   Valor anterior: " + String(valorAnterior));
-  Serial.println("   Valor nuevo: " + String(_valoresTemporales[_parametroActual]));
 
   // Actualizar pantalla
   updateParameterDisplay();
   updateRightPanel();
 
-  // Mostrar feedback visual/sonoro
-  playSound(0); // Sonido normal
-
-  Serial.println("✅ Parámetro decrementado exitosamente");
+  showMessage("Parámetro decrementado", 1000);
 }
 
 /**
@@ -1058,8 +1012,6 @@ void UIControllerClass::handleParameterDecrement()
  */
 void UIControllerClass::handleNextParameter()
 {
-  Serial.println("🔧 handleNextParameter() iniciado");
-
   // Obtener el siguiente parámetro en el ciclo usando las funciones de config.cpp
   int parametroAnterior = _parametroActual;
   _parametroActual = obtenerSiguienteParametro(_parametroActual);
@@ -1070,16 +1022,10 @@ void UIControllerClass::handleNextParameter()
     Serial.println("   ⏭️ Saltando parámetro FASE (no editable en P" + String(_programaEnEdicion + 22) + ")");
   }
 
-  Serial.println("   Parámetro anterior: " + String(obtenerTextoParametro(parametroAnterior)));
-  Serial.println("   Parámetro nuevo: " + String(obtenerTextoParametro(_parametroActual)));
-
   // Actualizar pantalla para mostrar el nuevo parámetro
   updateParameterDisplay();
 
-  // Mostrar feedback visual/sonoro
-  playSound(0); // Sonido normal
-
-  Serial.println("✅ Cambiado a siguiente parámetro exitosamente");
+  showMessage("Pasando al siguiente parámetro", 1000);
 }
 
 /**
@@ -1087,8 +1033,6 @@ void UIControllerClass::handleNextParameter()
  */
 void UIControllerClass::handlePreviousParameter()
 {
-  Serial.println("🔧 handlePreviousParameter() iniciado");
-
   // Obtener el parámetro anterior en el ciclo usando las funciones de config.cpp
   int parametroAnterior = _parametroActual;
   _parametroActual = obtenerAnteriorParametro(_parametroActual);
@@ -1099,16 +1043,10 @@ void UIControllerClass::handlePreviousParameter()
     Serial.println("   ⏮️ Saltando parámetro FASE (no editable en P" + String(_programaEnEdicion + 22) + ")");
   }
 
-  Serial.println("   Parámetro anterior: " + String(obtenerTextoParametro(parametroAnterior)));
-  Serial.println("   Parámetro nuevo: " + String(obtenerTextoParametro(_parametroActual)));
-
   // Actualizar pantalla para mostrar el nuevo parámetro
   updateParameterDisplay();
 
-  // Mostrar feedback visual/sonoro
-  // playSound(0); // Sonido normal
-
-  Serial.println("✅ Cambiado a parámetro anterior exitosamente");
+  showMessage("Volviendo al parámetro anterior", 1000);
 }
 
 /**
@@ -1133,7 +1071,6 @@ void UIControllerClass::handleSaveParameters()
 
     // Mostrar confirmación
     showMessage("Parámetro guardado - Presione de nuevo para guardar programa", 3000);
-    Serial.println("💾 Parámetro guardado temporalmente");
 
     // Actualizar display para mostrar que está pendiente de guardado final
     updateParameterDisplay();
@@ -1295,36 +1232,11 @@ bool UIControllerClass::_validateAllParameters()
  */
 void UIControllerClass::_checkEditTimeout()
 {
-  // TIMEOUT DE EDICIÓN DESHABILITADO POR SOLICITUD DEL USUARIO
-  // El usuario puede permanecer en edición indefinidamente
   // Solo sale manualmente con Guardar o Cancelar
   return;
 
   Serial.println("Timeout de edición alcanzado - Saliendo automáticamente");
 }
-// /**
-//  * @brief Diagnóstico del estado de edición y mapeo de eventos
-//  */
-// void UIControllerClass::diagnosticarEstadoEdicion() {
-//   // Método deshabilitado para reducir spam en consola
-//   Serial.println("   - Parámetro actual: " + String(obtenerTextoParametro(_parametroActual)));
-//   Serial.println("");
-
-//   Serial.println("🎯 IDs de botones de edición esperados:");
-//   Serial.println("   - btnMas: " + String(NEXTION_ID_BTN_PARAM_MAS));
-//   Serial.println("   - btnMenos: " + String(NEXTION_ID_BTN_PARAM_MENOS));
-//   Serial.println("   - btnSiguiente: " + String(NEXTION_ID_BTN_PARAM_SIGUIENTE));
-//   Serial.println("   - btnAnterior: " + String(NEXTION_ID_BTN_PARAM_ANTERIOR));
-//   Serial.println("   - btnGuardar: " + String(NEXTION_ID_BTN_GUARDAR));
-//   Serial.println("   - btnCancelar: " + String(NEXTION_ID_BTN_CANCELAR));
-//   Serial.println("");
-
-//   Serial.println("📋 Valores temporales actuales:");
-//   for (int i = 0; i < 4; i++) {
-//     Serial.println("   - " + String(obtenerTextoParametro(i)) + ": " + String(_valoresTemporales[i]));
-//   }
-//   Serial.println("======================================");
-// }
 
 /**
  * @brief Resetear el timeout de edición
@@ -1451,41 +1363,37 @@ void UIControllerClass::selectParameter(uint8_t param)
   switch (param)
   {
   case PARAM_NIVEL:
-    Serial.println("📝 Seleccionado parámetro: NIVEL");
+    showMessage("Seleccionando parámetro NIVEL", 1000);
     break;
   case PARAM_TEMPERATURA:
-    Serial.println("📝 Seleccionado parámetro: TEMPERATURA");
+    showMessage("Seleccionando parámetro TEMPERATURA", 1000);
     break;
   case PARAM_TIEMPO:
-    Serial.println("📝 Seleccionado parámetro: TIEMPO");
+    showMessage("Seleccionando parámetro TIEMPO", 1000);
     break;
   case PARAM_ROTACION:
-    Serial.println("📝 Seleccionado parámetro: ROTACIÓN");
+    showMessage("Seleccionando parámetro ROTACIÓN", 1000);
     break;
   case PARAM_FASE:
-    Serial.println("📝 Seleccionado parámetro: FASE");
+    showMessage("Seleccionando parámetro FASE", 1000);
     break;
   case PARAM_CENTRIF:
-    Serial.println("📝 Seleccionado parámetro: CENTRIFUGADO");
+    showMessage("Seleccionando parámetro CENTRIFUGADO", 1000);
     break;
   case PARAM_AGUA:
-    Serial.println("📝 Seleccionado parámetro: TIPO AGUA");
+    showMessage("Seleccionando parámetro AGUA", 1000);
     break;
   }
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
   updateRightPanel();
-
-  // Reset timeout
-  _resetEditTimeout();
 }
 
 /**
  * @brief Selecciona la fase para edición
  */
-void UIControllerClass::selectPhase()
-{
+void UIControllerClass::selectPhase(){
   if (!_modoEdicionActivo)
     return;
     
@@ -1493,38 +1401,28 @@ void UIControllerClass::selectPhase()
   if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
     // Programas 22 y 23 - no permitir edición de fase
     showMessage("P" + String(_programaEnEdicion + 22) + " tiene secuencia fija", 2000);
-    Serial.println("❌ Edición de fase bloqueada para P" + String(_programaEnEdicion + 22));
     return;
   }
 
   _parametroActual = PARAM_FASE;
-  Serial.println("📊 Seleccionado parámetro: FASE (solo P24)");
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
   updateRightPanel();
-
-  // Reset timeout
-  _resetEditTimeout();
 }
 
 /**
  * @brief Selecciona parámetros de centrifugado
  */
-void UIControllerClass::selectCentrifuge()
-{
+void UIControllerClass::selectCentrifuge(){
   if (!_modoEdicionActivo)
     return;
 
   _parametroActual = PARAM_CENTRIF;
-  Serial.println("🌀 Seleccionado parámetro: CENTRIFUGADO");
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
   updateRightPanel();
-
-  // Reset timeout
-  _resetEditTimeout();
 }
 
 /**
@@ -1536,14 +1434,10 @@ void UIControllerClass::selectWater()
     return;
 
   _parametroActual = PARAM_AGUA;
-  Serial.println("💧 Seleccionado parámetro: TIPO AGUA");
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
   updateRightPanel();
-
-  // Reset timeout
-  _resetEditTimeout();
 }
 
 // === FUNCIONES AUXILIARES PARA DOBLE GUARDADO ===
