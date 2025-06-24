@@ -1224,24 +1224,24 @@ void UIControllerClass::_resetEditTimeout()
 
 // === IMPLEMENTACIÓN DE MÉTODOS DE INDICADORES DE ESTADO ===
 
-/**
- * @brief Actualiza el indicador de pausa en la pantalla
- * @param visible true para mostrar, false para ocultar
- */
-void UIControllerClass::updatePauseIndicator(bool visible)
-{
-  if (_currentPage != NEXTION_PAGE_EXECUTION)
-    return;
+// /**
+//  * @brief Actualiza el indicador de pausa en la pantalla
+//  * @param visible true para mostrar, false para ocultar
+//  */
+// void UIControllerClass::updatePauseIndicator(bool visible)
+// {
+//   if (_currentPage != NEXTION_PAGE_EXECUTION)
+//     return;
 
-  // Mostrar u ocultar indicador de pausa (puede ser un texto o imagen)
-  String cmd = "vis tPausa," + String(visible ? 1 : 0);
-  Hardware.nextionSendCommand(cmd);
+//   // Mostrar u ocultar indicador de pausa (puede ser un texto o imagen)
+//   String cmd = "vis tPausa," + String(visible ? 1 : 0);
+//   Hardware.nextionSendCommand(cmd);
 
-  if (visible)
-  {
-    Utils.debug("⏸️ Indicador de pausa activado");
-  }
-}
+//   if (visible)
+//   {
+//     Utils.debug("⏸️ Indicador de pausa activado");
+//   }
+// }
 
 /**
  * @brief Actualiza la alerta de emergencia con efecto de parpadeo

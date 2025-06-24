@@ -215,7 +215,7 @@ void SensorsClass::updateTemperature() {
       // Leer el resultado
       // float temp = _tempSensors.getTempC(_tempSensorAddress);
       float temp = _tempSensors.getTempC(_tempSensorAddress);
-      Utils.debug("Lectura de temperatura: " + String(temp) + "°C");
+      // Utils.debug("Lectura de temperatura: " + String(temp) + "°C");
       _tempConversionInProgress = false;
       
       // Verificar si la lectura es válida
@@ -231,7 +231,7 @@ void SensorsClass::updateTemperature() {
         // Mostrar temperatura cada 10 lecturas (cada 5 segundos aproximadamente)
         _tempReadCount++;
         if (_tempReadCount >= 10) {
-          Utils.debug("🌡️ Temperatura actual: " + String(temp) + "°C");
+          // Utils.debug("🌡️ Temperatura actual: " + String(temp) + "°C");
           _tempReadCount = 0;
         }
       } else {
@@ -337,82 +337,6 @@ void SensorsClass::setTemperatureResolution(uint8_t resolution) {
 
 void SensorsClass::resetPressureCalibration() {
   _calibratePressureSensor();
-}
-
-void SensorsClass::diagnosticTemperatureSensor() {
-  Utils.debug("=== DIAGNÓSTICO MANUAL DEL SENSOR DE TEMPERATURA ===");
-  
-  // Información básica
-  Utils.debug("Pin configurado: " + String(PIN_TEMP_SENSOR));
-  Utils.debug("Resolución: " + String(TEMP_RESOLUTION) + " bits");
-  
-  // Buscar dispositivos
-  uint8_t deviceCount = _tempSensors.getDeviceCount();
-  Utils.debug("Dispositivos detectados: " + String(deviceCount));
-  
-  if (deviceCount == 0) {
-    Utils.debug("❌ NO SE DETECTARON SENSORES");
-    Utils.debug("Pasos para revisar:");
-    Utils.debug("1. Verificar cable de datos conectado al pin " + String(PIN_TEMP_SENSOR));
-    Utils.debug("2. Verificar VCC conectado a 3.3V o 5V");
-    Utils.debug("3. Verificar GND conectado a tierra");
-    Utils.debug("4. Verificar resistor de 4.7kΩ entre datos y VCC");
-    return;
-  }
-  
-  // Mostrar todos los dispositivos encontrados
-  for (uint8_t i = 0; i < deviceCount; i++) {
-    DeviceAddress addr;
-    if (_tempSensors.getAddress(addr, i)) {
-      String hexAddr = "{0x";
-      for (uint8_t j = 0; j < 8; j++) {
-        if (addr[j] < 16) hexAddr += "0";
-        hexAddr += String(addr[j], HEX);
-        if (j < 7) hexAddr += ", 0x";
-      }
-      hexAddr += "}";
-      
-      Utils.debug("Dispositivo " + String(i) + ": " + hexAddr);
-      
-      // Probar lectura
-      _tempSensors.requestTemperaturesByAddress(addr);
-      delay(1000); // Esperar conversión completa
-      float temp = _tempSensors.getTempC(addr);
-      
-      if (temp != DEVICE_DISCONNECTED_C) {
-        Utils.debug("  ✅ Temperatura: " + String(temp) + "°C");
-      } else {
-        Utils.debug("  ❌ Error de lectura");
-      }
-    }
-  }
-  
-  // Verificar sensor configurado
-  Utils.debug("--- Verificando sensor configurado ---");
-  String configAddr = "{0x";
-  for (uint8_t i = 0; i < 8; i++) {
-    if (_tempSensorAddress[i] < 16) configAddr += "0";
-    configAddr += String(_tempSensorAddress[i], HEX);
-    if (i < 7) configAddr += ", 0x";
-  }
-  configAddr += "}";
-  Utils.debug("Dirección configurada: " + configAddr);
-  
-  if (_tempSensors.isConnected(_tempSensorAddress)) {
-    Utils.debug("✅ Sensor configurado responde correctamente");
-    _tempSensors.requestTemperaturesByAddress(_tempSensorAddress);
-    delay(1000);
-    float temp = _tempSensors.getTempC(_tempSensorAddress);
-    Utils.debug("✅ Temperatura actual: " + String(temp) + "°C");
-  } else {
-    Utils.debug("❌ Sensor configurado NO responde");
-    if (deviceCount > 0) {
-      Utils.debug("💡 Sugerencia: Actualizar TEMP_SENSOR_ADDR en config.h");
-      Utils.debug("💡 Usar la dirección del primer dispositivo encontrado");
-    }
-  }
-  
-  Utils.debug("=== FIN DIAGNÓSTICO ===");
 }
 
 bool SensorsClass::isDoorClosed() {

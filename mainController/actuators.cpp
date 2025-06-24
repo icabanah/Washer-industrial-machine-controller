@@ -336,25 +336,38 @@ void ActuatorsClass::_updateMotorDirection() {
   uint16_t totalCycleTime = _forwardTime + _pauseTime + _reverseTime + _pauseTime;
   uint16_t cyclePosition = _motorSeconds % totalCycleTime;
   
+  // Debug cada 10 segundos para verificar el ciclo
+  static unsigned long lastDebug = 0;
+  if (millis() - lastDebug > 10000) {
+    Utils.debug("🔄 Motor - Nivel:" + String(_currentRotationLevel) + 
+                " Pos:" + String(cyclePosition) + "/" + String(totalCycleTime) +
+                " Estado:" + String(_motorState));
+    lastDebug = millis();
+  }
+  
   // Determinar la acción basada en la posición en el ciclo
   if (cyclePosition < _forwardTime) {
     // Giro hacia adelante
     if (_motorState != MOTOR_FORWARD) {
+      Utils.debug("🔄 Cambiando a FORWARD (DIR_A=HIGH, DIR_B=LOW)");
       startMotorForward();
     }
   } else if (cyclePosition < (_forwardTime + _pauseTime)) {
     // Pausa después del giro hacia adelante
     if (_motorState != MOTOR_OFF) {
+      Utils.debug("🔄 PAUSA después de FORWARD");
       stopMotor();
     }
   } else if (cyclePosition < (_forwardTime + _pauseTime + _reverseTime)) {
     // Giro hacia atrás
     if (_motorState != MOTOR_REVERSE) {
+      Utils.debug("🔄 Cambiando a REVERSE (DIR_A=LOW, DIR_B=HIGH)");
       startMotorReverse();
     }
   } else {
     // Pausa después del giro hacia atrás
     if (_motorState != MOTOR_OFF) {
+      Utils.debug("🔄 PAUSA después de REVERSE");
       stopMotor();
     }
   }

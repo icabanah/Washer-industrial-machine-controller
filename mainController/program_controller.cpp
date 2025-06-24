@@ -36,7 +36,7 @@ void ProgramControllerClass::init() {
   // Cargar datos de programa desde almacenamiento
   _loadProgramData();
   
-  Utils.debug("ProgramControllerClass::init| Program Controller inicializado");
+  Utils.debug("Program Controller inicializado");
 }
 
 /// @brief 
@@ -60,7 +60,7 @@ void ProgramControllerClass::_loadProgramData() {
   _currentProgram = Storage.loadProgram();
   _currentPhase = Storage.loadPhase();
   
-  Utils.debug("ProgramControllerClass::_loadProgramData| Datos de programa cargados");
+  Utils.debug("Datos de programa cargados");
 }
 
 /// @brief 
@@ -312,16 +312,18 @@ void ProgramControllerClass::_updatePhaseParameters() {
 
 void ProgramControllerClass::updateTimers() {
   if (_currentState == ESTADO_EJECUCION) {
-    // Siempre verificar condiciones de los sensores
-    _checkSensorConditions();
-    
-    // Solo decrementar el temporizador si está corriendo
-    if (_timerRunning) {
-      _decrementTimer();
+    // Siempre verificar condiciones de los sensores durante preparación
+    if (_preparingPhase) {
+      _checkSensorConditions();
     }
     
-    // Actualizar actuadores según estado del programa
-    Actuators.updateTimers();
+    // NOTA: El decremento del temporizador se hace en _handleExecutionState() 
+    // para sincronización exacta con la UI cada segundo
+    
+    // Solo actualizar actuadores si no se está manejando desde _handleExecutionState
+    if (!_timerRunning) {
+      Actuators.updateTimers();
+    }
   }
 }
 
@@ -413,25 +415,30 @@ void ProgramControllerClass::_checkSensorConditions() {
     }
   }
   
-  // Condición para iniciar la rotación automática (cuando se alcanza nivel y temperatura)
-  uint8_t rotLevel = _rotations[_currentProgram][_currentPhase];
+  // Verificar si se han alcanzado las condiciones para iniciar el temporizador
   if (Sensors.isWaterLevelReached(targetLevel) && 
       Sensors.isTemperatureReached(targetTemp) && 
-      rotLevel > 0 && 
-      !Actuators.isAutoRotationActive()) {
-    Actuators.startAutoRotation(rotLevel);
-    // Iniciar el temporizador solo cuando se alcanzan las condiciones necesarias
-    if (!_timerRunning) {
-      _timerRunning = true;
-      _preparingPhase = false; // Ya no estamos preparando
-      
-      // Reiniciar el temporizador a los valores configurados
-      _remainingMinutes = _totalMinutes;
-      _remainingSeconds = 0;
-      
-      Utils.debug("✅ Condiciones alcanzadas, iniciando temporizador de fase");
-      Utils.debug("⏱️ Tiempo de fase: " + String(_totalMinutes) + " minutos");
+      !_timerRunning) {
+    
+    // Iniciar rotación automática si es necesaria para esta fase
+    uint8_t rotLevel = _rotations[_currentProgram][_currentPhase];
+    if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
+      Actuators.startAutoRotation(rotLevel);
+      Utils.debug("🔄 Iniciando rotación nivel: " + String(rotLevel));
     }
+    
+    // Iniciar el temporizador cuando se alcanzan las condiciones necesarias
+    _timerRunning = true;
+    _preparingPhase = false; // Ya no estamos preparando
+    
+    // Reiniciar el temporizador a los valores configurados
+    _remainingMinutes = _totalMinutes;
+    _remainingSeconds = 0;
+    
+    Utils.debug("✅ Condiciones alcanzadas, iniciando temporizador de fase");
+    Utils.debug("⏱️ Tiempo de fase: " + String(_totalMinutes) + " minutos");
+    Utils.debug("💧 Nivel: " + String(Sensors.getCurrentWaterLevel()) + "/" + String(targetLevel));
+    Utils.debug("🌡️ Temp: " + String(Sensors.getCurrentTemperature()) + "/" + String(targetTemp) + "°C");
   }
 }
 
@@ -597,11 +604,11 @@ void ProgramControllerClass::_handleTemperatureControl() {
   
   // === CONTROL CON DRENAJE PARCIAL SEGÚN DOCUMENTO ===
   if (currentTemp < targetTemp - 2) {
-    Utils.debug("🌡️ Temperatura baja: " + String(currentTemp) + "°C, objetivo: " + String(targetTemp) + "°C");
+    // Utils.debug("🌡️ Temperatura baja: " + String(currentTemp) + "°C, objetivo: " + String(targetTemp) + "°C");
     
     // Paso 1: Drenar parcialmente para hacer espacio al agua caliente
     if (Sensors.getCurrentWaterLevel() > 1) {
-      Utils.debug("💧 Drenando parcialmente para renovar agua...");
+      // Utils.debug("💧 Drenando parcialmente para renovar agua...");
       Actuators.openDrainValve();
       
       // Esperar a que baje el nivel (implementación simplificada)
@@ -610,13 +617,13 @@ void ProgramControllerClass::_handleTemperatureControl() {
         Actuators.closeDrainValve();
         
         // Paso 2: Abrir válvula de agua caliente
-        Utils.debug("🔥 Abriendo válvula de agua caliente...");
+        // Utils.debug("🔥 Abriendo válvula de agua caliente...");
         Actuators.openWaterValve();
         
         // Paso 3: Activar vapor si es necesario
         if (!Actuators.isSteamValveOpen()) {
           Actuators.openSteamValve();
-          Utils.debug("🔥 Activando vapor para acelerar calentamiento");
+          // Utils.debug("🔥 Activando vapor para acelerar calentamiento");
         }
         
         drainStartTime = millis(); // Reset timer
@@ -625,14 +632,14 @@ void ProgramControllerClass::_handleTemperatureControl() {
       // Si el nivel ya es bajo, solo activar calentamiento
       if (!Actuators.isSteamValveOpen()) {
         Actuators.openSteamValve();
-        Utils.debug("🔥 Activando calentamiento directo");
+        // Utils.debug("🔥 Activando calentamiento directo");
       }
     }
   } else if (currentTemp > targetTemp + 2) {
     // Temperatura alta - detener calentamiento
     if (Actuators.isSteamValveOpen()) {
       Actuators.closeSteamValve();
-      Utils.debug("❄️ Deteniendo calentamiento - Temp OK");
+      // Utils.debug("❄️ Deteniendo calentamiento - Temp OK");
     }
   }
   
@@ -680,7 +687,7 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
     }
   }
   
-  Utils.debug("ProgramControllerClass::_configureActuatorsForPhase| Actuadores configurados para la fase");
+  // Utils.debug("Actuadores configurados para la fase");
 }
 
 uint8_t ProgramControllerClass::getRemainingMinutes() {
@@ -711,12 +718,13 @@ uint8_t ProgramControllerClass::getProgressPercentage() {
   uint16_t remainingTotal = (_remainingMinutes * 60) + _remainingSeconds;
   uint8_t progress = 100 - ((remainingTotal * 100) / _totalSeconds);
   
-  // Debug ocasional para verificar cálculo
+  // Debug cada 5 segundos para verificar sincronización
   static unsigned long lastDebug = 0;
-  if (millis() - lastDebug > 10000) { // Cada 10 segundos
-    Utils.debug("📊 Progreso: " + String(progress) + "% (Restante: " + 
+  if (millis() - lastDebug > 5000) { // Cada 5 segundos
+    Utils.debug("📊 Progreso: " + String(progress) + "% | Restante: " + 
                 String(_remainingMinutes) + ":" + String(_remainingSeconds) + 
-                " / Total: " + String(_totalSeconds) + "s)");
+                " | Total: " + String(_totalSeconds) + "s | Timer: " + 
+                String(_timerRunning ? "ON" : "OFF"));
     lastDebug = millis();
   }
   
@@ -739,12 +747,6 @@ void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
     _isEditing = true;
     
     setState(ESTADO_EDICION);
-    
-    // Utils.debug("ProgramControllerClass::startEditing| ✏️ Modo edición iniciado:");
-    // Utils.debug("ProgramControllerClass::startEditing|   Programa: " + String(program + 22));
-    // Utils.debug("ProgramControllerClass::startEditing|   Fase: " + String(phase));
-    // Utils.debug("ProgramControllerClass::startEditing|   Parámetro inicial: NIVEL");
-    // Utils.debug("ProgramControllerClass::startEditing|   Valor inicial: " + String(_editingParameterValue));
     
     // Mostrar pantalla de edición
     _updateEditDisplay();
@@ -1000,9 +1002,18 @@ void ProgramControllerClass::_handleExecutionState() {
   if (_timerRunning) {
     // El decremento se hace en updateTimers() llamado por el callback
     
-    // Actualizar display cada segundo
-    static unsigned long lastUIUpdate = 0;
-    if (millis() - lastUIUpdate >= 1000) {
+    // Actualizar display y decrementar temporizador EXACTAMENTE cada segundo
+    static unsigned long lastSecondUpdate = 0;
+    unsigned long currentTime = millis();
+    
+    if (currentTime - lastSecondUpdate >= 1000) {
+      // Sincronizar exactamente cada segundo
+      lastSecondUpdate = currentTime;
+      
+      // Decrementar temporizador aquí para sincronización exacta
+      _decrementTimer();
+      
+      // Actualizar UI inmediatamente después del decremento
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
       UIController.updateProgressBar(getProgressPercentage());
       
@@ -1011,7 +1022,8 @@ void ProgramControllerClass::_handleExecutionState() {
       UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
       UIController.updateRotation(Actuators.getCurrentRotationLevel());
       
-      lastUIUpdate = millis();
+      // Actualizar actuadores
+      Actuators.updateTimers();
     }
     
     // Verificar si la fase terminó
@@ -1058,12 +1070,9 @@ void ProgramControllerClass::_handlePauseState() {
   static bool blinkState = false;
   if (millis() - lastBlink > 500) { // Parpadeo cada 500ms
     blinkState = !blinkState;
-    UIController.updatePauseIndicator(blinkState);
+    // UIController.updatePauseIndicator(blinkState);
     lastBlink = millis();
   }
-  
-  // El sistema permanece en pausa hasta recibir comando de reanudar
-  // La reanudación se maneja mediante eventos táctiles en processUserEvent
 }
 
 void ProgramControllerClass::_handleErrorState() {
@@ -1129,9 +1138,6 @@ void ProgramControllerClass::_handleEmergencyState() {
   if (millis() - lastEmergencyAlert > 250) { // Alerta muy rápida
     alertState = !alertState;
     UIController.updateEmergencyAlert(alertState);
-    
-    // Opcional: activar buzzer si está disponible
-    // Hardware.digitalWrite(PIN_BUZZER, alertState ? HIGH : LOW);
     
     lastEmergencyAlert = millis();
   }
