@@ -341,11 +341,7 @@ void ProgramControllerClass::_decrementTimer() {
   // Actualizar la interfaz de usuario
   UIController.updateTime(_remainingMinutes, _remainingSeconds);
   
-  // Calcular y actualizar progreso
-  uint16_t totalSecs = _totalMinutes * 60;
-  uint16_t elapsedSecs = totalSecs - ((_remainingMinutes * 60) + _remainingSeconds);
-  uint8_t progress = (elapsedSecs * 100) / totalSecs;
-  UIController.updateProgressBar(progress);
+  // Nota: El progreso se actualiza en _handleExecutionState() usando getProgressPercentage()
 }
 
 /// @brief 

@@ -138,12 +138,15 @@
 #define NEXTION_COMP_PROGRAMA_SEL "val_prog" // Texto del programa seleccionado (ej: "P22")
 
 // Componentes de selección (usar los comunes para compatibilidad)
-#define NEXTION_COMP_SEL_NIVEL NEXTION_COMP_SET_NIVEL       // "val_nivel"
-#define NEXTION_COMP_SEL_TEMP NEXTION_COMP_SET_TEMP         // "val_temp"
-#define NEXTION_COMP_SEL_TIEMPO NEXTION_COMP_SET_TIEMPO     // "val_tiempo"
-#define NEXTION_COMP_SEL_ROTACION NEXTION_COMP_SET_ROTACION // "val_rotac"
-#define NEXTION_COMP_MSG_TEXT NEXTION_COMP_MSG              // "mensaje"
-#define NEXTION_COMP_INFO_FASES NEXTION_COMP_MSG            // "mensaje" para info adicional
+#define NEXTION_COMP_SEL_NIVEL NEXTION_COMP_SET_NIVEL          // "val_nivel"
+#define NEXTION_COMP_SEL_TEMP NEXTION_COMP_SET_TEMP            // "val_temp"
+#define NEXTION_COMP_SEL_TIEMPO NEXTION_COMP_SET_TIEMPO        // "val_tiempo"
+#define NEXTION_COMP_SEL_ROTACION NEXTION_COMP_SET_ROTACION    // "val_rotac"
+#define NEXTION_COMP_SEL_FASE NEXTION_COMP_SET_FASE            // "val_fase"
+#define NEXTION_COMP_SEL_CENTRIFUGADO NEXTION_COMP_SET_CENTRIF // "val_centrif"
+#define NEXTION_COMP_SEL_TIPO_AGUA NEXTION_COMP_SET_AGUA       // "val_agua"
+#define NEXTION_COMP_MSG_TEXT NEXTION_COMP_MSG                 // "mensaje"
+#define NEXTION_COMP_INFO_FASES NEXTION_COMP_MSG               // "mensaje" para info adicional
 
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
@@ -182,13 +185,13 @@
 #define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Valor del parámetro en edición
 
 // Panel derecho - usar componentes comunes para mostrar valores
-#define NEXTION_COMP_VAL_NIVEL_EDIT NEXTION_COMP_SET_NIVEL      // "val_nivel"
-#define NEXTION_COMP_VAL_TEMP_EDIT NEXTION_COMP_SET_TEMP        // "val_temp"
-#define NEXTION_COMP_VAL_TIEMPO_EDIT NEXTION_COMP_SET_TIEMPO    // "val_tiempo"
-#define NEXTION_COMP_VAL_ROTAC_EDIT NEXTION_COMP_SET_ROTACION   // "val_rotac"
-#define NEXTION_COMP_VAL_FASE_EDIT NEXTION_COMP_SET_FASE        // "val_fase"
-#define NEXTION_COMP_VAL_CENTRIF_EDIT NEXTION_COMP_SET_CENTRIF  // "val_centrif"
-#define NEXTION_COMP_VAL_AGUA_EDIT NEXTION_COMP_SET_AGUA        // "val_agua"
+#define NEXTION_COMP_VAL_NIVEL_EDIT NEXTION_COMP_SET_NIVEL     // "val_nivel"
+#define NEXTION_COMP_VAL_TEMP_EDIT NEXTION_COMP_SET_TEMP       // "val_temp"
+#define NEXTION_COMP_VAL_TIEMPO_EDIT NEXTION_COMP_SET_TIEMPO   // "val_tiempo"
+#define NEXTION_COMP_VAL_ROTAC_EDIT NEXTION_COMP_SET_ROTACION  // "val_rotac"
+#define NEXTION_COMP_VAL_FASE_EDIT NEXTION_COMP_SET_FASE       // "val_fase"
+#define NEXTION_COMP_VAL_CENTRIF_EDIT NEXTION_COMP_SET_CENTRIF // "val_centrif"
+#define NEXTION_COMP_VAL_AGUA_EDIT NEXTION_COMP_SET_AGUA       // "val_agua"
 
 // === IDs ADICIONALES PARA NAVEGACIÓN ===
 // #define NEXTION_ID_BTN_PROG_ANTERIOR 8  // Botón "Anterior" en selección de programa

@@ -92,7 +92,7 @@ void UIControllerClass::init()
     _valoresTemporales[i] = 0;
   }
 
-  Serial.println("UIControllerClass::init| UI Controller inicializado con sistema de limpieza de eventos");
+  Serial.println("UI Controller inicializado con sistema de limpieza de eventos");
 }
 
 /// @brief
@@ -419,13 +419,6 @@ void UIControllerClass::_handleTouchEvent()
   uint8_t componentId = Hardware.getTouchEventComponent();
   uint8_t eventType = Hardware.getTouchEventType();
 
-  // Serial.print("🔍 Evento táctil detectado: Página=");
-  // Serial.print(pageId);
-  // Serial.print(" ComponentID=");
-  // Serial.print(componentId);
-  // Serial.print(" Tipo=");
-  // Serial.println(eventType);
-
   // Solo procesar eventos de presionado (tipo 1)
   if (eventType != 1)
   {
@@ -460,25 +453,23 @@ void UIControllerClass::_handleTouchEvent()
  */
 void UIControllerClass::_handleSelectionPageEvent(uint8_t componentId)
 {
-  Serial.println("📋 Procesando evento de página de selección - ComponentID: " + String(componentId));
-
   if (componentId == NEXTION_ID_BTN_PROGRAM1)
   {
     _lastUserAction = "PROGRAM_1";
     _userActionPending = true;
-    Serial.println("   ✅ Programa 1 seleccionado");
+    showMessage("Programa P22 seleccionado", 2000);
   }
   else if (componentId == NEXTION_ID_BTN_PROGRAM2)
   {
     _lastUserAction = "PROGRAM_2";
     _userActionPending = true;
-    Serial.println("   ✅ Programa 2 seleccionado");
+    showMessage("Programa P23 seleccionado", 2000);
   }
   else if (componentId == NEXTION_ID_BTN_PROGRAM3)
   {
     _lastUserAction = "PROGRAM_3";
     _userActionPending = true;
-    Serial.println("   ✅ Programa 3 seleccionado");
+    showMessage("Programa P24 seleccionado", 2000);
   }
   else if (componentId == NEXTION_ID_BTN_START)
   {
@@ -487,23 +478,22 @@ void UIControllerClass::_handleSelectionPageEvent(uint8_t componentId)
       // Puerta abierta - botón dice "CERRAR" - activar bloqueo de puerta
       _lastUserAction = "CLOSE_DOOR";
       _userActionPending = true;
-      Serial.println("   ✅ Botón CERRAR presionado - Activar bloqueo de puerta");
+      showMessage("Puerta cerrada", 2000);
     } else {
       // Puerta cerrada - botón dice "INICIAR" - iniciar programa
       _lastUserAction = "START";
       _userActionPending = true;
-      Serial.println("   ✅ Botón INICIAR presionado - Iniciar programa");
+      showMessage("Programa iniciado", 2000);
     }
   }
   else if (componentId == NEXTION_ID_BTN_EDIT)
   {
     _lastUserAction = "EDIT";
     _userActionPending = true;
-    Serial.println("   ✅ Botón EDIT presionado");
+    showMessage("Modo edición activado", 2000);
   }
-  else
-  {
-    Serial.println("   ❓ ComponentID no reconocido: " + String(componentId));
+  else {
+    showMessage("Componente no reconocido", 2000);
   }
 }
 
@@ -512,19 +502,17 @@ void UIControllerClass::_handleSelectionPageEvent(uint8_t componentId)
  */
 void UIControllerClass::_handleExecutionPageEvent(uint8_t componentId)
 {
-  Serial.println("▶️ Procesando evento de página de ejecución - ComponentID: " + String(componentId));
-
   if (componentId == NEXTION_ID_BTN_PARAR)
   {
     _lastUserAction = "STOP";
     _userActionPending = true;
-    Serial.println("   ✅ Botón STOP presionado");
+    showMessage("Programa detenido", 2000);
   }
   else if (componentId == NEXTION_ID_BTN_PAUSAR)
   {
     _lastUserAction = "PAUSE";
     _userActionPending = true;
-    Serial.println("   ✅ Botón PAUSE presionado");
+    showMessage("Programa pausado", 2000);
   }
   else
   {
@@ -550,31 +538,31 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   uint8_t temp = Storage.loadTemperature(programa, 0);
   uint8_t tiempo = Storage.loadTime(programa, 0);
   uint8_t rotacion = Storage.loadRotation(programa, 0);
-  
-  // Debug para verificar valores cargados
-  // Serial.println("📊 Actualizando info P" + String(programa + 22) + " desde Storage:");
-  // Serial.println("   Nivel: " + String(nivel));
-  // Serial.println("   Temp: " + String(temp));
-  // Serial.println("   Tiempo: " + String(tiempo));
-  // Serial.println("   Rotación: " + String(rotacion));
+  uint8_t faseTipo = Storage.loadPhaseType(programa, 0);
+  uint8_t centrifugado = Storage.loadCentrifugado(programa, 0);
+  uint8_t tipoAgua = Storage.loadTipoAgua(programa, 0);
 
   // Mostrar valores actualizados
   Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, String(nivel));
   Hardware.nextionSetText(NEXTION_COMP_SEL_TEMP, String(temp) + "°C");
   Hardware.nextionSetText(NEXTION_COMP_SEL_TIEMPO, String(tiempo) + " min");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, String(rotacion) + " RPM");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_FASE, String(faseTipo));
+  Hardware.nextionSetText(NEXTION_COMP_SEL_CENTRIFUGADO, centrifugado ? "Activo" : "Inactivo");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_TIPO_AGUA, tipoAgua ? "Caliente" : "Fría");
 
   // Convertir valor numérico de rotación a texto descriptivo
   String rotacionTexto;
   switch (rotacion)
   {
   case 1:
-    rotacionTexto = "Lento";
+    rotacionTexto = "Suave";
     break;
   case 2:
-    rotacionTexto = "Medio";
+    rotacionTexto = "Media";
     break;
   case 3:
-    rotacionTexto = "Rápido";
+    rotacionTexto = "Intensa";
     break;
   default:
     rotacionTexto = "Desconocido";
@@ -716,11 +704,7 @@ void UIControllerClass::safeTransitionToSelection(uint8_t programa)
   showSelectionScreen(programa);
   
   // Forzar actualización de información del programa para reflejar cambios
-  Serial.println("🔄 Forzando actualización de información del programa P" + String(programa + 22));
-  delay(100); // Breve pausa para asegurar que Nextion procesó el cambio de página
   _updateProgramInfo(programa);
-
-  Serial.println("Transición segura a pantalla de selección completada");
 }
 
 void UIControllerClass::safeTransitionToExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion)
@@ -741,6 +725,7 @@ void UIControllerClass::safeTransitionToExecution(uint8_t programa, uint8_t fase
 
   // Ahora mostrar la pantalla objetivo con eventos limpios
   showExecutionScreen(programa, fase, nivelAgua, temperatura, rotacion);
+  _updateProgramInfo(programa); // Actualizar información del programa
 
   Serial.println("Transición segura a pantalla de ejecución completada");
 }
@@ -1074,9 +1059,7 @@ void UIControllerClass::handleSaveParameters()
 
     // Actualizar display para mostrar que está pendiente de guardado final
     updateParameterDisplay();
-  }
-  else
-  {
+  } else {
     // SEGUNDA PRESIÓN: Guardar programa completo
 
     // Validar todos los parámetros
@@ -1086,25 +1069,10 @@ void UIControllerClass::handleSaveParameters()
       return;
     }
 
-    // Guardar valores en storage permanente
-    Serial.println("💾 Guardando en Storage - P" + String(_programaEnEdicion + 22) + " F" + String(_faseEnEdicion + 1));
-    Serial.println("   Programa índice: " + String(_programaEnEdicion) + ", Fase índice: " + String(_faseEnEdicion));
-    Serial.println("   Valores a guardar:");
-    for (int i = 0; i < 7; i++) {
-      Serial.println("   " + String(obtenerTextoParametro(i)) + ": " + String(_valoresTemporales[i]));
-    }
     _saveParametersToStorage(_programaEnEdicion, _faseEnEdicion);
-
-    // Verificar que se guardó correctamente
-    Serial.println("🔍 Verificando guardado:");
-    Serial.println("   Nivel: " + String(Storage.loadWaterLevel(_programaEnEdicion, _faseEnEdicion)));
-    Serial.println("   Temp: " + String(Storage.loadTemperature(_programaEnEdicion, _faseEnEdicion)));
-    Serial.println("   Tiempo: " + String(Storage.loadTime(_programaEnEdicion, _faseEnEdicion)));
-    Serial.println("   Rotacion: " + String(Storage.loadRotation(_programaEnEdicion, _faseEnEdicion)));
 
     // Mostrar mensaje de confirmación
     showMessage("Programa guardado exitosamente", 2000);
-    Serial.println("✅ Programa guardado exitosamente - P" + String(_programaEnEdicion + 22) + " F" + String(_faseEnEdicion));
 
     // Resetear estado y salir del modo edición
     _parameterSaved = false;
@@ -1122,10 +1090,6 @@ void UIControllerClass::handleSaveParameters()
  */
 void UIControllerClass::handleCancelEdit()
 {
-  // Mostrar mensaje de confirmación
-  showMessage("Cambios descartados", 1500);
-  playSound(0); // Sonido normal
-
   // Salir del modo edición sin guardar
   _modoEdicionActivo = false;
   _parameterSaved = false;
@@ -1135,8 +1099,6 @@ void UIControllerClass::handleCancelEdit()
 
   // Volver a la página de selección
   safeTransitionToSelection(_programaEnEdicion);
-
-  Serial.println("Edición cancelada - Cambios descartados");
 }
 
 // ===== MÉTODOS INTERNOS PARA GESTIÓN DE PARÁMETROS =====
@@ -1149,10 +1111,6 @@ void UIControllerClass::handleCancelEdit()
 /// Número de fase (0-3)
 void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fase)
 {
-  Serial.println("Programa recibido (índice): " + String(programa));
-  Serial.println("Fase recibida: " + String(fase));
-  Serial.println("Esto corresponde a: P" + String(programa + 22) + " F" + String(fase));
-
   // Cargar valores directamente desde Storage
   _valoresTemporales[PARAM_NIVEL] = Storage.loadWaterLevel(programa, fase);
   _valoresTemporales[PARAM_TEMPERATURA] = Storage.loadTemperature(programa, fase);
@@ -1162,15 +1120,7 @@ void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fas
   _valoresTemporales[PARAM_CENTRIF] = Storage.loadCentrifugado(programa, fase);
   _valoresTemporales[PARAM_AGUA] = Storage.loadTipoAgua(programa, fase);
 
-  Serial.println("Valores cargados desde Storage:");
-  Serial.println("  Nivel: " + String(_valoresTemporales[PARAM_NIVEL]));
-  Serial.println("  Temperatura: " + String(_valoresTemporales[PARAM_TEMPERATURA]) + "°C");
-  Serial.println("  Tiempo: " + String(_valoresTemporales[PARAM_TIEMPO]) + " min");
-  Serial.println("  Rotación: " + String(_valoresTemporales[PARAM_ROTACION]));
-  Serial.println("  Fase: " + String(_valoresTemporales[PARAM_FASE]));
-  Serial.println("  Centrifugado: " + String(_valoresTemporales[PARAM_CENTRIF]));
-  Serial.println("  Tipo Agua: " + String(_valoresTemporales[PARAM_AGUA]));
-  Serial.println("=== FIN _loadParametersFromStorage ===");
+  showMessage("Parámetros cargados de Storage - P" + String(programa + 22) + " F" + String(fase + 1), 2000);
 }
 
 /// @brief
@@ -1184,11 +1134,7 @@ void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fas
 /// @param fase
 /// Número de fase (0-3)
 void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase)
-{
-  Serial.println("💾 _saveParametersToStorage iniciado:");
-  Serial.println("   Guardando en programa índice " + String(programa) + " (P" + String(programa + 22) + ")");
-  Serial.println("   Guardando en fase índice " + String(fase) + " (F" + String(fase + 1) + ")");
-  
+{ 
   // Guardar valores directamente en Storage
   Storage.saveWaterLevel(programa, fase, _valoresTemporales[PARAM_NIVEL]);
   Storage.saveTemperature(programa, fase, _valoresTemporales[PARAM_TEMPERATURA]);
