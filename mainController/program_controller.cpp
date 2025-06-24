@@ -302,7 +302,7 @@ void ProgramControllerClass::_updatePhaseParameters() {
     _timerRunning = false;
     
     // Actualizar la interfaz de usuario
-    UIController.updatePhase(_currentPhase);
+    UIController.updatePhase(_currentPhase + 1); // Convertir índice interno (0-3) a número de fase para UI (1-4)
     UIController.updateTime(_remainingMinutes, _remainingSeconds);
     UIController.updateProgressBar(0);
     

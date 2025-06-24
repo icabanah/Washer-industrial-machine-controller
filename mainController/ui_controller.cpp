@@ -3,6 +3,7 @@
 #include "program_controller.h"
 #include "storage.h"
 #include "sensors.h"
+#include "actuators.h"
 #include "Arduino.h"
 #include <stdio.h>
 
@@ -175,13 +176,23 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   // Mostrar información del programa usando los componentes correctos de la documentación
   Hardware.nextionSetText(NEXTION_COMP_PROG_EJECUCION, "P" + String(programa + 22));
 
-  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, String(fase));
+  // Usar updatePhase para mostrar nombre descriptivo de la fase
+  updatePhase(fase + 1); // +1 porque fase interna 0 = Llenado (1)
   Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00"); // Tiempo inicial
 
   // Actualizar indicadores usando los componentes existentes que funcionan correctamente
-  updateWaterLevel(nivelAgua);
-  updateTemperature(temperatura); // Usar temperatura real del sensor
-  updateRotation(rotacion);
+  updateWaterLevel(Sensors.getCurrentWaterLevel()); // Usar nivel real del sensor
+  updateTemperature(Sensors.getCurrentTemperature()); // Usar temperatura real del sensor
+  updateRotation(Actuators.getCurrentRotationLevel()); // Usar rotación real del actuator
+  
+  // Actualizar parámetros objetivo del programa en el panel derecho usando Storage
+  Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, String(Storage.loadWaterLevel(programa, fase)));
+  Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, String(Storage.loadTemperature(programa, fase)) + "°C");
+  Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, String(Storage.loadTime(programa, fase)) + " min");
+  Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(Storage.loadRotation(programa, fase)));
+  Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(Storage.loadPhaseType(programa, fase)));
+  Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, Storage.loadCentrifugado(programa, fase) ? "Activo" : "Inactivo");
+  Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, Storage.loadTipoAgua(programa, fase) ? "Caliente" : "Fría");
   
   // Inicializar barra de progreso
   updateProgressBar(0);
@@ -345,8 +356,27 @@ void UIControllerClass::updateRotation(uint8_t rotacion)
 
 void UIControllerClass::updatePhase(uint8_t fase)
 {
-  // Solo enviar el número de fase, el label "Fase" ya existe en la interfaz Nextion
-  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, String(fase));
+  // Mostrar nombre descriptivo de la fase según el diseño del cliente
+  String faseTexto;
+  switch(fase) {
+    case 1:
+      faseTexto = "Llenado";
+      break;
+    case 2:
+      faseTexto = "Lavado";
+      break;
+    case 3:
+      faseTexto = "Drenaje";
+      break;
+    case 4:
+      faseTexto = "Centrifugado";
+      break;
+    default:
+      faseTexto = "Fase " + String(fase);
+      break;
+  }
+  
+  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, faseTexto);
 }
 
 void UIControllerClass::updateProgressBar(uint8_t progress)
