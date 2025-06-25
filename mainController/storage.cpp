@@ -87,30 +87,10 @@ const char* StorageClass::_getWaterLevelKey(uint8_t program, uint8_t phase) {
   return key;
 }
 
-void StorageClass::saveWaterLevel(uint8_t program, uint8_t phase, uint8_t level) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  writeByte(_getWaterLevelKey(program, phase), level);
-}
-
-uint8_t StorageClass::loadWaterLevel(uint8_t program, uint8_t phase) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0;
-  return readByte(_getWaterLevelKey(program, phase), 0);
-}
-
 const char* StorageClass::_getTemperatureKey(uint8_t program, uint8_t phase) {
   static char key[20]; // Buffer más grande para mayor seguridad
   snprintf(key, sizeof(key), "temp_%u_%u", program, phase); // Uso de snprintf más seguro
   return key;
-}
-
-void StorageClass::saveTemperature(uint8_t program, uint8_t phase, uint8_t temperature) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  writeByte(_getTemperatureKey(program, phase), temperature);
-}
-
-uint8_t StorageClass::loadTemperature(uint8_t program, uint8_t phase) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0;
-  return readByte(_getTemperatureKey(program, phase), 0);
 }
 
 const char* StorageClass::_getTimeKey(uint8_t program, uint8_t phase) {
@@ -119,30 +99,10 @@ const char* StorageClass::_getTimeKey(uint8_t program, uint8_t phase) {
   return key;
 }
 
-void StorageClass::saveTime(uint8_t program, uint8_t phase, uint8_t time) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  writeByte(_getTimeKey(program, phase), time);
-}
-
-uint8_t StorageClass::loadTime(uint8_t program, uint8_t phase) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0;
-  return readByte(_getTimeKey(program, phase), 0);
-}
-
 const char* StorageClass::_getRotationKey(uint8_t program, uint8_t phase) {
   static char key[20]; // Buffer más grande para mayor seguridad
   snprintf(key, sizeof(key), "rotacion_%u_%u", program, phase); // Uso de snprintf más seguro
   return key;
-}
-
-void StorageClass::saveRotation(uint8_t program, uint8_t phase, uint8_t rotation) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  writeByte(_getRotationKey(program, phase), rotation);
-}
-
-uint8_t StorageClass::loadRotation(uint8_t program, uint8_t phase) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0;
-  return readByte(_getRotationKey(program, phase), 0);
 }
 
 // === FUNCIONES PARA FASE ===
@@ -169,31 +129,11 @@ const char* StorageClass::_getCentrifugadoKey(uint8_t program, uint8_t phase) {
   return key;
 }
 
-void StorageClass::saveCentrifugado(uint8_t program, uint8_t phase, uint8_t centrifugado) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  writeByte(_getCentrifugadoKey(program, phase), centrifugado);
-}
-
-uint8_t StorageClass::loadCentrifugado(uint8_t program, uint8_t phase) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0; // Default: inactivo
-  return readByte(_getCentrifugadoKey(program, phase), 0);
-}
-
 // === FUNCIONES PARA TIPO DE AGUA ===
 const char* StorageClass::_getTipoAguaKey(uint8_t program, uint8_t phase) {
   static char key[20];
   snprintf(key, sizeof(key), "agua_%u_%u", program, phase);
   return key;
-}
-
-void StorageClass::saveTipoAgua(uint8_t program, uint8_t phase, uint8_t tipoAgua) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
-  writeByte(_getTipoAguaKey(program, phase), tipoAgua);
-}
-
-uint8_t StorageClass::loadTipoAgua(uint8_t program, uint8_t phase) {
-  if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 0; // Default: fría
-  return readByte(_getTipoAguaKey(program, phase), 0);
 }
 
 uint16_t StorageClass::loadUsageCounter() {
@@ -215,76 +155,17 @@ bool StorageClass::validateSettings() {
 }
 
 void StorageClass::resetToDefaults() {
-  // Programa por defecto (cambiado a 1 para mostrar el primer programa)
+  // Resetear configuraciones básicas
   saveProgram(0);
   savePhase(0);
   saveTimer(0, 0);
-  
-  // Reiniciar el contador de uso
   writeWord("contador", 0);
   
-  // === CONFIGURACIÓN SEGÚN DOCUMENTO DEL CLIENTE ===
-  // Programa 22 (P22): Agua Caliente - 3 fases + centrifugado ajustable
-  // Programa 23 (P23): Agua Fría - 3 fases + centrifugado ajustable  
-  // Programa 24 (P24): Multi-ciclo configurable - 3 fases, centrifugado ajustable
+  // Llamar a la inicialización optimizada
+  writeByte("defaults_v2", 0); // Forzar reinicialización
+  initializeDefaultValues();
   
-  uint8_t defaultWaterLevels[3][4] = {
-    {1, 2, 3, 4}, // P22: Llenado, Lavado, Drenaje, Centrifugado opcional
-    {1, 2, 3, 4}, // P23: Igual que P22 pero con agua fría
-    {1, 3, 3, 4}  // P24: Multi-ciclo)
-  };
-  
-  uint8_t defaultTemperatures[3][4] = {
-    {20, 30, 40, 50}, // P22: Caliente para llenado/lavado, templado para drenaje
-    {20, 30, 40, 50}, // P23: Temperatura ambiente (agua fría)
-    {20, 30, 40, 50}  // P24: Configurable (por defecto tibio)
-  };
-  
-  uint8_t defaultTimes[3][4] = {
-    {8, 15, 5, 4},  // P22: Llenado 8min, Lavado 15min, Drenaje 5min, Centrifugado 4min
-    {8, 15, 5, 4},  // P23: Mismos tiempos que P22
-    {6, 12, 4, 0}   // P24: Ciclo más corto, sin centrifugado
-  };
-  
-  uint8_t defaultRotations[3][4] = {
-    {0, 2, 0, 3}, // P22: Sin rotación en llenado/drenaje, media en lavado, rápida en centrifugado
-    {0, 2, 0, 3}, // P23: Igual que P22
-    {0, 2, 0, 0}  // P24: Sin centrifugado
-  };
-  
-  // Fases según documento: 1=Llenado, 2=Lavado, 3=Drenaje, 4=Centrifugado
-  uint8_t defaultPhases[3][4] = {
-    {1, 2, 3, 4}, // P22: Secuencia completa con centrifugado
-    {1, 2, 3, 4}, // P23: Secuencia completa con centrifugado
-    {1, 2, 3, 0}  // P24: Solo 3 fases, sin centrifugado
-  };
-  
-  // Centrifugado opcional en todos los programas (según configuración)
-  uint8_t defaultCentrifugado[3][4] = {
-    {0, 0, 0, 1}, // P22: Centrifugado configurable (por defecto habilitado al final)
-    {0, 0, 0, 1}, // P23: Centrifugado configurable (por defecto habilitado al final)  
-    {0, 0, 0, 0}  // P24: Centrifugado configurable (por defecto deshabilitado)
-  };
-  
-  // Tipo de agua según especificaciones del cliente
-  uint8_t defaultTipoAgua[3][4] = {
-    {1, 1, 1, 0}, // P22: Agua caliente en todas las fases activas
-    {0, 0, 0, 0}, // P23: Agua fría en todas las fases
-    {1, 1, 0, 0}  // P24: Configurable (defecto: caliente para llenado/lavado)
-  };
-  
-  // Guardar valores por defecto
-  for (uint8_t p = 0; p < NUM_PROGRAMAS; p++) {
-    for (uint8_t f = 0; f < NUM_FASES; f++) {
-      saveWaterLevel(p, f, defaultWaterLevels[p][f]);
-      saveTemperature(p, f, defaultTemperatures[p][f]);
-      saveTime(p, f, defaultTimes[p][f]);
-      saveRotation(p, f, defaultRotations[p][f]);
-      savePhaseType(p, f, defaultPhases[p][f]);
-      saveCentrifugado(p, f, defaultCentrifugado[p][f]);
-      saveTipoAgua(p, f, defaultTipoAgua[p][f]);
-    }
-  }
+  Utils.debug("🔄 Sistema reseteado a valores predeterminados optimizados");
 }
 
 bool StorageClass::loadAllProgramSettings(uint8_t program, uint8_t (&waterLevels)[NUM_FASES],
@@ -329,108 +210,391 @@ bool StorageClass::saveAllProgramSettings(uint8_t program, const uint8_t (&water
 
 
 /**
- * @brief Inicializa valores predeterminados para los programas P22, P23 y P24
- * Solo se ejecuta si no existen valores guardados previamente
+ * @brief Inicializa valores predeterminados OPTIMIZADOS para los programas P22, P23 y P24
+ * P22 y P23 usan valores únicos, P24 usa matriz por fases
  */
 void StorageClass::initializeDefaultValues() {
-  // Verificar si ya existen valores guardados
-  if (loadWaterLevel(0, 0) == 0 && loadTemperature(0, 0) == 0) {
-    Utils.debug("🔧 Inicializando valores predeterminados de programas...");
+  // Verificar si ya existen valores guardados (usar valores optimizados)
+  if (loadP22WaterLevel() == 0 || !readByte("defaults_v2", 0)) {
+    Utils.debug("🔧 Inicializando valores predeterminados OPTIMIZADOS...");
     
-    // === PROGRAMA P22 (índice 0) - Lavado Normal ===
-    // Fase 0: Prelavado
-    saveWaterLevel(0, 0, 2);      // Nivel medio
-    saveTemperature(0, 0, 30);    // 30°C
-    saveTime(0, 0, 10);           // 10 minutos
-    saveRotation(0, 0, 1);        // Rotación lenta
+    // === PROGRAMA P22 - AGUA CALIENTE (Valores únicos) ===
+    saveP22WaterLevel(2);        // Nivel 2 
+    saveP22Temperature(30);      // 30°C (agua caliente)
+    saveP22Time(50);             // 50 minutos
+    saveP22Rotation(2);          // Rotación 2
+    saveP22Centrifugado(1);      // Centrifugado activo
+    Utils.debug("✅ P22 configurado: Nivel=2, Temp=30°C, Tiempo=50min, Rot=2, Centrif=Activo");
     
-    // Fase 1: Lavado principal
-    saveWaterLevel(0, 1, 3);      // Nivel alto
-    saveTemperature(0, 1, 40);    // 40°C
-    saveTime(0, 1, 20);           // 20 minutos
-    saveRotation(0, 1, 2);        // Rotación media
+    // === PROGRAMA P23 - AGUA FRÍA (Valores únicos) ===
+    saveP23WaterLevel(2);        // Nivel 2
+    saveP23Temperature(20);      // 20°C (agua fría)
+    saveP23Time(40);             // 40 minutos
+    saveP23Rotation(2);          // Rotación 2
+    saveP23Centrifugado(1);      // Centrifugado activo
+    Utils.debug("✅ P23 configurado: Nivel=2, Temp=20°C, Tiempo=40min, Rot=2, Centrif=Activo");
     
-    // Fase 2: Enjuague
-    saveWaterLevel(0, 2, 3);      // Nivel alto
-    saveTemperature(0, 2, 30);    // 30°C
-    saveTime(0, 2, 15);           // 15 minutos
-    saveRotation(0, 2, 2);        // Rotación media
-    
-    // Fase 3: Centrifugado
-    saveWaterLevel(0, 3, 1);      // Nivel bajo
-    saveTemperature(0, 3, 20);    // 20°C
-    saveTime(0, 3, 8);            // 8 minutos
-    saveRotation(0, 3, 3);        // Rotación rápida
-    
-    // === PROGRAMA P23 (índice 1) - Lavado Delicado ===
-    // Fase 0: Prelavado suave
-    saveWaterLevel(1, 0, 3);      // Nivel alto
-    saveTemperature(1, 0, 20);    // 20°C
-    saveTime(1, 0, 8);            // 8 minutos
-    saveRotation(1, 0, 1);        // Rotación lenta
-    
-    // Fase 1: Lavado delicado
-    saveWaterLevel(1, 1, 3);      // Nivel alto
-    saveTemperature(1, 1, 30);    // 30°C
-    saveTime(1, 1, 15);           // 15 minutos
-    saveRotation(1, 1, 1);        // Rotación lenta
-    
-    // Fase 2: Enjuague suave
-    saveWaterLevel(1, 2, 3);      // Nivel alto
-    saveTemperature(1, 2, 20);    // 20°C
-    saveTime(1, 2, 12);           // 12 minutos
-    saveRotation(1, 2, 1);        // Rotación lenta
-    
-    // Fase 3: Centrifugado suave
-    saveWaterLevel(1, 3, 2);      // Nivel medio
-    saveTemperature(1, 3, 20);    // 20°C
-    saveTime(1, 3, 5);            // 5 minutos
-    saveRotation(1, 3, 2);        // Rotación media
-    
-    // === PROGRAMA P24 (índice 2) - Lavado Intensivo ===
+    // === PROGRAMA P24 - MULTI-CICLO (Matriz por fases) ===
     // Fase 0: Prelavado intenso
-    saveWaterLevel(2, 0, 3);      // Nivel alto
-    saveTemperature(2, 0, 40);    // 40°C
-    saveTime(2, 0, 15);           // 15 minutos
-    saveRotation(2, 0, 2);        // Rotación media
+    saveP24WaterLevel(0, 3);     // Nivel alto
+    saveP24Temperature(0, 40);   // 40°C
+    saveP24Time(0, 15);          // 15 minutos
+    saveP24Rotation(0, 2);       // Rotación media
+    saveP24Centrifugado(0, 0);   // Sin centrifugado en prelavado
+    saveP24TipoAgua(0, 1);       // Agua caliente
     
     // Fase 1: Lavado intensivo
-    saveWaterLevel(2, 1, 4);      // Nivel muy alto
-    saveTemperature(2, 1, 60);    // 60°C
-    saveTime(2, 1, 30);           // 30 minutos
-    saveRotation(2, 1, 3);        // Rotación rápida
+    saveP24WaterLevel(1, 4);     // Nivel muy alto
+    saveP24Temperature(1, 60);   // 60°C
+    saveP24Time(1, 30);          // 30 minutos
+    saveP24Rotation(1, 3);       // Rotación rápida
+    saveP24Centrifugado(1, 0);   // Sin centrifugado en lavado
+    saveP24TipoAgua(1, 1);       // Agua caliente
     
     // Fase 2: Enjuague intensivo
-    saveWaterLevel(2, 2, 4);      // Nivel muy alto
-    saveTemperature(2, 2, 40);    // 40°C
-    saveTime(2, 2, 20);           // 20 minutos
-    saveRotation(2, 2, 2);        // Rotación media
+    saveP24WaterLevel(2, 4);     // Nivel muy alto
+    saveP24Temperature(2, 40);   // 40°C
+    saveP24Time(2, 20);          // 20 minutos
+    saveP24Rotation(2, 2);       // Rotación media
+    saveP24Centrifugado(2, 0);   // Sin centrifugado en enjuague
+    saveP24TipoAgua(2, 1);       // Agua caliente
     
     // Fase 3: Centrifugado intensivo
-    saveWaterLevel(2, 3, 1);      // Nivel bajo
-    saveTemperature(2, 3, 20);    // 20°C
-    saveTime(2, 3, 12);           // 12 minutos
-    saveRotation(2, 3, 3);        // Rotación rápida
+    saveP24WaterLevel(3, 1);     // Nivel bajo
+    saveP24Temperature(3, 20);   // 20°C
+    saveP24Time(3, 12);          // 12 minutos
+    saveP24Rotation(3, 0);       // Sin rotación de lavado en centrifugado
+    saveP24Centrifugado(3, 1);   // Centrifugado activo
+    saveP24TipoAgua(3, 0);       // Agua fría para enjuague final
     
-    Utils.debug("✅ Valores predeterminados inicializados correctamente");
+    Utils.debug("✅ P24 configurado con 4 fases personalizables");
+    
+    // Marcar como inicializado (versión 2 = optimizada)
+    writeByte("defaults_v2", 1);
+    
+    Utils.debug("🗂️ OPTIMIZACIÓN: P22 y P23 usan valores únicos, P24 usa matriz");
+    Utils.debug("✅ Valores predeterminados OPTIMIZADOS inicializados correctamente");
   }
 }
-// /**
-//  * @brief Función de depuración para verificar los valores almacenados
-//  */
-// void StorageClass::debugPrintAllPrograms() {
-//   Serial.println("=== VALORES ALMACENADOS EN STORAGE ===");
-  
-//   for (uint8_t p = 0; p < NUM_PROGRAMAS; p++) {
-//     Serial.println("PROGRAMA P" + String(p + 22) + " (índice " + String(p) + "):");
-//     for (uint8_t f = 0; f < NUM_FASES; f++) {
-//       Serial.println("  Fase " + String(f) + ":");
-//       Serial.println("    Nivel: " + String(loadWaterLevel(p, f)));
-//       Serial.println("    Temperatura: " + String(loadTemperature(p, f)) + "°C");
-//       Serial.println("    Tiempo: " + String(loadTime(p, f)) + " min");
-//       Serial.println("    Rotación: " + String(loadRotation(p, f)));
-//     }
-//   }
-  
 //   Serial.println("=====================================");
 // }
+
+// ===== IMPLEMENTACIÓN DE MÉTODOS OPTIMIZADOS =====
+
+// === PROGRAMA 22 (P22) - AGUA CALIENTE - VALORES ÚNICOS ===
+
+void StorageClass::saveP22WaterLevel(uint8_t level) {
+  writeByte("p22_nivel", level);
+}
+
+uint8_t StorageClass::loadP22WaterLevel() {
+  return readByte("p22_nivel", 2); // Valor predeterminado: nivel 2
+}
+
+void StorageClass::saveP22Temperature(uint8_t temperature) {
+  writeByte("p22_temp", temperature);
+}
+
+uint8_t StorageClass::loadP22Temperature() {
+  return readByte("p22_temp", 30); // Valor predeterminado: 30°C
+}
+
+void StorageClass::saveP22Time(uint8_t time) {
+  writeByte("p22_tiempo", time);
+}
+
+uint8_t StorageClass::loadP22Time() {
+  return readByte("p22_tiempo", 50); // Valor predeterminado: 50 minutos
+}
+
+void StorageClass::saveP22Rotation(uint8_t rotation) {
+  writeByte("p22_rotacion", rotation);
+}
+
+uint8_t StorageClass::loadP22Rotation() {
+  return readByte("p22_rotacion", 2); // Valor predeterminado: rotación 2
+}
+
+void StorageClass::saveP22Centrifugado(uint8_t centrifugado) {
+  writeByte("p22_centrif", centrifugado);
+}
+
+uint8_t StorageClass::loadP22Centrifugado() {
+  return readByte("p22_centrif", 1); // Valor predeterminado: activo
+}
+
+// === PROGRAMA 23 (P23) - AGUA FRÍA - VALORES ÚNICOS ===
+
+void StorageClass::saveP23WaterLevel(uint8_t level) {
+  writeByte("p23_nivel", level);
+}
+
+uint8_t StorageClass::loadP23WaterLevel() {
+  return readByte("p23_nivel", 2); // Valor predeterminado: nivel 2
+}
+
+void StorageClass::saveP23Temperature(uint8_t temperature) {
+  writeByte("p23_temp", temperature);
+}
+
+uint8_t StorageClass::loadP23Temperature() {
+  return readByte("p23_temp", 20); // Valor predeterminado: 20°C (agua fría)
+}
+
+void StorageClass::saveP23Time(uint8_t time) {
+  writeByte("p23_tiempo", time);
+}
+
+uint8_t StorageClass::loadP23Time() {
+  return readByte("p23_tiempo", 40); // Valor predeterminado: 40 minutos
+}
+
+void StorageClass::saveP23Rotation(uint8_t rotation) {
+  writeByte("p23_rotacion", rotation);
+}
+
+uint8_t StorageClass::loadP23Rotation() {
+  return readByte("p23_rotacion", 2); // Valor predeterminado: rotación 2
+}
+
+void StorageClass::saveP23Centrifugado(uint8_t centrifugado) {
+  writeByte("p23_centrif", centrifugado);
+}
+
+uint8_t StorageClass::loadP23Centrifugado() {
+  return readByte("p23_centrif", 1); // Valor predeterminado: activo
+}
+
+// === PROGRAMA 24 (P24) - MULTI-CICLO - MATRIZ POR FASES ===
+
+void StorageClass::saveP24WaterLevel(uint8_t phase, uint8_t level) {
+  if (phase >= NUM_FASES) return;
+  writeByte(_getP24Key("nivel", phase), level);
+}
+
+uint8_t StorageClass::loadP24WaterLevel(uint8_t phase) {
+  if (phase >= NUM_FASES) return 2;
+  return readByte(_getP24Key("nivel", phase), 2);
+}
+
+void StorageClass::saveP24Temperature(uint8_t phase, uint8_t temperature) {
+  if (phase >= NUM_FASES) return;
+  writeByte(_getP24Key("temp", phase), temperature);
+}
+
+uint8_t StorageClass::loadP24Temperature(uint8_t phase) {
+  if (phase >= NUM_FASES) return 25;
+  return readByte(_getP24Key("temp", phase), 25);
+}
+
+void StorageClass::saveP24Time(uint8_t phase, uint8_t time) {
+  if (phase >= NUM_FASES) return;
+  writeByte(_getP24Key("tiempo", phase), time);
+}
+
+uint8_t StorageClass::loadP24Time(uint8_t phase) {
+  if (phase >= NUM_FASES) return 30;
+  return readByte(_getP24Key("tiempo", phase), 30);
+}
+
+void StorageClass::saveP24Rotation(uint8_t phase, uint8_t rotation) {
+  if (phase >= NUM_FASES) return;
+  writeByte(_getP24Key("rotacion", phase), rotation);
+}
+
+uint8_t StorageClass::loadP24Rotation(uint8_t phase) {
+  if (phase >= NUM_FASES) return 2;
+  return readByte(_getP24Key("rotacion", phase), 2);
+}
+
+void StorageClass::saveP24Centrifugado(uint8_t phase, uint8_t centrifugado) {
+  if (phase >= NUM_FASES) return;
+  writeByte(_getP24Key("centrif", phase), centrifugado);
+}
+
+uint8_t StorageClass::loadP24Centrifugado(uint8_t phase) {
+  if (phase >= NUM_FASES) return 1;
+  return readByte(_getP24Key("centrif", phase), 1);
+}
+
+void StorageClass::saveP24TipoAgua(uint8_t phase, uint8_t tipoAgua) {
+  if (phase >= NUM_FASES) return;
+  writeByte(_getP24Key("agua", phase), tipoAgua);
+}
+
+uint8_t StorageClass::loadP24TipoAgua(uint8_t phase) {
+  if (phase >= NUM_FASES) return 0;
+  return readByte(_getP24Key("agua", phase), 0);
+}
+
+// === MÉTODO AUXILIAR PARA P24 ===
+
+const char* StorageClass::_getP24Key(const char* param, uint8_t phase) {
+  static char key[16];
+  snprintf(key, sizeof(key), "p24_%s_%d", param, phase);
+  return key;
+}
+
+// === MÉTODOS DE COMPATIBILIDAD (para transición gradual) ===
+
+void StorageClass::saveWaterLevel(uint8_t program, uint8_t phase, uint8_t level) {
+  switch (program) {
+    case 0: // P22
+      saveP22WaterLevel(level); // Ignora la fase, P22 tiene un solo valor
+      break;
+    case 1: // P23  
+      saveP23WaterLevel(level); // Ignora la fase, P23 tiene un solo valor
+      break;
+    case 2: // P24
+      saveP24WaterLevel(phase, level);
+      break;
+  }
+}
+
+uint8_t StorageClass::loadWaterLevel(uint8_t program, uint8_t phase) {
+  switch (program) {
+    case 0: // P22
+      return loadP22WaterLevel(); // Ignora la fase
+    case 1: // P23
+      return loadP23WaterLevel(); // Ignora la fase  
+    case 2: // P24
+      return loadP24WaterLevel(phase);
+    default:
+      return 2; // Valor predeterminado
+  }
+}
+
+void StorageClass::saveTemperature(uint8_t program, uint8_t phase, uint8_t temperature) {
+  switch (program) {
+    case 0: // P22
+      saveP22Temperature(temperature);
+      break;
+    case 1: // P23
+      saveP23Temperature(temperature);
+      break;
+    case 2: // P24
+      saveP24Temperature(phase, temperature);
+      break;
+  }
+}
+
+uint8_t StorageClass::loadTemperature(uint8_t program, uint8_t phase) {
+  switch (program) {
+    case 0: // P22
+      return loadP22Temperature();
+    case 1: // P23
+      return loadP23Temperature();
+    case 2: // P24
+      return loadP24Temperature(phase);
+    default:
+      return 25;
+  }
+}
+
+void StorageClass::saveTime(uint8_t program, uint8_t phase, uint8_t time) {
+  switch (program) {
+    case 0: // P22
+      saveP22Time(time);
+      break;
+    case 1: // P23
+      saveP23Time(time);
+      break;
+    case 2: // P24
+      saveP24Time(phase, time);
+      break;
+  }
+}
+
+uint8_t StorageClass::loadTime(uint8_t program, uint8_t phase) {
+  switch (program) {
+    case 0: // P22
+      return loadP22Time();
+    case 1: // P23
+      return loadP23Time();
+    case 2: // P24
+      return loadP24Time(phase);
+    default:
+      return 30;
+  }
+}
+
+void StorageClass::saveRotation(uint8_t program, uint8_t phase, uint8_t rotation) {
+  switch (program) {
+    case 0: // P22
+      saveP22Rotation(rotation);
+      break;
+    case 1: // P23
+      saveP23Rotation(rotation);
+      break;
+    case 2: // P24
+      saveP24Rotation(phase, rotation);
+      break;
+  }
+}
+
+uint8_t StorageClass::loadRotation(uint8_t program, uint8_t phase) {
+  switch (program) {
+    case 0: // P22
+      return loadP22Rotation();
+    case 1: // P23
+      return loadP23Rotation();
+    case 2: // P24
+      return loadP24Rotation(phase);
+    default:
+      return 2;
+  }
+}
+
+void StorageClass::saveCentrifugado(uint8_t program, uint8_t phase, uint8_t centrifugado) {
+  switch (program) {
+    case 0: // P22
+      saveP22Centrifugado(centrifugado);
+      break;
+    case 1: // P23
+      saveP23Centrifugado(centrifugado);
+      break;
+    case 2: // P24
+      saveP24Centrifugado(phase, centrifugado);
+      break;
+  }
+}
+
+uint8_t StorageClass::loadCentrifugado(uint8_t program, uint8_t phase) {
+  switch (program) {
+    case 0: // P22
+      return loadP22Centrifugado();
+    case 1: // P23
+      return loadP23Centrifugado();
+    case 2: // P24
+      return loadP24Centrifugado(phase);
+    default:
+      return 1;
+  }
+}
+
+void StorageClass::saveTipoAgua(uint8_t program, uint8_t phase, uint8_t tipoAgua) {
+  switch (program) {
+    case 0: // P22
+      // P22 siempre usa agua caliente (1), ignorar parámetro
+      break;
+    case 1: // P23
+      // P23 siempre usa agua fría (0), ignorar parámetro
+      break;
+    case 2: // P24
+      saveP24TipoAgua(phase, tipoAgua);
+      break;
+  }
+}
+
+uint8_t StorageClass::loadTipoAgua(uint8_t program, uint8_t phase) {
+  switch (program) {
+    case 0: // P22
+      return 1; // Siempre agua caliente
+    case 1: // P23
+      return 0; // Siempre agua fría
+    case 2: // P24
+      return loadP24TipoAgua(phase);
+    default:
+      return 0;
+  }
+}

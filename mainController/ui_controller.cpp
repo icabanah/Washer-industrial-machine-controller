@@ -563,7 +563,9 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   // Actualizar información mostrada para el programa seleccionado
   Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(programa + 22));
 
-  // Cargar valores actualizados desde Storage para la primera fase (fase 0)
+  // Cargar valores desde Storage
+  // NOTA: Para P22/P23 (valores únicos), todas las fases devuelven el mismo valor
+  // Para P24 (matriz), se usa la fase 0 como representativa para la pantalla de selección
   uint8_t nivel = Storage.loadWaterLevel(programa, 0);
   uint8_t temp = Storage.loadTemperature(programa, 0);
   uint8_t tiempo = Storage.loadTime(programa, 0);
@@ -600,8 +602,8 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   }
   Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, rotacionTexto);
 
-  // Si es el programa 3 (P24), mostrar información adicional de múltiples fases
-  if (programa == 3)
+  // Si es el programa P24 (índice 2), mostrar información adicional de múltiples fases
+  if (programa == 2)
   {
     // Mostrar información de todas las fases
     String fasesInfo = "Fases: ";
@@ -614,7 +616,8 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   }
   else
   {
-    Hardware.nextionSetText(NEXTION_COMP_INFO_FASES, ""); // Limpiar texto si no es programa 3
+    // Para P22 y P23, mostrar que usan configuración única
+    Hardware.nextionSetText(NEXTION_COMP_INFO_FASES, "Configuracion unica"); 
   }
 
   Serial.println("Información del programa P" + String(programa + 22) + " actualizada desde Storage");
@@ -834,7 +837,12 @@ void UIControllerClass::updateEditDisplay()
   generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer)); // Sumar 1 porque generarTextoPrograma espera 1,2,3
   Hardware.nextionSetText(NEXTION_COMP_PROG_EDICION, buffer);
 
-  snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion + 1); // Mostrar F1, F2, F3, F4 al usuario
+  // Mostrar fase diferenciada según programa
+  if (_programaEnEdicion == 2) { // P24 - mostrar fases numeradas
+    snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion + 1); // F1, F2, F3, F4
+  } else { // P22 y P23 - mostrar configuración única
+    strcpy(buffer, "CONFIG"); // Configuración única
+  }
   Hardware.nextionSetText(NEXTION_COMP_FASE_EDICION, buffer);
 
   // Actualizar parámetro actual y panel derecho
@@ -1202,6 +1210,7 @@ bool UIControllerClass::_validateAllParameters()
   }
   return true;
 }
+
 
 /**
  * @brief Verificar timeout de edición y salir automáticamente si es necesario
