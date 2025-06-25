@@ -101,6 +101,7 @@ private:
   uint8_t _centrifugadoPrograma[NUM_PROGRAMAS][NUM_FASES];
   
   void _loadProgramData();
+  void _loadCurrentProgramState();
   void _updatePhaseParameters();
   void _checkSensorConditions();
   void _decrementTimer();

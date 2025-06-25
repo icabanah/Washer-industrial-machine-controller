@@ -231,7 +231,6 @@ void SensorsClass::updateTemperature() {
         // Mostrar temperatura cada 10 lecturas (cada 5 segundos aproximadamente)
         _tempReadCount++;
         if (_tempReadCount >= 10) {
-          // Utils.debug("🌡️ Temperatura actual: " + String(temp) + "°C");
           _tempReadCount = 0;
         }
       } else {

@@ -69,25 +69,52 @@ Cada programa está definido por varios parámetros configurables:
    - El llenado continúa hasta alcanzar el nivel configurado
    - El sistema monitorea la temperatura constantemente
    - Si la temperatura del agua desciende más de 2°C por debajo del valor configurado:
-     * Se drena parcialmente el agua
-     * Se introduce nueva agua caliente
+     * Se drena parcialmente el agua (PIN_VALVULA_DESFOGUE)
+     * Se introduce nueva agua caliente (PIN_ELECTROV_VAPOR)
      * Este proceso mantiene la temperatura dentro del rango de tolerancia
 
 2. **Fase 2: Lavado**
-   - Activación del motor con el patrón de rotación configurado
+   - Activación de PIN_MOTOR_DIR_A off y PIN_MOTOR_DIR_B off con el patrón de rotación configurado
    - Mantenimiento activo de la temperatura durante todo el ciclo
    - Monitoreo constante del nivel de agua
    - El temporizador de lavado se ejecuta durante el tiempo configurado
 
 3. **Fase 3: Drenaje**
    - Se abre la válvula de drenaje hasta evacuación completa del agua
-   - El motor puede continuar funcionando a baja velocidad para facilitar el drenaje
    - El sistema monitorea el sensor de presión para confirmar el vaciado completo
 
 4. **Fase 4: Centrifugado (opcional)**
    - Si está habilitado, se activa el modo de centrifugado
    - La intensidad y duración dependen de la configuración
-   - El motor funciona a alta velocidad para extraer la humedad residual
+
+Secuencia del flujo del programa 22.
+Al presionar en "iniciar" (asumiendo que la puerta ya esta cerrada)│
+1) Temporizador off, espera a que el agua llegue a un nivel seteado y la temperatura a temperatura seteada.
+2) PIN_ELECTROV_VAPOR on, ingresa agua caliente.
+3) PIN_VALVULA_DESFOGUE off (porque debe llenar agua).
+4) El sensor de temperatura indica si la temperatura llegó a la temperatura seteada.
+5) PIN_VALVULA_AGUA off. 
+6) PIN_CENTRIFUGADO off.
+7) PIN_MOTOR_DIR_A y PIN_MOTOR_DIR_B off, motores comenzarán a permutar cuando el nivel del agua llegó al nivel seteado.
+
+Apenas llegue el nivel del agua al nivel seteado:
+1) Temporizador on, comienza conteo en reversa.
+2) PIN_ELECTROV_VAPOR off, ya no ingresa agua.
+3) PIN_VALVULA_DESFOGUE off.
+4) PIN_VALVULA_AGUA off.
+5) PIN_MOTOR_DIR_A on y PIN_MOTOR_DIR_B on (agrega aqui un parámetro en config.h para definir los tiempos de activación y pausa de estas salidas) estas salidas comienzan a permutar.
+
+Cuando termina el tiempo seteado (temporizador 00:00):
+La página de ejecución permanece, el 
+1) PIN_ELECTROV_VAPOR off.
+2) PIN_VALVULA_DESFOGUE on, desfogue del agua.
+3) PIN_VALVULA_AGUA off. 
+4) PIN_CENTRIFUGADO on/off (dependiendo de si el usuario eligió que haya centrifugado).
+5) PIN_MOTOR_DIR_A off y PIN_MOTOR_DIR_B off. Salidas detenidas.
+Puerta permanece bloqueada 1 min mas antes de abrir.
+temporizador 01:00 (1 minuto) comienza conteo de tiempo en reversa.
+Puerta se abre.
+Programa vuelve a página de selección. 
 
 ### Control de Temperatura
 - Durante las fases de llenado y lavado, el sistema mantiene la temperatura configurada con una tolerancia de ±2°C

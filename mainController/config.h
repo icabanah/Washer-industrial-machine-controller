@@ -67,21 +67,6 @@
 #define NUM_FASES 4
 #define MAX_NIVEL_ROTACION 3
 
-// === CLAVES PREFERENCES (Reemplazo de direcciones EEPROM) ===
-// Las claves ahora se definen directamente en el código como strings
-// Ya no se necesitan direcciones numéricas para Preferences
-// Se mantienen estos comentarios como referencia de los nombres de claves
-// usados en la implementación de storage.cpp:
-// - "programa" - Programa actual
-// - "fase" - Fase actual
-// - "minutos" - Minutos del temporizador
-// - "segundos" - Segundos del temporizador
-// - "contador" - Contador de uso
-// - "nivel_P_F" - Nivel de agua para programa P, fase F
-// - "temp_P_F" - Temperatura para programa P, fase F
-// - "tiempo_P_F" - Tiempo para programa P, fase F
-// - "rotacion_P_F" - Rotación para programa P, fase F
-
 // === DEFINICIÓN DE ESTADOS ===
 #define ESTADO_SELECCION 0
 #define ESTADO_EDICION 1

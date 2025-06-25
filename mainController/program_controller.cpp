@@ -40,27 +40,14 @@ void ProgramControllerClass::init() {
 }
 
 /// @brief 
-/// Carga los datos de los programas desde el almacenamiento.
-/// Este método se encarga de cargar los niveles de agua, temperaturas, tiempos y rotaciones para cada programa y fase.
-/// Utiliza la clase `Storage` para acceder a los datos almacenados.
-void ProgramControllerClass::_loadProgramData() {
-  // Cargar todos los parámetros para todos los programas
-  for (uint8_t p = 0; p < NUM_PROGRAMAS; p++) {
-    for (uint8_t f = 0; f < NUM_FASES; f++) {
-      _waterLevels[p][f] = Storage.loadWaterLevel(p, f);
-      _temperatures[p][f] = Storage.loadTemperature(p, f);
-      _times[p][f] = Storage.loadTime(p, f);
-      _rotations[p][f] = Storage.loadRotation(p, f);
-      _tipoAguaPrograma[p][f] = Storage.loadTipoAgua(p, f);
-      _centrifugadoPrograma[p][f] = Storage.loadCentrifugado(p, f);
-    }
-  }
-  
-  // Inicialmente cargar el último programa utilizado
+/// Carga el estado inicial del programa desde el almacenamiento.
+/// Este método solo carga el programa y fase actual, los demás datos se obtienen directamente de Storage.
+void ProgramControllerClass::_loadCurrentProgramState() {
+  // Cargar el último programa y fase utilizados
   _currentProgram = Storage.loadProgram();
   _currentPhase = Storage.loadPhase();
   
-  Utils.debug("Datos de programa cargados");
+  Utils.debug("Estado del programa cargado: P" + String(_currentProgram + 22) + " F" + String(_currentPhase + 1));
 }
 
 /// @brief 
@@ -291,7 +278,7 @@ void ProgramControllerClass::_updatePhaseParameters() {
     _configureActuatorsForPhase();
     
     // Reiniciar temporizador para la nueva fase
-    _totalMinutes = _times[_currentProgram][_currentPhase];
+    _totalMinutes = Storage.loadTime(_currentProgram, _currentPhase);
     _totalSeconds = _totalMinutes * 60;
     _remainingMinutes = _totalMinutes;
     _remainingSeconds = 0;
@@ -351,8 +338,8 @@ void ProgramControllerClass::_decrementTimer() {
 /// Este método se encarga de verificar si se han alcanzado las condiciones de temperatura y nivel de agua
 void ProgramControllerClass::_checkSensorConditions() {
   // Verificar las condiciones de temperatura y nivel de agua según la fase actual
-  uint8_t targetTemp = _temperatures[_currentProgram][_currentPhase];
-  uint8_t targetLevel = _waterLevels[_currentProgram][_currentPhase];
+  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
+  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
   
   // Actualizar la interfaz con los valores actuales
   UIController.updateTemperature(Sensors.getCurrentTemperature());
@@ -421,7 +408,7 @@ void ProgramControllerClass::_checkSensorConditions() {
       !_timerRunning) {
     
     // Iniciar rotación automática si es necesaria para esta fase
-    uint8_t rotLevel = _rotations[_currentProgram][_currentPhase];
+    uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
     if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
       Actuators.startAutoRotation(rotLevel);
       Utils.debug("🔄 Iniciando rotación nivel: " + String(rotLevel));
@@ -514,7 +501,7 @@ void ProgramControllerClass::_initializeProgram() {
   Utils.debug("🔒 Puerta bloqueada");
   
   // 2. Inicializar variables del programa
-  _totalMinutes = _times[_currentProgram][_currentPhase];
+  _totalMinutes = Storage.loadTime(_currentProgram, _currentPhase);
   _totalSeconds = _totalMinutes * 60;
   _remainingMinutes = _totalMinutes;
   _remainingSeconds = 0;
@@ -600,7 +587,7 @@ void ProgramControllerClass::_handleTemperatureControl() {
   }
   
   float currentTemp = Sensors.getCurrentTemperature();
-  float targetTemp = _temperatures[_currentProgram][_currentPhase];
+  float targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
   
   // === CONTROL CON DRENAJE PARCIAL SEGÚN DOCUMENTO ===
   if (currentTemp < targetTemp - 2) {
@@ -644,7 +631,7 @@ void ProgramControllerClass::_handleTemperatureControl() {
   }
   
   // Cerrar válvula de agua si se alcanzó el nivel objetivo
-  uint8_t targetLevel = _waterLevels[_currentProgram][_currentPhase];
+  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
   if (Sensors.getCurrentWaterLevel() >= targetLevel) {
     Actuators.closeWaterValve();
   }
@@ -660,8 +647,8 @@ bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa, uint8_t fa
 
 void ProgramControllerClass::_configureActuatorsForPhase() {
   // Configurar actuadores según la fase actual
-  uint8_t targetLevel = _waterLevels[_currentProgram][_currentPhase];
-  uint8_t targetTemp = _temperatures[_currentProgram][_currentPhase];
+  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
+  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
   
   // Configurar válvulas según la fase
   if (_currentPhase == 0) {
@@ -1036,10 +1023,11 @@ void ProgramControllerClass::_handleExecutionState() {
   _handleTemperatureControl();
   
   // 5. Control del motor según nivel de rotación
-  if (_rotations[_currentProgram][_currentPhase] > 0) {
+  if (Storage.loadRotation(_currentProgram, _currentPhase) > 0) {
     // Asegurar que el motor esté funcionando con el patrón correcto
     if (!Actuators.isMotorRunning()) {
-      Actuators.startAutoRotation(_rotations[_currentProgram][_currentPhase]);
+      uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
+    Actuators.startAutoRotation(rotLevel);
       Utils.debug("🔄 Motor iniciado - Nivel: " + String(_rotations[_currentProgram][_currentPhase]));
     }
   } else {
@@ -1482,4 +1470,23 @@ void ProgramControllerClass::_updateEditDisplay() {
   
   // Solo actualizar la pantalla, no reinicializar todo
   UIController.updateEditDisplay();
+}
+
+void ProgramControllerClass::_loadProgramData() {
+  // Cargar todos los datos de programa desde almacenamiento
+  for (uint8_t prog = 0; prog < NUM_PROGRAMAS; prog++) {
+    for (uint8_t fase = 0; fase < NUM_FASES; fase++) {
+      _waterLevels[prog][fase] = Storage.loadWaterLevel(prog, fase);
+      _temperatures[prog][fase] = Storage.loadTemperature(prog, fase);
+      _times[prog][fase] = Storage.loadTime(prog, fase);
+      _rotations[prog][fase] = Storage.loadRotation(prog, fase);
+      _tipoAguaPrograma[prog][fase] = Storage.loadTipoAgua(prog, fase);
+      _centrifugadoPrograma[prog][fase] = Storage.loadCentrifugado(prog, fase);
+    }
+  }
+  
+  // Cargar el estado actual del programa
+  _loadCurrentProgramState();
+  
+  Utils.debug("Datos de programa cargados desde almacenamiento");
 }
