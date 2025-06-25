@@ -111,10 +111,32 @@ La página de ejecución permanece, el
 3) PIN_VALVULA_AGUA off. 
 4) PIN_CENTRIFUGADO on/off (dependiendo de si el usuario eligió que haya centrifugado).
 5) PIN_MOTOR_DIR_A off y PIN_MOTOR_DIR_B off. Salidas detenidas.
-Puerta permanece bloqueada 1 min mas antes de abrir.
-temporizador 01:00 (1 minuto) comienza conteo de tiempo en reversa.
-Puerta se abre.
-Programa vuelve a página de selección. 
+
+Si centrifugado esta activado:
+1) PIN_ELECTROV_VAPOR off.
+2) PIN_VALVULA_DESFOGUE off.
+3) PIN_VALVULA_AGUA off. 
+4) PIN_CENTRIFUGADO on.
+5) PIN_MOTOR_DIR_A off y PIN_MOTOR_DIR_B off. Salidas detenidas.
+
+Si centrifugado esta desactivado:
+1) Puerta permanece bloqueada 1 min mas antes de abrir.
+2) PIN_ELECTROV_VAPOR off.
+3) PIN_VALVULA_DESFOGUE on.
+4) PIN_VALVULA_AGUA off.
+4) PIN_CENTRIFUGADO off.
+5) PIN_MOTOR_DIR_A off y PIN_MOTOR_DIR_B off. Salidas detenidas.
+2) temporizador 01:00 (1 minuto) comienza conteo de tiempo en reversa.
+
+Una vez concluido el tiempo de la puerta:
+1) Puerta se abre.
+2) Programa vuelve a página de selección. 
+3) PIN_ELECTROV_VAPOR off.
+4) PIN_VALVULA_DESFOGUE off.
+5) PIN_VALVULA_AGUA off.
+6) PIN_CENTRIFUGADO off.
+7) PIN_MOTOR_DIR_A off y PIN_MOTOR_DIR_B off. Salidas detenidas.
+
 
 ### Control de Temperatura
 - Durante las fases de llenado y lavado, el sistema mantiene la temperatura configurada con una tolerancia de ±2°C

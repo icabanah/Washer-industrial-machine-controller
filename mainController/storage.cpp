@@ -224,20 +224,20 @@ void StorageClass::resetToDefaults() {
   writeWord("contador", 0);
   
   // === CONFIGURACIÓN SEGÚN DOCUMENTO DEL CLIENTE ===
-  // Programa 22 (P22): Agua Caliente - 3 fases + centrifugado
-  // Programa 23 (P23): Agua Fría - 3 fases + centrifugado  
-  // Programa 24 (P24): Multi-ciclo configurable - 3 fases, sin centrifugado
+  // Programa 22 (P22): Agua Caliente - 3 fases + centrifugado ajustable
+  // Programa 23 (P23): Agua Fría - 3 fases + centrifugado ajustable  
+  // Programa 24 (P24): Multi-ciclo configurable - 3 fases, centrifugado ajustable
   
   uint8_t defaultWaterLevels[3][4] = {
-    {3, 4, 2, 1}, // P22: Llenado alto, Lavado máximo, Drenaje bajo, Centrifugado mínimo
-    {3, 4, 2, 1}, // P23: Igual que P22 pero con agua fría
-    {2, 3, 2, 0}  // P24: Multi-ciclo, sin centrifugado (fase 4 = 0)
+    {1, 2, 3, 4}, // P22: Llenado, Lavado, Drenaje, Centrifugado opcional
+    {1, 2, 3, 4}, // P23: Igual que P22 pero con agua fría
+    {1, 3, 3, 4}  // P24: Multi-ciclo)
   };
   
   uint8_t defaultTemperatures[3][4] = {
-    {60, 65, 40, 25}, // P22: Caliente para llenado/lavado, templado para drenaje
-    {25, 25, 25, 25}, // P23: Temperatura ambiente (agua fría)
-    {45, 50, 30, 25}  // P24: Configurable (por defecto tibio)
+    {20, 30, 40, 50}, // P22: Caliente para llenado/lavado, templado para drenaje
+    {20, 30, 40, 50}, // P23: Temperatura ambiente (agua fría)
+    {20, 30, 40, 50}  // P24: Configurable (por defecto tibio)
   };
   
   uint8_t defaultTimes[3][4] = {

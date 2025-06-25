@@ -59,6 +59,15 @@
 #define TIEMPO_BIENVENIDA 3000
 #define INTERVALO_TEMPORIZADOR 800
 
+// Configuración de motor bidireccional (para permutación en lavado)
+#define MOTOR_TIEMPO_ON 5000    // Tiempo que permanece activo cada dirección (3 segundos)
+#define MOTOR_TIEMPO_PAUSA 2000  // Tiempo de pausa entre cambios de dirección (0.5 segundos)
+
+// Configuración de temporizadores especiales
+#define TIEMPO_DRENAJE_FINAL 60000  // 1 minuto de drenaje al final (60 segundos)
+#define TIEMPO_PUERTA_BLOQUEO 60000 // 1 minuto adicional antes de desbloquear puerta
+#define TIEMPO_CENTRIFUGADO 120000  // 2 minutos de centrifugado (120 segundos)
+
 // Configuración de tareas asíncronas
 #define MAX_ASYNC_TASKS 10 // Número máximo de tareas asíncronas que se pueden gestionar
 

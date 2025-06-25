@@ -177,7 +177,7 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   Hardware.nextionSetText(NEXTION_COMP_PROG_EJECUCION, "P" + String(programa + 22));
 
   // Usar updatePhase para mostrar nombre descriptivo de la fase
-  updatePhase(fase + 1); // +1 porque fase interna 0 = Llenado (1)
+  updatePhase(fase); // +1 porque fase interna 0 = Llenado (1)
   Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00"); // Tiempo inicial
 
   // Actualizar indicadores usando los componentes existentes que funcionan correctamente
@@ -1223,25 +1223,6 @@ void UIControllerClass::_resetEditTimeout()
 }
 
 // === IMPLEMENTACIÓN DE MÉTODOS DE INDICADORES DE ESTADO ===
-
-// /**
-//  * @brief Actualiza el indicador de pausa en la pantalla
-//  * @param visible true para mostrar, false para ocultar
-//  */
-// void UIControllerClass::updatePauseIndicator(bool visible)
-// {
-//   if (_currentPage != NEXTION_PAGE_EXECUTION)
-//     return;
-
-//   // Mostrar u ocultar indicador de pausa (puede ser un texto o imagen)
-//   String cmd = "vis tPausa," + String(visible ? 1 : 0);
-//   Hardware.nextionSendCommand(cmd);
-
-//   if (visible)
-//   {
-//     Utils.debug("⏸️ Indicador de pausa activado");
-//   }
-// }
 
 /**
  * @brief Actualiza la alerta de emergencia con efecto de parpadeo

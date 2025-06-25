@@ -59,17 +59,13 @@ void setup()
     }
   });
 
-  // Registrar callbacks para actualización de UI
+  // Registrar callbacks para actualización de UI (reducido para evitar saturación)
   Utils.registerTimerCallback([](){
-  // Actualizar UI si es necesario
+  // Actualizar UI si es necesario (solo eventos táctiles)
   if (Hardware.isNextionInitComplete()) {
     Hardware.nextionCheckForEvents();
-    if (ProgramController.getState() == ESTADO_EJECUCION) {
-      // Actualizar información de UI cada segundo
-      // Actualizamos directamente sin usar formatTime
-      UIController.updateTime(ProgramController.getRemainingMinutes(), 
-                            ProgramController.getRemainingSeconds());
-    }
+    // REMOVIDO: La actualización de tiempo la maneja ProgramController internamente
+    // para evitar actualizaciones duplicadas que causan parpadeo de pantalla
   } });
 
   // Mostrar pantalla de bienvenida

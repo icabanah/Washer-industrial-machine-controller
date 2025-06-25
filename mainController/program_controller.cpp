@@ -375,8 +375,8 @@ void ProgramControllerClass::_checkSensorConditions() {
     static unsigned long lastStatusUpdate = 0;
     if (millis() - lastStatusUpdate > 5000) { // Cada 5 segundos
       lastStatusUpdate = millis();
-      Utils.debug("📊 " + statusMsg + " Agua:" + String(Sensors.getCurrentWaterLevel()) + "/" + String(targetLevel) + 
-                  " Temp:" + String(Sensors.getCurrentTemperature()) + "/" + String(targetTemp) + "°C");
+      // Utils.debug("📊 " + statusMsg + " Agua:" + String(Sensors.getCurrentWaterLevel()) + "/" + String(targetLevel) + 
+                  // " Temp:" + String(Sensors.getCurrentTemperature()) + "/" + String(targetTemp) + "°C");
     }
   }
   
@@ -430,12 +430,76 @@ void ProgramControllerClass::_checkSensorConditions() {
 }
 
 void ProgramControllerClass::_completePhase() {
-  Utils.debugValue("ProgramControllerClass::_completePhase| Fase completada: ", _currentPhase);
+  Utils.debugValue("Fase completada: ", _currentPhase);
   
-  // Detener actuadores de la fase actual
-  Actuators.stopAutoRotation();
-  Actuators.closeSteamValve();
-  Actuators.closeWaterValve();
+  // === SECUENCIA CUANDO TERMINA EL TEMPORIZADOR (00:00) ===
+  Utils.debug("⏰ TEMPORIZADOR TERMINADO - Analizando configuración de centrifugado");
+  
+  // Verificar si el centrifugado está activado
+  bool centrifugadoEnabled = _isCentrifugadoEnabled(_currentProgram, _currentPhase);
+  
+  if (centrifugadoEnabled) {
+    Utils.debug("🌪️ CENTRIFUGADO ACTIVADO - Ejecutando secuencia con centrifugado");
+    
+    // === SECUENCIA CON CENTRIFUGADO ===
+    // 1) PIN_ELECTROV_VAPOR OFF
+    Actuators.closeSteamValve();
+    Utils.debug("🔥 Vapor desactivado");
+    
+    // 2) PIN_VALVULA_DESFOGUE OFF - NO drenar durante centrifugado
+    Actuators.closeDrainValve();
+    Utils.debug("💧 Válvula de drenaje cerrada para centrifugado");
+    
+    // 3) PIN_VALVULA_AGUA OFF
+    Actuators.closeWaterValve();
+    Utils.debug("🚰 Válvula de agua cerrada");
+    
+    // 4) PIN_CENTRIFUGADO ON
+    Actuators.startCentrifuge();
+    Utils.debug("🌪️ Centrifugado iniciado");
+    
+    // 5) PIN_MOTOR_DIR_A OFF y PIN_MOTOR_DIR_B OFF - salidas detenidas
+    Actuators.stopAutoRotation();
+    Actuators.stopMotor();
+    Utils.debug("🔄 Motores de lavado detenidos");
+    
+    // La página permanece en ejecución mostrando centrifugado activo
+    // Crear timeout para finalizar centrifugado después del tiempo configurado
+    Utils.debug("⏱️ Programando fin de centrifugado en " + String(TIEMPO_CENTRIFUGADO/1000) + " segundos");
+    
+    Utils.createTimeout(TIEMPO_CENTRIFUGADO, []() {
+      Utils.debug("🌪️ Centrifugado completado - Finalizando programa");
+      ProgramController._finalizeProgramSequence();
+    });
+    
+  } else {
+    Utils.debug("🚫 CENTRIFUGADO DESACTIVADO - Ejecutando secuencia sin centrifugado");
+    
+    // === SECUENCIA SIN CENTRIFUGADO ===
+    // 1) PIN_ELECTROV_VAPOR OFF
+    Actuators.closeSteamValve();
+    Utils.debug("🔥 Vapor desactivado");
+    
+    // 2) PIN_VALVULA_DESFOGUE ON - drenar agua
+    Actuators.openDrainValve();
+    Utils.debug("💧 Iniciando drenaje de agua");
+    
+    // 3) PIN_VALVULA_AGUA OFF
+    Actuators.closeWaterValve();
+    Utils.debug("🚰 Válvula de agua cerrada");
+    
+    // 4) PIN_CENTRIFUGADO OFF
+    Actuators.stopCentrifuge();
+    Utils.debug("🌪️ Centrifugado confirmado OFF");
+    
+    // 5) PIN_MOTOR_DIR_A OFF y PIN_MOTOR_DIR_B OFF - salidas detenidas
+    Actuators.stopAutoRotation();
+    Actuators.stopMotor();
+    Utils.debug("🔄 Motores detenidos");
+    
+    // Iniciar temporizador de 1 minuto para puerta bloqueada
+    _startDoorLockTimer();
+  }
   
   // === SISTEMA DE TANDAS PARA PROGRAMA 24 SEGÚN DOCUMENTO DEL CLIENTE ===
   if (_currentProgram == 2 && isLastPhase()) { // P24 en última fase
@@ -474,23 +538,14 @@ void ProgramControllerClass::_completePhase() {
 }
 
 void ProgramControllerClass::_completeProgram() {
-  Utils.debug("ProgramControllerClass::_completeProgram| Programa completado");
+  Utils.debug("✅ PROGRAMA COMPLETADO");
   
-  // Llevar el sistema a un estado seguro
-  Actuators.stopAutoRotation();
-  Actuators.closeSteamValve();
-  Actuators.closeWaterValve();
-  Actuators.openDrainValve();
+  // Esta función ya no maneja la secuencia final directamente
+  // La secuencia final se maneja en _completePhase() según centrifugado ON/OFF
+  // Solo se llama cuando el centrifugado ha terminado (si estaba activo)
   
-  // Desbloquear puerta después de completar programa exitosamente
-  Actuators.unlockDoor();
-  Utils.debug("🔓 Puerta desbloqueada - Programa completado exitosamente");
-  
-  // Incrementar contador de uso
-  Storage.incrementUsageCounter();
-  
-  // Volver a la pantalla de selección
-  setState(ESTADO_SELECCION);
+  Utils.debug("🔄 Programa terminado, iniciando secuencia de finalización");
+  _finalizeProgramSequence();
 }
 
 void ProgramControllerClass::_initializeProgram() {
@@ -646,35 +701,69 @@ bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa, uint8_t fa
 }
 
 void ProgramControllerClass::_configureActuatorsForPhase() {
-  // Configurar actuadores según la fase actual
+  // Configurar actuadores según el flujo específico del Programa 22
   uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
   uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
   
-  // Configurar válvulas según la fase
-  if (_currentPhase == 0) {
-    // Primera fase: llenar con agua
-    Actuators.closeDrainValve();
-    if (Sensors.getCurrentWaterLevel() < targetLevel) {
-      Actuators.openWaterValve();
-    }
-  } else if (_currentPhase == NUM_FASES - 1) {
-    // Última fase: drenar
-    Actuators.closeWaterValve();
-    Actuators.closeSteamValve();
-    Actuators.openDrainValve();
-  } else {
-    // Fases intermedias
-    if (Sensors.getCurrentWaterLevel() < targetLevel) {
-      Actuators.openWaterValve();
-      Actuators.closeDrainValve();
+  Utils.debug("🔧 Configurando actuadores - Programa: P" + String(_currentProgram + 22) + 
+              ", Fase: " + String(_currentPhase + 1));
+  
+  // ESTADO INICIAL: Al presionar "iniciar" (antes de que llegue agua y temperatura)
+  if (_preparingPhase) {
+    Utils.debug("📋 FASE PREPARACIÓN - Esperando condiciones");
+    
+    // 1) Temporizador OFF (ya manejado en _timerRunning = false)
+    // 2) PIN_ELECTROV_VAPOR ON - ingresa agua caliente (solo Programa 22)
+    if (_currentProgram == 0) { // P22 = agua caliente
+      Actuators.openSteamValve();
+      Utils.debug("🔥 P22: Activando vapor para agua caliente");
     }
     
-    if (Sensors.getCurrentTemperature() < targetTemp) {
-      Actuators.openSteamValve();
+    // 3) PIN_VALVULA_DESFOGUE OFF - debe llenar agua
+    Actuators.closeDrainValve();
+    
+    // 4) El sensor de temperatura indica si llegó a temperatura seteada (manejado en _checkSensorConditions)
+    
+    // 5) PIN_VALVULA_AGUA OFF cuando llegue al nivel (manejado en _checkSensorConditions)
+    if (Sensors.getCurrentWaterLevel() < targetLevel) {
+      Actuators.openWaterValve();
+    } else {
+      Actuators.closeWaterValve();
+    }
+    
+    // 6) PIN_CENTRIFUGADO OFF
+    Actuators.stopCentrifuge();
+    
+    // 7) Motores OFF - comenzarán cuando llegue nivel de agua
+    Actuators.stopMotor();
+    
+    return; // No continuar con lógica normal mientras se prepara
+  }
+  
+  // CUANDO YA SE ALCANZARON LAS CONDICIONES (nivel + temperatura)
+  if (_timerRunning) {
+    Utils.debug("⏱️ FASE EJECUCIÓN - Temporizador activo");
+    
+    // 1) Temporizador ON (ya manejado en _timerRunning = true)
+    // 2) PIN_ELECTROV_VAPOR OFF - ya no ingresa agua
+    Actuators.closeSteamValve();
+    
+    // 3) PIN_VALVULA_DESFOGUE OFF - mantener agua
+    Actuators.closeDrainValve();
+    
+    // 4) PIN_VALVULA_AGUA OFF - ya está lleno
+    Actuators.closeWaterValve();
+    
+    // 5) Motores ON con permutación - activar rotación según configuración
+    uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
+    if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
+      Actuators.startAutoRotation(rotLevel);
+      Utils.debug("🔄 Iniciando rotación con permutación nivel: " + String(rotLevel));
     }
   }
   
-  // Utils.debug("Actuadores configurados para la fase");
+  Utils.debug("✅ Actuadores configurados para P" + String(_currentProgram + 22) + 
+              " F" + String(_currentPhase + 1));
 }
 
 uint8_t ProgramControllerClass::getRemainingMinutes() {
@@ -987,30 +1076,26 @@ void ProgramControllerClass::_handleExecutionState() {
   
   // 3. Actualizar temporizadores (solo si está corriendo)
   if (_timerRunning) {
-    // El decremento se hace en updateTimers() llamado por el callback
-    
     // Actualizar display y decrementar temporizador EXACTAMENTE cada segundo
     static unsigned long lastSecondUpdate = 0;
+    static unsigned long lastSensorUpdate = 0;
     unsigned long currentTime = millis();
     
+    // Actualizar tiempo cada segundo
     if (currentTime - lastSecondUpdate >= 1000) {
-      // Sincronizar exactamente cada segundo
       lastSecondUpdate = currentTime;
-      
-      // Decrementar temporizador aquí para sincronización exacta
       _decrementTimer();
-      
-      // Actualizar UI inmediatamente después del decremento
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
       UIController.updateProgressBar(getProgressPercentage());
-      
-      // Actualizar sensores y actuadores en tiempo real durante ejecución
+      Actuators.updateTimers();
+    }
+    
+    // Actualizar sensores solo cada 3 segundos para reducir saturación
+    if (currentTime - lastSensorUpdate >= 3000) {
+      lastSensorUpdate = currentTime;
       UIController.updateTemperature(Sensors.getCurrentTemperature());
       UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
       UIController.updateRotation(Actuators.getCurrentRotationLevel());
-      
-      // Actualizar actuadores
-      Actuators.updateTimers();
     }
     
     // Verificar si la fase terminó
@@ -1489,4 +1574,81 @@ void ProgramControllerClass::_loadProgramData() {
   _loadCurrentProgramState();
   
   Utils.debug("Datos de programa cargados desde almacenamiento");
+}
+
+/// @brief
+/// Inicia el temporizador de 1 minuto para puerta bloqueada cuando centrifugado está desactivado
+void ProgramControllerClass::_startDoorLockTimer() {
+  Utils.debug("🔒 INICIANDO TEMPORIZADOR DE PUERTA BLOQUEADA (1 minuto)");
+  
+  // === SECUENCIA SIN CENTRIFUGADO: PUERTA BLOQUEADA 1 MINUTO ===
+  // Puerta permanece bloqueada 1 min más antes de abrir
+  // Temporizador 01:00 (1 minuto) comienza conteo en reversa
+  
+  // Configurar temporizador de 1 minuto en pantalla
+  _totalMinutes = 1;
+  _totalSeconds = 60;
+  _remainingMinutes = 1;
+  _remainingSeconds = 0;
+  _timerRunning = true;
+  
+  // Mostrar mensaje en pantalla
+  UIController.updateTime(_remainingMinutes, _remainingSeconds);
+  UIController.showMessage("Drenaje - Puerta bloqueada", 2000);
+  
+  Utils.debug("⏱️ Temporizador de puerta iniciado: 01:00");
+  
+  // Crear timeout para finalizar después de 1 minuto
+  Utils.createTimeout(TIEMPO_PUERTA_BLOQUEO, []() {
+    Utils.debug("⏰ Temporizador de puerta completado");
+    ProgramController._finalizeProgramSequence();
+  });
+}
+
+/// @brief
+/// Secuencia final de programa: abrir puerta, limpiar actuadores y volver a selección
+void ProgramControllerClass::_finalizeProgramSequence() {
+  Utils.debug("🏁 FINALIZANDO PROGRAMA - Secuencia final");
+  
+  // === UNA VEZ CONCLUIDO EL TIEMPO DE LA PUERTA ===
+  
+  // 1) Puerta se abre
+  Actuators.unlockDoor();
+  Utils.debug("🔓 Puerta desbloqueada y abierta");
+  
+  // 2) Programa vuelve a página de selección (al final)
+  
+  // 3) PIN_ELECTROV_VAPOR OFF
+  Actuators.closeSteamValve();
+  Utils.debug("🔥 Vapor desactivado");
+  
+  // 4) PIN_VALVULA_DESFOGUE OFF
+  Actuators.closeDrainValve();
+  Utils.debug("💧 Válvula de drenaje cerrada");
+  
+  // 5) PIN_VALVULA_AGUA OFF
+  Actuators.closeWaterValve();
+  Utils.debug("🚰 Válvula de agua cerrada");
+  
+  // 6) PIN_CENTRIFUGADO OFF
+  Actuators.stopCentrifuge();
+  Utils.debug("🌪️ Centrifugado desactivado");
+  
+  // 7) PIN_MOTOR_DIR_A OFF y PIN_MOTOR_DIR_B OFF - salidas detenidas
+  Actuators.stopAutoRotation();
+  Actuators.stopMotor();
+  Utils.debug("🔄 Todos los motores detenidos");
+  
+  // Incrementar contador de uso
+  Storage.incrementUsageCounter();
+  Utils.debug("📊 Contador de uso incrementado");
+  
+  // Detener temporizador
+  _timerRunning = false;
+  
+  // 2) Programa vuelve a página de selección
+  setState(ESTADO_SELECCION);
+  Utils.debug("📋 Regresando a página de selección");
+  
+  Utils.debug("✅ PROGRAMA COMPLETAMENTE FINALIZADO");
 }

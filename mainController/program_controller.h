@@ -136,6 +136,10 @@ private:
   void _handleTemperatureControl();
   bool _isCentrifugadoEnabled(uint8_t programa, uint8_t fase);
   
+  // Secuencias especiales del programa
+  void _startDoorLockTimer();
+  void _finalizeProgramSequence();
+  
   // Manejo de errores
   void _triggerError(uint8_t errorCode, const String& errorMessage);
 };

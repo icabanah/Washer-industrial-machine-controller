@@ -150,8 +150,8 @@ void HardwareClass::nextionSendCommand(const String &command)
   //   lastDebugTime = millis();
   // }
 
-  // Pequeña pausa para asegurar envío
-  delay(10);
+  // Pausa aumentada para evitar saturación del buffer Nextion
+  delay(50);
 }
 
 void HardwareClass::_sendNextionEndCmd()
