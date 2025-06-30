@@ -177,7 +177,7 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   Hardware.nextionSetText(NEXTION_COMP_PROG_EJECUCION, "P" + String(programa + 22));
 
   // Usar updatePhase para mostrar nombre descriptivo de la fase
-  updatePhase(fase); // +1 porque fase interna 0 = Llenado (1)
+  updatePhase(fase); // indica fase actual
   Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00"); // Tiempo inicial
 
   // Actualizar indicadores usando los componentes existentes que funcionan correctamente
@@ -195,7 +195,7 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, Storage.loadTipoAgua(programa, fase) ? "Caliente" : "Fría");
   
   // Inicializar barra de progreso
-  updateProgressBar(0);
+  updateProgressBar(0); // Se actualizar\u00e1 desde ProgramController
 
   Serial.println("Mostrando pantalla de ejecución de programa");
 }
@@ -291,6 +291,12 @@ void UIControllerClass::showEmergencyScreen()
   Serial.println("EMERGENCIA: Sistema detenido");
 }
 
+
+/// @brief 
+/// Actualiza el tiempo transcurrido en la pantalla de ejecución.
+/// Este método formatea el tiempo en minutos y segundos y lo muestra en el componente de tiempo de ejecución.
+/// @param minutos 
+/// @param segundos 
 void UIControllerClass::updateTime(uint8_t minutos, uint8_t segundos)
 {
   char timeBuffer[6];
@@ -327,12 +333,12 @@ void UIControllerClass::updateWaterLevel(uint8_t nivel)
   Hardware.nextionSetValue(NEXTION_COMP_BARRA_NIVEL_EJECUCION, barValue);
 
   // Debug para verificar mapeo
-  static uint8_t lastLevel = 255;
-  if (nivel != lastLevel)
-  {
-    Utils.debug("💧 Nivel agua: " + String(nivel) + " -> Barra: " + String(barValue) + "%");
-    lastLevel = nivel;
-  }
+  // static uint8_t lastLevel = 255;
+  // if (nivel != lastLevel)
+  // {
+  //   Utils.debug("💧 Nivel agua: " + String(nivel) + " -> Barra: " + String(barValue) + "%");
+  //   lastLevel = nivel;
+  // }
 }
 
 void UIControllerClass::updateRotation(uint8_t rotacion)
@@ -346,12 +352,12 @@ void UIControllerClass::updateRotation(uint8_t rotacion)
   Hardware.nextionSetValue(NEXTION_COMP_GAUGE_VEL_EJECUCION, gaugeValue);
 
   // Debug para verificar mapeo
-  static uint8_t lastRotation = 255;
-  if (rotacion != lastRotation)
-  {
-    Utils.debug("⚙️ Rotación: " + String(rotacion) + " -> Gauge: " + String(gaugeValue) + "%");
-    lastRotation = rotacion;
-  }
+  // static uint8_t lastRotation = 255;
+  // if (rotacion != lastRotation)
+  // {
+  //   Utils.debug("⚙️ Rotación: " + String(rotacion) + " -> Gauge: " + String(gaugeValue) + "%");
+  //   lastRotation = rotacion;
+  // }
 }
 
 void UIControllerClass::updatePhase(uint8_t fase)
@@ -359,20 +365,23 @@ void UIControllerClass::updatePhase(uint8_t fase)
   // Mostrar nombre descriptivo de la fase según el diseño del cliente
   String faseTexto;
   switch(fase) {
-    case 1:
+    case 0:
       faseTexto = "Llenado";
       break;
-    case 2:
+    case 1:
       faseTexto = "Lavado";
       break;
-    case 3:
+    case 2:
       faseTexto = "Drenaje";
       break;
-    case 4:
+    case 3:
       faseTexto = "Centrifugado";
       break;
+    case 4:
+      faseTexto = "En preparacion";
+      break;
     default:
-      faseTexto = "Fase " + String(fase);
+      faseTexto = "No especificado";
       break;
   }
   

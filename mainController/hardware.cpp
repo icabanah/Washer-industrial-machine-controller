@@ -293,18 +293,18 @@ bool HardwareClass::_readNextionResponse()
     }
 
     // Debug detallado de eventos (filtrados automáticos 0x1A y 0x02)
-    Serial.print("🔍 Evento Nextion Raw [");
-    Serial.print(index);
-    Serial.print(" bytes]: ");
-    for (int i = 0; i < index; i++)
-    {
-      Serial.print("0x");
-      if (rawBytes[i] < 16)
-        Serial.print("0");
-      Serial.print(rawBytes[i], HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
+    // Serial.print("🔍 Evento Nextion Raw [");
+    // Serial.print(index);
+    // Serial.print(" bytes]: ");
+    // for (int i = 0; i < index; i++)
+    // {
+    //   Serial.print("0x");
+    //   if (rawBytes[i] < 16)
+    //     Serial.print("0");
+    //   Serial.print(rawBytes[i], HEX);
+    //   Serial.print(" ");
+    // }
+    // Serial.println();
 
     // Interpretar eventos táctiles específicos
     // Formato típico de evento táctil: 0x65 [PageID] [ComponentID] [EventType]
@@ -315,16 +315,16 @@ bool HardwareClass::_readNextionResponse()
       _touchComponent = rawBytes[2];
       _touchEventType = rawBytes[3];
 
-      Serial.println("✅ EVENTO TÁCTIL DETECTADO:");
-      Serial.print("   Página: " + String(_touchPage));
-      Serial.println("   Componente: " + String(_touchComponent));
-      Serial.println("   Tipo: " + String(_touchEventType) + (_touchEventType == 1 ? " (PRESIONADO)" : " (LIBERADO)"));
+      // Serial.println("✅ EVENTO TÁCTIL DETECTADO:");
+      // Serial.print("   Página: " + String(_touchPage));
+      // Serial.println("   Componente: " + String(_touchComponent));
+      // Serial.println("   Tipo: " + String(_touchEventType) + (_touchEventType == 1 ? " (PRESIONADO)" : " (LIBERADO)"));
 
       return true;
     }
 
     // Otros tipos de respuesta (no táctiles)
-    Serial.println("📄 Respuesta no táctil: " + _nextionLastEvent);
+    // Serial.println("📄 Respuesta no táctil: " + _nextionLastEvent);
     return true;
   }
 

@@ -171,7 +171,7 @@ void ActuatorsClass::startCentrifuge() {
   // Iniciar el centrifugado
   Hardware.digitalWrite(PIN_CENTRIFUGADO, HIGH);
   _centrifugeActive = true;
-  Utils.debug("Centrifugado iniciado");
+  // Utils.debug("Centrifugado iniciado");
 }
 
 
@@ -214,13 +214,13 @@ bool ActuatorsClass::isSteamValveOpen() {
 void ActuatorsClass::openDrainValve() {
   Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, HIGH);
   _drainValveOpen = true;
-  Utils.debug("Válvula de drenaje abierta");
+  // Utils.debug("Válvula de drenaje abierta");
 }
 
 void ActuatorsClass::closeDrainValve() {
   Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, LOW);
   _drainValveOpen = false;
-  Utils.debug("Válvula de drenaje cerrada");
+  // Utils.debug("Válvula de drenaje cerrada");
 }
 
 bool ActuatorsClass::isDrainValveOpen() {
@@ -230,13 +230,13 @@ bool ActuatorsClass::isDrainValveOpen() {
 void ActuatorsClass::lockDoor() {
   Hardware.digitalWrite(PIN_MAGNET_PUERTA, HIGH);
   _doorLocked = true;
-  Utils.debug("Puerta bloqueada");
+  // Utils.debug("Puerta bloqueada");
 }
 
 void ActuatorsClass::unlockDoor() {
   Hardware.digitalWrite(PIN_MAGNET_PUERTA, LOW);
   _doorLocked = false;
-  Utils.debug("Puerta desbloqueada");
+  // Utils.debug("Puerta desbloqueada");
 }
 
 bool ActuatorsClass::isDoorLocked() {
@@ -310,13 +310,13 @@ void ActuatorsClass::updateTimers() {
     // que no requiera un temporizador independiente
     
     // Ejemplo: Log de estado cada cierto tiempo
-    static unsigned long lastLogTime = 0;
-    if (millis() - lastLogTime > 10000) { // Cada 10 segundos
-      lastLogTime = millis();
-      Utils.debug("Estado motor: " + String(_motorState) + 
-                  " / Rotación: " + String(_currentRotationLevel) +
-                  " / Segundos: " + String(_motorSeconds));
-    }
+    // static unsigned long lastLogTime = 0;
+    // if (millis() - lastLogTime > 10000) { // Cada 10 segundos
+    //   lastLogTime = millis();
+    //   Utils.debug("Estado motor: " + String(_motorState) + 
+    //               " / Rotación: " + String(_currentRotationLevel) +
+    //               " / Segundos: " + String(_motorSeconds));
+    // }
   }
 }
 
@@ -337,13 +337,13 @@ void ActuatorsClass::_updateMotorDirection() {
   uint16_t cyclePosition = _motorSeconds % totalCycleTime;
   
   // Debug cada 10 segundos para verificar el ciclo
-  static unsigned long lastDebug = 0;
-  if (millis() - lastDebug > 10000) {
-    Utils.debug("🔄 Motor - Nivel:" + String(_currentRotationLevel) + 
-                " Pos:" + String(cyclePosition) + "/" + String(totalCycleTime) +
-                " Estado:" + String(_motorState));
-    lastDebug = millis();
-  }
+  // static unsigned long lastDebug = 0;
+  // if (millis() - lastDebug > 10000) {
+  //   Utils.debug("🔄 Motor - Nivel:" + String(_currentRotationLevel) + 
+  //               " Pos:" + String(cyclePosition) + "/" + String(totalCycleTime) +
+  //               " Estado:" + String(_motorState));
+  //   lastDebug = millis();
+  // }
   
   // Determinar la acción basada en la posición en el ciclo
   if (cyclePosition < _forwardTime) {

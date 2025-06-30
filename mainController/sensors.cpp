@@ -339,13 +339,73 @@ void SensorsClass::resetPressureCalibration() {
 }
 
 bool SensorsClass::isDoorClosed() {
+  // === IMPLEMENTACIÓN PARA SISTEMA INDUSTRIAL ===
+  
   // Verificar primero si la puerta está bloqueada electrónicamente
   if (Actuators.isDoorLocked()) {
-    return true; // Si está bloqueada, considerarla cerrada
+    return true; // Si está bloqueada, considerarla cerrada por seguridad
   }
   
-  // Si no está bloqueada, verificar sensor físico
-  // Por ahora, usamos el botón de emergencia como sensor de puerta
-  // En una implementación real, esto sería un sensor magnético de puerta
-  return !Hardware.isEmergencyButtonPressed();
+  // Para este sistema, sin sensor físico de puerta dedicado, 
+  // usamos una lógica basada en el estado del sistema:
+  
+  // 1. Si hay emergencia activa, considerar puerta abierta para seguridad
+  if (Hardware.isEmergencyButtonPressed()) {
+    return false; // Emergencia = puerta debe estar abierta para evacuación
+  }
+  
+  // 2. Durante operación normal, la puerta se considera cerrada cuando:
+  //    - El sistema no está en emergencia
+  //    - No hay problemas de comunicación con actuadores
+  
+  // Por defecto, en ausencia de sensor físico, asumir puerta cerrada
+  // En una implementación futura se puede añadir:
+  // - Sensor magnético en PIN adicional (ej: PIN_SENSOR_PUERTA)
+  // - Sensor reed switch
+  // - Fin de carrera mecánico
+  
+  return true; // Asumir puerta cerrada por defecto
+}
+
+void SensorsClass::diagnosticTemperatureSensor() {
+  // === DIAGNÓSTICO MANUAL DEL SENSOR DE TEMPERATURA ===
+  Utils.debug("=== DIAGNÓSTICO SENSOR TEMPERATURA ===");
+  
+  // 1. Verificar conexión
+  uint8_t deviceCount = _tempSensors.getDeviceCount();
+  Utils.debug("Dispositivos detectados: " + String(deviceCount));
+  
+  if (deviceCount == 0) {
+    Utils.debug("❌ ERROR: No se detectan sensores");
+    Utils.debug("Verificar conexiones y alimentación");
+    return;
+  }
+  
+  // 2. Verificar comunicación con el sensor configurado
+  if (_tempSensors.isConnected(_tempSensorAddress)) {
+    Utils.debug("✅ Sensor configurado responde correctamente");
+  } else {
+    Utils.debug("⚠️ El sensor configurado no responde");
+  }
+  
+  // 3. Realizar lectura de prueba
+  _tempSensors.requestTemperatures();
+  delay(1000); // Esperar conversión completa
+  
+  float temp = _tempSensors.getTempC(_tempSensorAddress);
+  
+  if (temp != DEVICE_DISCONNECTED_C && temp >= -127.0 && temp <= 85.0) {
+    Utils.debug("✅ Lectura válida: " + String(temp) + "°C");
+    _currentTemperature = temp;
+    _tempSensorErrorCount = 0;
+  } else {
+    Utils.debug("❌ Lectura inválida: " + String(temp));
+    _tempSensorErrorCount++;
+  }
+  
+  // 4. Mostrar estadísticas de errores
+  Utils.debug("Errores acumulados: " + String(_tempSensorErrorCount));
+  Utils.debug("Temperatura actual almacenada: " + String(_currentTemperature) + "°C");
+  
+  Utils.debug("=== FIN DIAGNÓSTICO ===");
 }

@@ -45,6 +45,16 @@ void setup()
   UIController.init();
   ProgramController.init();
 
+  // Actuators.startMotorForward(); // Iniciar motor en modo forward para pruebas iniciales
+  // Actuators.startMotorReverse(); // Iniciar motor en modo reverse para pruebas iniciales
+  // Hardware.digitalWrite(PIN_MOTOR_DIR_A, HIGH); // Configurar motor en dirección A para pruebas iniciales
+  // Hardware.digitalWrite(PIN_MOTOR_DIR_B, HIGH); // Configurar motor en dirección B para pruebas iniciales    
+  // Actuators.startCentrifuge(); // Iniciar centrifugado para pruebas iniciales
+  // Actuators.openWaterValve(); // Abrir válvula de agua para pruebas iniciales
+  // Actuators.lockDoor(); // Bloquear puerta para pruebas iniciales
+  // Actuators.openDrainValve(); // Abrir válvula de drenaje para pruebas iniciales
+  // Actuators.openSteamValve(); // Abrir válvula de vapor para pruebas iniciales
+
   // Prueba de conectividad con Nextion después de inicialización
   delay(1000); // Esperar que la pantalla termine de inicializarse
   // Serial.println("Probando conectividad con pantalla Nextion...");
@@ -62,10 +72,8 @@ void setup()
   // Registrar callbacks para actualización de UI (reducido para evitar saturación)
   Utils.registerTimerCallback([](){
   // Actualizar UI si es necesario (solo eventos táctiles)
-  if (Hardware.isNextionInitComplete()) {
-    Hardware.nextionCheckForEvents();
-    // REMOVIDO: La actualización de tiempo la maneja ProgramController internamente
-    // para evitar actualizaciones duplicadas que causan parpadeo de pantalla
+    if (Hardware.isNextionInitComplete()) {
+      Hardware.nextionCheckForEvents();
   } });
 
   // Mostrar pantalla de bienvenida

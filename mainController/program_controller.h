@@ -41,6 +41,7 @@ public:
   uint8_t getTotalMinutes();
   uint8_t getTotalSeconds();
   uint8_t getProgressPercentage();
+  uint8_t getTotalProgramProgressPercentage();
   
   // Gestión de edición
   void startEditing(uint8_t program, uint8_t phase);
@@ -130,6 +131,10 @@ private:
   void _completePhase();
   void _completeProgram();
   void _configureProgramType();
+  
+  // Métodos auxiliares para progreso total del programa
+  uint16_t _getTotalProgramDuration(uint8_t programa);
+  uint16_t _getElapsedProgramTime(uint8_t programa);
   
   // Control de actuadores según fase
   void _configureActuatorsForPhase();

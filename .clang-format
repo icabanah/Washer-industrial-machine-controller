@@ -1,0 +1,5 @@
+# .clang-format
+Language: Cpp
+BreakBeforeBraces: Attach
+IndentWidth: 2 # O el número de espacios que prefieras para la indentación (comúnmente 2 o 4)
+UseTab: Never # Asegura que use espacios en lugar de tabulaciones (recomendado)

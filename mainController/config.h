@@ -32,6 +32,10 @@
 // Sensor de Temperatura (OneWire Dallas)
 #define PIN_TEMP_SENSOR 23 // Pin de datos para sensor de temperatura
 
+// Sensor de Puerta (Opcional - para implementación futura)
+// #define PIN_SENSOR_PUERTA 22 // Pin para sensor magnético/reed switch de puerta
+// #define PUERTA_CERRADA_LEVEL LOW // Nivel lógico cuando puerta está cerrada
+
 // === PARÁMETROS DEL SISTEMA ===
 // Límites y configuraciones
 #define LIMITE_BLOQUEO 10000
