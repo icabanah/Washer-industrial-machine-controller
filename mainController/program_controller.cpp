@@ -212,11 +212,23 @@ void ProgramControllerClass::resumeProgram() {
     _remainingMinutes = _pausedMinutes;
     _remainingSeconds = _pausedSeconds;
 
-    // Reactivar temporizador
+    // Reactivar temporizador (mantener estado actual, no reinicializar)
     _timerRunning = true;
+    _preparingPhase = false; // No volver a preparación
 
-    // Cambiar estado a ejecución
-    setState(ESTADO_EJECUCION);
+    // Cambiar estado directamente sin llamar a setState() para evitar _initializeProgram()
+    _previousState = _currentState;
+    _currentState = ESTADO_EJECUCION;
+
+    // Reconfigurar actuadores para la fase actual sin reinicializar
+    _configureActuatorsForPhase();
+    
+    // Mostrar pantalla de ejecución
+    UIController.showExecutionScreen(
+        _currentProgram, _currentPhase,
+        _waterLevels[_currentProgram][_currentPhase],
+        _temperatures[_currentProgram][_currentPhase],
+        _rotations[_currentProgram][_currentPhase]);
 
     // Cambiar texto del botón de vuelta a "PAUSAR"
     Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "PAUSAR");
@@ -435,16 +447,15 @@ void ProgramControllerClass::_checkSensorConditions() {
     _remainingMinutes = _totalMinutes;
     _remainingSeconds = 0;
 
+    // Inicializar barra de progreso desde el inicio de esta fase
+    UIController.updateProgressBar(getTotalProgramProgressPercentage());
+
     Hardware.nextionSetText(NEXTION_COMP_MSG, "Fase " + String(_currentPhase + 1) + " iniciada");
   }
 }
 
 void ProgramControllerClass::_completePhase() {
   Utils.debugValue("Fase completada: ", _currentPhase);
-
-  // === SECUENCIA CUANDO TERMINA EL TEMPORIZADOR (00:00) ===
-  Utils.debug(
-      "⏰ TEMPORIZADOR TERMINADO - Analizando configuración de centrifugado");
 
   // Verificar si el centrifugado está activado
   bool centrifugadoEnabled =
@@ -833,7 +844,15 @@ uint16_t ProgramControllerClass::_getElapsedProgramTime(uint8_t programa) {
   // Sumar tiempo transcurrido de la fase actual
   if (!_preparingPhase && _timerRunning) {
     uint8_t currentPhaseTotal = Storage.loadTime(programa, _currentPhase);
-    uint8_t currentPhaseElapsed = currentPhaseTotal - _remainingMinutes;
+    // Calcular tiempo transcurrido: total menos tiempo restante
+    uint8_t currentPhaseElapsed = 0;
+    if (_remainingMinutes < currentPhaseTotal) {
+      currentPhaseElapsed = currentPhaseTotal - _remainingMinutes;
+    }
+    // Si _remainingSeconds > 0, significa que no se ha completado el minuto actual
+    if (_remainingSeconds > 0 && currentPhaseElapsed > 0) {
+      currentPhaseElapsed--;
+    }
     elapsedTime += currentPhaseElapsed;
   }
   
@@ -1173,8 +1192,6 @@ void ProgramControllerClass::_handleExecutionState() {
     if (!Actuators.isMotorRunning()) {
       uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
       Actuators.startAutoRotation(rotLevel);
-      Utils.debug("🔄 Motor iniciado - Nivel: " +
-                  String(_rotations[_currentProgram][_currentPhase]));
     }
   } else {
     // Sin rotación en esta fase
