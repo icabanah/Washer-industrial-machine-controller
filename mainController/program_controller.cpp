@@ -344,8 +344,14 @@ void ProgramControllerClass::_decrementTimer() {
 /// fase actual. Este método se encarga de verificar si se han alcanzado las
 /// condiciones de temperatura y nivel de agua
 void ProgramControllerClass::_checkSensorConditions() {
-  // Verificar las condiciones de temperatura y nivel de agua según la fase
-  // actual
+  // Verificar puerta cerrada antes de cualquier operación
+  if (!Sensors.isDoorClosed()) {
+    Hardware.nextionSetText(NEXTION_COMP_MSG, "Error: Puerta abierta");
+    _triggerError(ERROR_PUERTA, "Puerta debe estar cerrada");
+    return;
+  }
+
+  // Verificar las condiciones de temperatura y nivel de agua según la fase actual
   uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
   uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
 
@@ -353,17 +359,16 @@ void ProgramControllerClass::_checkSensorConditions() {
   UIController.updateTemperature(Sensors.getCurrentTemperature());
   UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
 
-  // Si estamos preparando la fase, mostrar el estado en el temporizador
+  // Si estamos preparando la fase, mostrar el estado en Nextion
   if (_preparingPhase) {
-
-    // Mostrar mensaje de estado
     String statusMsg = "Preparando: ";
     bool waterOk = Sensors.isWaterLevelReached(targetLevel);
     bool tempOk = Sensors.isTemperatureReached(targetTemp);
+    
     if (!waterOk) {
       statusMsg += "Llenando... ";
     }
-    if (!tempOk) {
+    if (!tempOk && (_currentProgram == 0)) { // Solo P22 requiere calentamiento
       statusMsg += "Calentando... ";
     }
     if (waterOk && tempOk) {
@@ -372,18 +377,39 @@ void ProgramControllerClass::_checkSensorConditions() {
     Hardware.nextionSetText(NEXTION_COMP_MSG, statusMsg);
   }
 
-  // Control de llenado de agua
-  if (_currentProgram == 22) {
-    // Control de temperatura
-    if (Sensors.getCurrentWaterLevel() < targetLevel &&
+  // Control de llenado y temperatura por programa
+  // P22 (índice 0): Agua caliente - usar vapor/electroválvula para llenado y calentamiento
+  if (_currentProgram == 0) {
+    if (Sensors.getCurrentWaterLevel() < targetLevel || 
         Sensors.getCurrentTemperature() < targetTemp) {
-      Actuators.openSteamValve();
+      Actuators.openSteamValve();  // PIN_ELECTROV_VAPOR para agua caliente
     } else {
       Actuators.closeSteamValve();
     }
-
-  } else if (_currentProgram == 23) {
+    // No usar PIN_VALVULA_AGUA en P22 (solo agua fría)
+  } 
+  // P23 (índice 1): Agua fría, sin calentamiento
+  else if (_currentProgram == 1) {
     if (Sensors.getCurrentWaterLevel() < targetLevel) {
+      Actuators.openWaterValve();
+    } else {
+      Actuators.closeWaterValve();
+    }
+    // No hay control de vapor para agua fría
+    Actuators.closeSteamValve();
+  }
+  // P24 (índice 2): Configurable según parámetros
+  else if (_currentProgram == 2) {
+    if (Sensors.getCurrentWaterLevel() < targetLevel) {
+      Actuators.openWaterValve();
+    } else {
+      Actuators.closeWaterValve();
+    }
+    
+    // Control de vapor según configuración de tipo de agua
+    uint8_t tipoAgua = Storage.loadTipoAgua(_currentProgram, _currentPhase);
+    if (tipoAgua == 1 && Sensors.getCurrentWaterLevel() >= targetLevel && 
+        Sensors.getCurrentTemperature() < targetTemp) {
       Actuators.openSteamValve();
     } else {
       Actuators.closeSteamValve();
@@ -398,23 +424,18 @@ void ProgramControllerClass::_checkSensorConditions() {
     uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
     if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
       Actuators.startAutoRotation(rotLevel);
-      Utils.debug("🔄 Iniciando rotación nivel: " + String(rotLevel));
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "Rotacion L" + String(rotLevel) + " iniciada");
     }
 
     // Iniciar el temporizador cuando se alcanzan las condiciones necesarias
     _timerRunning = true;
-    _preparingPhase = false; // Ya no estamos preparando
+    _preparingPhase = false;
 
     // Reiniciar el temporizador a los valores configurados
     _remainingMinutes = _totalMinutes;
     _remainingSeconds = 0;
 
-    Utils.debug("✅ Condiciones alcanzadas, iniciando temporizador de fase");
-    Utils.debug("⏱️ Tiempo de fase: " + String(_totalMinutes) + " minutos");
-    Utils.debug("💧 Nivel: " + String(Sensors.getCurrentWaterLevel()) + "/" +
-                String(targetLevel));
-    Utils.debug("🌡️ Temp: " + String(Sensors.getCurrentTemperature()) + "/" +
-                String(targetTemp) + "°C");
+    Hardware.nextionSetText(NEXTION_COMP_MSG, "Fase " + String(_currentPhase + 1) + " iniciada");
   }
 }
 
