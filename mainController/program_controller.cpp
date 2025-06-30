@@ -76,25 +76,17 @@ void ProgramControllerClass::setState(uint8_t newState) {
     _previousState = _currentState;
     _currentState = newState;
 
-    Utils.debug("🔄 CAMBIO DE ESTADO:");
-    Utils.debug("   Estado anterior: " + String(_previousState));
-    Utils.debug("   Estado nuevo: " + String(_currentState));
-
     // Acciones específicas al cambiar de estado
     switch (newState) {
     case ESTADO_SELECCION:
-      Utils.debug("📋 Mostrando pantalla de selección");
-      UIController.showSelectionScreen(
-          _currentProgram); // Pasar índice directamente
+      UIController.showSelectionScreen(_currentProgram);
       break;
 
     case ESTADO_EDICION:
-      Utils.debug("✏️ Mostrando pantalla de edición");
       UIController.showEditScreen(_editingProgram, _editingPhase);
       break;
 
     case ESTADO_EJECUCION:
-      Utils.debug("▶️ Mostrando pantalla de ejecución");
       _initializeProgram();
       _configureActuatorsForPhase();
       UIController.showExecutionScreen(
@@ -106,7 +98,7 @@ void ProgramControllerClass::setState(uint8_t newState) {
 
     case ESTADO_PAUSA:
       Actuators.stopMotor();
-      UIController.showMessage("Programa en pausa");
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa pausado");
       break;
 
     case ESTADO_ERROR:
@@ -120,7 +112,7 @@ void ProgramControllerClass::setState(uint8_t newState) {
       break;
     }
 
-    Utils.debugValue("Estado cambiado a", _currentState);
+    // Estado cambiado
   }
 }
 
@@ -177,7 +169,6 @@ void ProgramControllerClass::startProgram() {
     if (!Actuators.isDoorLocked()) {
       // Mostrar advertencia en componente de mensajes de Nextion
       Hardware.nextionSetText(NEXTION_COMP_MSG, "PUERTA ABIERTA");
-      Utils.debug("❌ No se puede iniciar: Puerta abierta");
       return;
     } else {
       // Limpiar mensaje si la puerta está cerrada
@@ -188,8 +179,7 @@ void ProgramControllerClass::startProgram() {
 
     // Asegurar que el botón pausar muestre "PAUSAR" al iniciar
     Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "PAUSAR");
-
-    Utils.debug("Programa iniciado: " + String(_currentProgram));
+    Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa P" + String(_currentProgram + 22) + " iniciado");
   }
 }
 
@@ -208,8 +198,7 @@ void ProgramControllerClass::pauseProgram() {
     // Cambiar texto del botón a "REANUDAR"
     Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "REANUDAR");
 
-    Utils.debug("⏸️ Programa pausado - Tiempo preservado: " +
-                String(_pausedMinutes) + ":" + String(_pausedSeconds));
+    // Tiempo preservado para reanudar
   }
 }
 
@@ -230,9 +219,7 @@ void ProgramControllerClass::resumeProgram() {
 
     // Actualizar display con tiempo restaurado
     UIController.updateTime(_remainingMinutes, _remainingSeconds);
-
-    Utils.debug("▶️ Programa reanudado - Tiempo restaurado: " +
-                String(_remainingMinutes) + ":" + String(_remainingSeconds));
+    Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa reanudado");
   }
 }
 
@@ -578,7 +565,6 @@ void ProgramControllerClass::_initializeProgram() {
 
   // 1. Bloquear puerta (ya verificada en startProgram)
   Actuators.lockDoor();
-  Utils.debug("🔒 Puerta bloqueada");
 
   // 2. Inicializar variables del programa
   _totalMinutes = Storage.loadTime(_currentProgram, _currentPhase);
@@ -599,13 +585,6 @@ void ProgramControllerClass::_initializeProgram() {
     _tandaCounter = 0;
     _maxTandas = 3; // Configurable según necesidades del cliente
   }
-
-  Utils.debug("Programa inicializado");
-  Utils.debug("📋 Programa: P" + String(_currentProgram + 22) +
-              " | Fase: " + String(_currentPhase));
-  Utils.debug("⏳ Esperando condiciones: Nivel=" +
-              String(_waterLevels[_currentProgram][_currentPhase]) + ", Temp=" +
-              String(_temperatures[_currentProgram][_currentPhase]) + "°C");
 }
 
 // void ProgramControllerClass::_configureProgramType() {
@@ -735,15 +714,9 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
   uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
   uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
 
-  Utils.debug("🔧 Configurando actuadores - Programa: P" +
-              String(_currentProgram + 22) +
-              ", Fase: " + String(_currentPhase));
-
   // ESTADO INICIAL: Al presionar "iniciar" (antes de que llegue agua y
   // temperatura)
   if (_preparingPhase) {
-    Utils.debug("📋 FASE PREPARACIÓN - Esperando condiciones");
-
     // 1) PIN_VALVULA_DESFOGUE OFF - debe llenar agua
     Actuators.closeDrainValve();
 
@@ -777,8 +750,6 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
 
   // CUANDO YA SE ALCANZARON LAS CONDICIONES (nivel + temperatura)
   if (_timerRunning) {
-    Utils.debug("⏱️ FASE EJECUCIÓN - Temporizador activo");
-
     // 1) Temporizador ON (ya manejado en _timerRunning = true)
 
     // 2) PIN_ELECTROV_VAPOR OFF - ya no ingresa agua

@@ -110,21 +110,18 @@ void ActuatorsClass::startMotorForward() {
   Hardware.digitalWrite(PIN_MOTOR_DIR_IZQ, HIGH);
   Hardware.digitalWrite(PIN_MOTOR_DIR_DER, LOW);
   _motorState = MOTOR_FORWARD;
-  Utils.debug("Motor iniciado en dirección adelante");
 }
 
 void ActuatorsClass::startMotorReverse() {
   Hardware.digitalWrite(PIN_MOTOR_DIR_IZQ, LOW);
   Hardware.digitalWrite(PIN_MOTOR_DIR_DER, HIGH);
   _motorState = MOTOR_REVERSE;
-  Utils.debug("Motor iniciado en dirección reversa");
 }
 
 void ActuatorsClass::stopMotor() {
   Hardware.digitalWrite(PIN_MOTOR_DIR_IZQ, LOW);
   Hardware.digitalWrite(PIN_MOTOR_DIR_DER, LOW);
   _motorState = MOTOR_OFF;
-  Utils.debug("Motor detenido");
 }
 
 bool ActuatorsClass::isMotorRunning() {
@@ -142,28 +139,35 @@ void ActuatorsClass::setRotationLevel(uint8_t level) {
 }
 
 void ActuatorsClass::_configureRotationTiming(uint8_t level) {
-  // Configurar los tiempos según el nivel de rotación
+  // Configurar los tiempos según el nivel de rotación usando constantes de config.h
+  // MOTOR_TIEMPO_ON = 5000ms (5 segundos) y MOTOR_TIEMPO_PAUSA = 2000ms (2 segundos)
+  
   switch (level) {
     case 0: // Sin rotación
       _forwardTime = 0;
       _reverseTime = 0;
       _pauseTime = 0;
       break;
-    case 1: // Rotación suave
-      _forwardTime = 5;
-      _reverseTime = 5;
-      _pauseTime = 3;
+    case 1: // Rotación suave - usar tiempos base de config.h
+      _forwardTime = MOTOR_TIEMPO_ON / 1000;        // 5 segundos
+      _reverseTime = MOTOR_TIEMPO_ON / 1000;        // 5 segundos
+      _pauseTime = MOTOR_TIEMPO_PAUSA / 1000;       // 2 segundos
       break;
-    case 2: // Rotación media
-      _forwardTime = 8;
-      _reverseTime = 8;
-      _pauseTime = 2;
+    case 2: // Rotación media - tiempos aumentados
+      _forwardTime = (MOTOR_TIEMPO_ON * 1.5) / 1000;    // 7.5 segundos
+      _reverseTime = (MOTOR_TIEMPO_ON * 1.5) / 1000;    // 7.5 segundos
+      _pauseTime = MOTOR_TIEMPO_PAUSA / 1000;            // 2 segundos
       break;
-    case 3: // Rotación intensa
-      _forwardTime = 12;
-      _reverseTime = 12;
-      _pauseTime = 1;
+    case 3: // Rotación intensa - tiempos más largos
+      _forwardTime = (MOTOR_TIEMPO_ON * 2) / 1000;       // 10 segundos
+      _reverseTime = (MOTOR_TIEMPO_ON * 2) / 1000;       // 10 segundos
+      _pauseTime = (MOTOR_TIEMPO_PAUSA * 0.5) / 1000;    // 1 segundo
       break;
+  }
+  
+  // Solo log para configuración inicial si es necesario
+  if (level > 0) {
+    Hardware.nextionSetText(NEXTION_COMP_MSG, "Rotacion nivel " + String(level));
   }
 }
 
@@ -182,13 +186,11 @@ bool ActuatorsClass::isCentrifugeRunning() {
 void ActuatorsClass::openWaterValve() {
   Hardware.digitalWrite(PIN_VALVULA_AGUA, HIGH);
   _waterValveOpen = true;
-  Utils.debug("Válvula de agua abierta");
 }
 
 void ActuatorsClass::closeWaterValve() {
   Hardware.digitalWrite(PIN_VALVULA_AGUA, LOW);
   _waterValveOpen = false;
-  Utils.debug("Válvula de agua cerrada");
 }
 
 bool ActuatorsClass::isWaterValveOpen() {
@@ -198,13 +200,11 @@ bool ActuatorsClass::isWaterValveOpen() {
 void ActuatorsClass::openSteamValve() {
   Hardware.digitalWrite(PIN_ELECTROV_VAPOR, HIGH);
   _steamValveOpen = true;
-  Utils.debug("Válvula de vapor abierta");
 }
 
 void ActuatorsClass::closeSteamValve() {
   Hardware.digitalWrite(PIN_ELECTROV_VAPOR, LOW);
   _steamValveOpen = false;
-  Utils.debug("Válvula de vapor cerrada");
 }
 
 bool ActuatorsClass::isSteamValveOpen() {
@@ -259,12 +259,7 @@ void ActuatorsClass::startAutoRotation(uint8_t level) {
     _autoRotationActive = true;
     
     // Crear un temporizador recurrente que actualizará la rotación del motor
-    // Este se ejecutará cada segundo (1000 ms)
     _rotationTaskId = Utils.createInterval(1000, rotationTimerCallback, true);
-    
-    Utils.debug("Rotación automática iniciada con nivel " + String(level));
-  } else {
-    Utils.debug("Error: Nivel de rotación inválido (" + String(level) + ")");
   }
 }
 
@@ -279,8 +274,6 @@ void ActuatorsClass::stopAutoRotation() {
     Utils.stopTask(_rotationTaskId);
     _rotationTaskId = 0;
   }
-  
-  Utils.debug("Rotación automática detenida");
 }
 
 bool ActuatorsClass::isAutoRotationActive() {
@@ -336,38 +329,25 @@ void ActuatorsClass::_updateMotorDirection() {
   uint16_t totalCycleTime = _forwardTime + _pauseTime + _reverseTime + _pauseTime;
   uint16_t cyclePosition = _motorSeconds % totalCycleTime;
   
-  // Debug cada 10 segundos para verificar el ciclo
-  // static unsigned long lastDebug = 0;
-  // if (millis() - lastDebug > 10000) {
-  //   Utils.debug("🔄 Motor - Nivel:" + String(_currentRotationLevel) + 
-  //               " Pos:" + String(cyclePosition) + "/" + String(totalCycleTime) +
-  //               " Estado:" + String(_motorState));
-  //   lastDebug = millis();
-  // }
-  
   // Determinar la acción basada en la posición en el ciclo
   if (cyclePosition < _forwardTime) {
     // Giro hacia adelante
     if (_motorState != MOTOR_FORWARD) {
-      Utils.debug("🔄 Cambiando a FORWARD (DIR_A=HIGH, DIR_B=LOW)");
       startMotorForward();
     }
   } else if (cyclePosition < (_forwardTime + _pauseTime)) {
     // Pausa después del giro hacia adelante
     if (_motorState != MOTOR_OFF) {
-      Utils.debug("🔄 PAUSA después de FORWARD");
       stopMotor();
     }
   } else if (cyclePosition < (_forwardTime + _pauseTime + _reverseTime)) {
     // Giro hacia atrás
     if (_motorState != MOTOR_REVERSE) {
-      Utils.debug("🔄 Cambiando a REVERSE (DIR_A=LOW, DIR_B=HIGH)");
       startMotorReverse();
     }
   } else {
     // Pausa después del giro hacia atrás
     if (_motorState != MOTOR_OFF) {
-      Utils.debug("🔄 PAUSA después de REVERSE");
       stopMotor();
     }
   }
