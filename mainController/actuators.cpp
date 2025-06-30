@@ -148,27 +148,29 @@ void ActuatorsClass::_configureRotationTiming(uint8_t level) {
       _reverseTime = 0;
       _pauseTime = 0;
       break;
-    case 1: // Rotación suave - usar tiempos base de config.h
-      _forwardTime = MOTOR_TIEMPO_ON / 1000;        // 5 segundos
-      _reverseTime = MOTOR_TIEMPO_ON / 1000;        // 5 segundos
-      _pauseTime = MOTOR_TIEMPO_PAUSA / 1000;       // 2 segundos
+    case 1: // Rotación suave - usar configuración específica de config.h
+      _forwardTime = MOTOR_L1_TIEMPO_DERECHA;
+      _reverseTime = MOTOR_L1_TIEMPO_IZQUIERDA;
+      _pauseTime = MOTOR_L1_TIEMPO_PAUSA;
       break;
-    case 2: // Rotación media - tiempos aumentados
-      _forwardTime = (MOTOR_TIEMPO_ON * 1.5) / 1000;    // 7.5 segundos
-      _reverseTime = (MOTOR_TIEMPO_ON * 1.5) / 1000;    // 7.5 segundos
-      _pauseTime = MOTOR_TIEMPO_PAUSA / 1000;            // 2 segundos
+    case 2: // Rotación media - usar configuración específica de config.h
+      _forwardTime = MOTOR_L2_TIEMPO_DERECHA;
+      _reverseTime = MOTOR_L2_TIEMPO_IZQUIERDA;
+      _pauseTime = MOTOR_L2_TIEMPO_PAUSA;
       break;
-    case 3: // Rotación intensa - tiempos más largos
-      _forwardTime = (MOTOR_TIEMPO_ON * 2) / 1000;       // 10 segundos
-      _reverseTime = (MOTOR_TIEMPO_ON * 2) / 1000;       // 10 segundos
-      _pauseTime = (MOTOR_TIEMPO_PAUSA * 0.5) / 1000;    // 1 segundo
+    case 3: // Rotación intensa - usar configuración específica de config.h
+      _forwardTime = MOTOR_L3_TIEMPO_DERECHA;
+      _reverseTime = MOTOR_L3_TIEMPO_IZQUIERDA;
+      _pauseTime = MOTOR_L3_TIEMPO_PAUSA;
       break;
   }
   
-  // Solo log para configuración inicial si es necesario
-  if (level > 0) {
-    Hardware.nextionSetText(NEXTION_COMP_MSG, "Rotacion nivel " + String(level));
-  }
+  // Mostrar configuración solo al inicializar (opcional)
+  // if (level > 0) {
+  //   String configMsg = "L" + String(level) + ": Der" + String(_forwardTime) + 
+  //                      "s Izq" + String(_reverseTime) + "s Pausa" + String(_pauseTime) + "s";
+  //   Hardware.nextionSetText(NEXTION_COMP_MSG, configMsg);
+  // }
 }
 
 void ActuatorsClass::startCentrifuge() {
@@ -247,18 +249,28 @@ bool ActuatorsClass::isDoorLocked() {
 
 void ActuatorsClass::startAutoRotation(uint8_t level) {
   if (level > 0 && level <= MAX_NIVEL_ROTACION) {
-    // Detener rotación anterior si existe
-    stopAutoRotation();
+    // Si ya está activa, solo cambiar el nivel sin reiniciar
+    if (_autoRotationActive && _currentRotationLevel == level) {
+      return; // Ya está funcionando con el mismo nivel
+    }
+    
+    // Detener temporizador anterior si existe (pero mantener motor funcionando)
+    if (_rotationTaskId > 0) {
+      Utils.stopTask(_rotationTaskId);
+      _rotationTaskId = 0;
+    }
     
     // Configurar nivel de rotación
     setRotationLevel(level);
     _motorSeconds = 0;
-    
-    // Iniciar con dirección hacia adelante
-    startMotorForward();
     _autoRotationActive = true;
     
-    // Crear un temporizador recurrente que actualizará la rotación del motor
+    // Solo iniciar motor si no está ya funcionando
+    if (_motorState == MOTOR_OFF) {
+      startMotorForward();
+    }
+    
+    // Crear nuevo temporizador
     _rotationTaskId = Utils.createInterval(1000, rotationTimerCallback, true);
   }
 }
@@ -327,7 +339,17 @@ void ActuatorsClass::_updateMotorDirection() {
   if (_currentRotationLevel == 0) return;
   
   uint16_t totalCycleTime = _forwardTime + _pauseTime + _reverseTime + _pauseTime;
+  if (totalCycleTime == 0) return; // Evitar división por cero
+  
   uint16_t cyclePosition = _motorSeconds % totalCycleTime;
+  
+  // Debug opcional (descomentars para troubleshooting)
+  // static unsigned long lastDebug = 0;
+  // if (millis() - lastDebug > 5000) { // Cada 5 segundos
+  //   String debugMsg = "Ciclo:" + String(_motorSeconds) + "/" + String(totalCycleTime);
+  //   Hardware.nextionSetText(NEXTION_COMP_MSG, debugMsg);
+  //   lastDebug = millis();
+  // }
   
   // Determinar la acción basada en la posición en el ciclo
   if (cyclePosition < _forwardTime) {

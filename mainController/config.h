@@ -63,9 +63,38 @@
 #define TIEMPO_BIENVENIDA 3000
 #define INTERVALO_TEMPORIZADOR 800
 
-// Configuración de motor bidireccional (para permutación en lavado)
-#define MOTOR_TIEMPO_ON 5000    // Tiempo que permanece activo cada dirección (3 segundos)
-#define MOTOR_TIEMPO_PAUSA 2000  // Tiempo de pausa entre cambios de dirección (0.5 segundos)
+// === CONFIGURACIÓN DE MOTOR BIDIRECCIONAL (PERMUTACIÓN EN LAVADO) ===
+// 
+// Tiempos en segundos para cada nivel de rotación
+// Secuencia: DERECHA → PAUSA → IZQUIERDA → PAUSA → [repetir]
+//
+// TABLA DE CONFIGURACIÓN ACTUAL:
+// +-------+----------+------------+---------+----------------+
+// | Nivel | Derecha  | Izquierda  |  Pausa  | Ciclo Total    |
+// +-------+----------+------------+---------+----------------+
+// |   1   |    5s    |     5s     |    2s   |   14s (suave)  |
+// |   2   |    8s    |     8s     |    2s   |   20s (media)  |
+// |   3   |   10s    |    10s     |    1s   |   22s (intensa)|
+// +-------+----------+------------+---------+----------------+
+
+// Nivel 1 - Rotación Suave
+#define MOTOR_L1_TIEMPO_DERECHA 5    // Segundos activo hacia la derecha
+#define MOTOR_L1_TIEMPO_IZQUIERDA 5  // Segundos activo hacia la izquierda  
+#define MOTOR_L1_TIEMPO_PAUSA 2      // Segundos de pausa entre cambios
+
+// Nivel 2 - Rotación Media
+#define MOTOR_L2_TIEMPO_DERECHA 8    // Segundos activo hacia la derecha
+#define MOTOR_L2_TIEMPO_IZQUIERDA 8  // Segundos activo hacia la izquierda
+#define MOTOR_L2_TIEMPO_PAUSA 2      // Segundos de pausa entre cambios
+
+// Nivel 3 - Rotación Intensa
+#define MOTOR_L3_TIEMPO_DERECHA 10   // Segundos activo hacia la derecha
+#define MOTOR_L3_TIEMPO_IZQUIERDA 10 // Segundos activo hacia la izquierda
+#define MOTOR_L3_TIEMPO_PAUSA 1      // Segundos de pausa entre cambios
+
+// Configuración legacy (mantenida por compatibilidad)
+#define MOTOR_TIEMPO_ON 5000    // Tiempo que permanece activo cada dirección (5 segundos)
+#define MOTOR_TIEMPO_PAUSA 2000  // Tiempo de pausa entre cambios de dirección (2 segundos)
 
 // Configuración de temporizadores especiales
 #define TIEMPO_DRENAJE_FINAL 60000  // 1 minuto de drenaje al final (60 segundos)
