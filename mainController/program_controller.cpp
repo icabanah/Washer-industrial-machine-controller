@@ -26,6 +26,12 @@ void ProgramControllerClass::init() {
   // Inicializar variables de estado de fase
   _preparingPhase = false;
   _phaseStartTime = 0;
+  
+  // Inicializar variables de secuencia final
+  _finalDrainMinutes = 0;
+  _finalDrainSeconds = 0;
+  _doorWaitMinutes = 0;
+  _doorWaitSeconds = 0;
 
   // Inicializar variables de edición
   _editingProgram = 0; // Inicializar con programa P22 (índice 0) por defecto
@@ -110,6 +116,24 @@ void ProgramControllerClass::setState(uint8_t newState) {
     case ESTADO_EMERGENCIA:
       Actuators.emergencyStop();
       UIController.showEmergencyScreen();
+      break;
+      
+    case ESTADO_DRENAJE_FINAL:
+      // Inicializar drenaje final
+      _finalDrainMinutes = TIEMPO_DRENAJE_FINAL / 60;
+      _finalDrainSeconds = TIEMPO_DRENAJE_FINAL % 60;
+      Actuators.openDrainValve();
+      Actuators.stopMotor();
+      Actuators.stopCentrifuge();
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "Drenaje final");
+      break;
+      
+    case ESTADO_ESPERA_PUERTA:
+      // Inicializar espera para abrir puerta
+      _doorWaitMinutes = TIEMPO_PUERTA_BLOQUEO / 60;
+      _doorWaitSeconds = TIEMPO_PUERTA_BLOQUEO % 60;
+      Actuators.closeDrainValve();
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "Enfriando - Espere");
       break;
     }
 
@@ -570,12 +594,9 @@ void ProgramControllerClass::_completePhase() {
 void ProgramControllerClass::_completeProgram() {
   Utils.debug("✅ PROGRAMA COMPLETADO");
 
-  // Esta función ya no maneja la secuencia final directamente
-  // La secuencia final se maneja en _completePhase() según centrifugado ON/OFF
-  // Solo se llama cuando el centrifugado ha terminado (si estaba activo)
-
-  Utils.debug("🔄 Programa terminado, iniciando secuencia de finalización");
-  _finalizeProgramSequence();
+  // Iniciar secuencia de drenaje final antes de finalizar
+  Utils.debug("🔄 Programa terminado, iniciando drenaje final");
+  setState(ESTADO_DRENAJE_FINAL);
 }
 
 void ProgramControllerClass::_initializeProgram() {
@@ -1087,6 +1108,14 @@ void ProgramControllerClass::_handleStateMachine() {
 
   case ESTADO_EMERGENCIA:
     _handleEmergencyState();
+    break;
+    
+  case ESTADO_DRENAJE_FINAL:
+    _handleFinalDrainState();
+    break;
+    
+  case ESTADO_ESPERA_PUERTA:
+    _handleDoorWaitState();
     break;
 
   default:
@@ -1712,4 +1741,68 @@ void ProgramControllerClass::_finalizeProgramSequence() {
   Utils.debug("📋 Regresando a página de selección");
 
   Utils.debug("✅ PROGRAMA COMPLETAMENTE FINALIZADO");
+}
+
+void ProgramControllerClass::_handleFinalDrainState() {
+  // Manejar el estado de drenaje final
+  static unsigned long lastSecondUpdate = 0;
+  unsigned long currentTime = millis();
+  
+  // Actualizar cada segundo
+  if (currentTime - lastSecondUpdate >= 1000) {
+    lastSecondUpdate = currentTime;
+    
+    // Decrementar temporizador de drenaje
+    if (_finalDrainSeconds > 0) {
+      _finalDrainSeconds--;
+    } else if (_finalDrainMinutes > 0) {
+      _finalDrainMinutes--;
+      _finalDrainSeconds = 59;
+    } else {
+      // Drenaje final completado, pasar a espera de puerta
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "Drenaje completado");
+      setState(ESTADO_ESPERA_PUERTA);
+      return;
+    }
+    
+    // Actualizar display con tiempo de drenaje
+    UIController.updateTime(_finalDrainMinutes, _finalDrainSeconds);
+    
+    // Mostrar mensaje de estado
+    String drainMsg = "Drenaje: " + String(_finalDrainMinutes) + ":" + 
+                      String(_finalDrainSeconds < 10 ? "0" : "") + String(_finalDrainSeconds);
+    Hardware.nextionSetText(NEXTION_COMP_MSG, drainMsg);
+  }
+}
+
+void ProgramControllerClass::_handleDoorWaitState() {
+  // Manejar el estado de espera para abrir puerta
+  static unsigned long lastSecondUpdate = 0;
+  unsigned long currentTime = millis();
+  
+  // Actualizar cada segundo
+  if (currentTime - lastSecondUpdate >= 1000) {
+    lastSecondUpdate = currentTime;
+    
+    // Decrementar temporizador de espera
+    if (_doorWaitSeconds > 0) {
+      _doorWaitSeconds--;
+    } else if (_doorWaitMinutes > 0) {
+      _doorWaitMinutes--;
+      _doorWaitSeconds = 59;
+    } else {
+      // Espera completada, finalizar programa
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa terminado");
+      _finalizeProgramSequence();
+      return;
+    }
+    
+    // Actualizar display con tiempo de espera
+    UIController.updateTime(_doorWaitMinutes, _doorWaitSeconds);
+    
+    // Mostrar mensaje de estado
+    String waitMsg = "Enfriando: " + String(_doorWaitMinutes) + ":" + 
+                     String(_doorWaitSeconds < 10 ? "0" : "") + String(_doorWaitSeconds);
+    Hardware.nextionSetText(NEXTION_COMP_MSG, waitMsg);
+  }
 }
