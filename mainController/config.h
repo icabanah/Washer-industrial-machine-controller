@@ -9,13 +9,13 @@
 #define PIN_BTN_EMERGENCIA 15 // Pin para botón de emergencia con antirrebote
 
 // Salidas (Actuadores)
-#define PIN_MOTOR_DIR_A 12      // Control dirección derecha del motor
-#define PIN_MOTOR_DIR_B 14      // Control dirección izquierda del motor
-#define PIN_CENTRIFUGADO 27     // Control centrifugado del motor
-#define PIN_VALVULA_AGUA 26     // Control de la válvula de entrada de agua
+#define PIN_MOTOR_DIR_IZQ 12      // Control dirección izquierda del motor
+#define PIN_MOTOR_DIR_DER 13      // Control dirección derecha del motor
+#define PIN_CENTRIFUGADO 14     // Control centrifugado del motor
+#define PIN_VALVULA_AGUA 27     // Control de la válvula de entrada de agua
 #define PIN_ELECTROV_VAPOR 33   // Control de la electroválvula de vapor para calentar
-#define PIN_VALVULA_DESFOGUE 13 // Control de la válvula de drenaje
-#define PIN_MAGNET_PUERTA 25    // Control del bloqueo electromagnético de la puerta
+#define PIN_VALVULA_DESFOGUE 25 // Control de la válvula de drenaje
+#define PIN_MAGNET_PUERTA 26    // Control del bloqueo electromagnético de la puerta
 
 // Comunicación Serial para Nextion
 #define NEXTION_SERIAL Serial2

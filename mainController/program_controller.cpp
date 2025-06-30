@@ -240,7 +240,7 @@ void ProgramControllerClass::stopProgram() {
   if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA) {
     Actuators.emergencyStop(); // Detener todos los actuadores de forma segura
     setState(ESTADO_SELECCION);
-    Utils.debug("ProgramControllerClass::stopProgram| Programa detenido: " +
+    Utils.debug("Programa detenido: " +
                 String(_currentProgram));
   }
 }
@@ -1178,12 +1178,9 @@ void ProgramControllerClass::_handleExecutionState() {
     return;
   }
 
-  // 2. Verificar si estamos preparando la fase (llenado/calentamiento)
+  // 2. Verificar si estamos preparando la fase de preparación
   if (_preparingPhase) {
     // Mostrar estado de preparación en UI
-    // unsigned long prepTime = (millis() - _phaseStartTime) / 1000;
-    // UIController.updatePreparationStatus(prepTime);
-
     // Mostrar mensaje de preparación
     UIController.updatePhase(4); // Fase 4 = Preparación
 
@@ -1403,30 +1400,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     UIController.showSelectionScreen(
         _currentProgram); // Pasar índice 2 directamente
     break;
-
-    // case NEXTION_ID_BTN_PROG_ANTERIOR:
-    //   // Cambiar al programa anterior
-    //   if (_currentProgram > 0) {
-    //     _currentProgram--;
-    //   } else {
-    //     _currentProgram = NUM_PROGRAMAS - 1; // Circular: ir al último
-    //     programa
-    //   }
-    //   Storage.saveProgram(_currentProgram);
-    //   Utils.debug("📋 Programa seleccionado: " + String(_currentProgram +
-    //   22)); UIController.showSelectionScreen(_currentProgram); break;
-
-    // case NEXTION_ID_BTN_PROG_SIGUIENTE:
-    //   // Cambiar al programa siguiente
-    //   if (_currentProgram < NUM_PROGRAMAS - 1) {
-    //     _currentProgram++;
-    //   } else {
-    //     _currentProgram = 0; // Circular: ir al primer programa
-    //   }
-    //   Storage.saveProgram(_currentProgram);
-    //   Utils.debug("📋 Programa seleccionado: " + String(_currentProgram +
-    //   22)); UIController.showSelectionScreen(_currentProgram); break;
-
+    
   case NEXTION_ID_BTN_START:
     // Verificar estado de puerta para determinar acción
     if (!Sensors.isDoorClosed()) {
@@ -1437,10 +1411,6 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
 
       // Actualizar texto del botón después de bloquear
       Hardware.nextionSetText(NEXTION_COMP_BTN_START, "INICIAR");
-
-      // Breve pausa para mostrar mensaje
-      delay(1000);
-      Hardware.nextionSetText(NEXTION_COMP_MSG, "");
     } else {
       // Puerta cerrada - iniciar programa
       Utils.debug("▶️ Iniciando programa " + String(_currentProgram + 22));
@@ -1449,19 +1419,8 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     break;
 
   case NEXTION_ID_BTN_EDIT:
-    // Entrar en modo de edición para el programa seleccionado
-    Serial.println("=== BOTÓN EDIT PRESIONADO ===");
-    Serial.println("_currentProgram = " + String(_currentProgram));
-
-    // Depuración: Mostrar todos los valores almacenados
-    // Storage.debugPrintAllPrograms();
-
     Utils.debug("✏️ Editando programa " + String(_currentProgram + 22));
-    // Utils.debug("🔧 Llamando a startEditing(" + String(_currentProgram) + ",
-    // 0)");
     startEditing(_currentProgram, 0); // Comenzar editando la primera fase
-    // Utils.debug("🔧 startEditing() completado, estado actual: " +
-    // String(_currentState));
     break;
 
   default:

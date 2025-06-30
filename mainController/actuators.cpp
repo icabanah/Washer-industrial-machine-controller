@@ -107,22 +107,22 @@ void ActuatorsClass::init() {
 }
 
 void ActuatorsClass::startMotorForward() {
-  Hardware.digitalWrite(PIN_MOTOR_DIR_A, HIGH);
-  Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_IZQ, HIGH);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_DER, LOW);
   _motorState = MOTOR_FORWARD;
   Utils.debug("Motor iniciado en dirección adelante");
 }
 
 void ActuatorsClass::startMotorReverse() {
-  Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
-  Hardware.digitalWrite(PIN_MOTOR_DIR_B, HIGH);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_IZQ, LOW);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_DER, HIGH);
   _motorState = MOTOR_REVERSE;
   Utils.debug("Motor iniciado en dirección reversa");
 }
 
 void ActuatorsClass::stopMotor() {
-  Hardware.digitalWrite(PIN_MOTOR_DIR_A, LOW);
-  Hardware.digitalWrite(PIN_MOTOR_DIR_B, LOW);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_IZQ, LOW);
+  Hardware.digitalWrite(PIN_MOTOR_DIR_DER, LOW);
   _motorState = MOTOR_OFF;
   Utils.debug("Motor detenido");
 }
@@ -380,7 +380,7 @@ void ActuatorsClass::emergencyStop() {
   closeWaterValve();
   closeSteamValve();
   openDrainValve();
-  unlockDoor();
+  lockDoor(); // en caso de emergencia, bloquear la puerta
   
   Utils.debug("PARADA DE EMERGENCIA ACTIVADA");
 }

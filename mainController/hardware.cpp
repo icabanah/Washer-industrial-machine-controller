@@ -42,8 +42,8 @@ void HardwareClass::_initEmergencyButton()
 void HardwareClass::_initOutputs()
 {
   // Configurar pines de salida
-  pinMode(PIN_MOTOR_DIR_A, OUTPUT);
-  pinMode(PIN_MOTOR_DIR_B, OUTPUT);
+  pinMode(PIN_MOTOR_DIR_IZQ, OUTPUT);
+  pinMode(PIN_MOTOR_DIR_DER, OUTPUT);
   pinMode(PIN_CENTRIFUGADO, OUTPUT);
   pinMode(PIN_VALVULA_AGUA, OUTPUT);
   pinMode(PIN_ELECTROV_VAPOR, OUTPUT);
@@ -51,8 +51,8 @@ void HardwareClass::_initOutputs()
   pinMode(PIN_MAGNET_PUERTA, OUTPUT);
 
   // Inicializar todas las salidas en LOW
-  digitalWrite(PIN_MOTOR_DIR_A, LOW);
-  digitalWrite(PIN_MOTOR_DIR_B, LOW);
+  digitalWrite(PIN_MOTOR_DIR_IZQ, LOW);
+  digitalWrite(PIN_MOTOR_DIR_DER, LOW);
   digitalWrite(PIN_CENTRIFUGADO, LOW);
   digitalWrite(PIN_VALVULA_AGUA, LOW);
   digitalWrite(PIN_ELECTROV_VAPOR, LOW);

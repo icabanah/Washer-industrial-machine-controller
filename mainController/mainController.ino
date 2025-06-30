@@ -47,8 +47,8 @@ void setup()
 
   // Actuators.startMotorForward(); // Iniciar motor en modo forward para pruebas iniciales
   // Actuators.startMotorReverse(); // Iniciar motor en modo reverse para pruebas iniciales
-  // Hardware.digitalWrite(PIN_MOTOR_DIR_A, HIGH); // Configurar motor en dirección A para pruebas iniciales
-  // Hardware.digitalWrite(PIN_MOTOR_DIR_B, HIGH); // Configurar motor en dirección B para pruebas iniciales    
+  // Hardware.digitalWrite(PIN_MOTOR_DIR_IZQ, HIGH); // Configurar motor en dirección A para pruebas iniciales
+  // Hardware.digitalWrite(PIN_MOTOR_DIR_DER, HIGH); // Configurar motor en dirección B para pruebas iniciales    
   // Actuators.startCentrifuge(); // Iniciar centrifugado para pruebas iniciales
   // Actuators.openWaterValve(); // Abrir válvula de agua para pruebas iniciales
   // Actuators.lockDoor(); // Bloquear puerta para pruebas iniciales
