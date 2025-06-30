@@ -105,6 +105,7 @@ void ProgramControllerClass::setState(uint8_t newState) {
 
     case ESTADO_PAUSA:
       Actuators.stopMotor();
+      Actuators.stopAutoRotation();
       Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa pausado");
       break;
 
@@ -380,13 +381,6 @@ void ProgramControllerClass::_decrementTimer() {
 /// fase actual. Este método se encarga de verificar si se han alcanzado las
 /// condiciones de temperatura y nivel de agua
 void ProgramControllerClass::_checkSensorConditions() {
-  // Verificar puerta cerrada antes de cualquier operación
-  if (!Sensors.isDoorClosed()) {
-    Hardware.nextionSetText(NEXTION_COMP_MSG, "Error: Puerta abierta");
-    _triggerError(ERROR_PUERTA, "Puerta debe estar cerrada");
-    return;
-  }
-
   // Verificar las condiciones de temperatura y nivel de agua según la fase actual
   uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
   uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
@@ -422,7 +416,6 @@ void ProgramControllerClass::_checkSensorConditions() {
     } else {
       Actuators.closeSteamValve();
     }
-    // No usar PIN_VALVULA_AGUA en P22 (solo agua fría)
   } 
   // P23 (índice 1): Agua fría, sin calentamiento
   else if (_currentProgram == 1) {
@@ -431,8 +424,6 @@ void ProgramControllerClass::_checkSensorConditions() {
     } else {
       Actuators.closeWaterValve();
     }
-    // No hay control de vapor para agua fría
-    Actuators.closeSteamValve();
   }
   // P24 (índice 2): Configurable según parámetros
   else if (_currentProgram == 2) {
@@ -490,26 +481,21 @@ void ProgramControllerClass::_completePhase() {
         "🌪️ CENTRIFUGADO ACTIVADO - Ejecutando secuencia con centrifugado");
 
     // === SECUENCIA CON CENTRIFUGADO ===
-    // 1) PIN_ELECTROV_VAPOR OFF
+    // 1) PIN_VALVULA_VAPOR OFF
     Actuators.closeSteamValve();
-    Utils.debug("🔥 Vapor desactivado");
 
     // 2) PIN_VALVULA_DESFOGUE OFF - NO drenar durante centrifugado
     Actuators.closeDrainValve();
-    Utils.debug("💧 Válvula de drenaje cerrada para centrifugado");
 
     // 3) PIN_VALVULA_AGUA OFF
     Actuators.closeWaterValve();
-    Utils.debug("🚰 Válvula de agua cerrada");
 
     // 4) PIN_CENTRIFUGADO ON
     Actuators.startCentrifuge();
-    Utils.debug("🌪️ Centrifugado iniciado");
 
     // 5) PIN_MOTOR_DIR_A OFF y PIN_MOTOR_DIR_B OFF - salidas detenidas
     Actuators.stopAutoRotation();
     Actuators.stopMotor();
-    Utils.debug("🔄 Motores de lavado detenidos");
 
     // La página permanece en ejecución mostrando centrifugado activo
     // Crear timeout para finalizar centrifugado después del tiempo configurado
@@ -528,24 +514,19 @@ void ProgramControllerClass::_completePhase() {
     // === SECUENCIA SIN CENTRIFUGADO ===
     // 1) PIN_ELECTROV_VAPOR OFF
     Actuators.closeSteamValve();
-    Utils.debug("🔥 Vapor desactivado");
 
     // 2) PIN_VALVULA_DESFOGUE ON - drenar agua
     Actuators.openDrainValve();
-    Utils.debug("💧 Iniciando drenaje de agua");
 
     // 3) PIN_VALVULA_AGUA OFF
     Actuators.closeWaterValve();
-    Utils.debug("🚰 Válvula de agua cerrada");
 
     // 4) PIN_CENTRIFUGADO OFF
     Actuators.stopCentrifuge();
-    Utils.debug("🌪️ Centrifugado confirmado OFF");
 
     // 5) PIN_MOTOR_DIR_A OFF y PIN_MOTOR_DIR_B OFF - salidas detenidas
     Actuators.stopAutoRotation();
     Actuators.stopMotor();
-    Utils.debug("🔄 Motores detenidos");
 
     // Iniciar temporizador de 1 minuto para puerta bloqueada
     _startDoorLockTimer();
@@ -761,14 +742,12 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
   if (_timerRunning) {
     // 1) Temporizador ON (ya manejado en _timerRunning = true)
 
-    // 2) PIN_ELECTROV_VAPOR OFF - ya no ingresa agua
+    // 2) Cerrar válvulas (ya no ingresa agua)
     Actuators.closeSteamValve();
+    Actuators.closeWaterValve();
 
     // 3) PIN_VALVULA_DESFOGUE OFF - mantener agua
     Actuators.closeDrainValve();
-
-    // 4) PIN_VALVULA_AGUA OFF - ya está lleno
-    // Actuators.closeWaterValve();
 
     // 5) Motores ON con permutación - activar rotación según configuración
     uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
@@ -1203,7 +1182,7 @@ void ProgramControllerClass::_handleExecutionState() {
       lastSensorUpdate = currentTime;
       UIController.updateTemperature(Sensors.getCurrentTemperature());
       UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
-      UIController.updateRotation(Actuators.getCurrentRotationLevel());
+      // UIController.updateRotation(Actuators.getCurrentRotationLevel());
     }
 
     // Verificar si la fase terminó
