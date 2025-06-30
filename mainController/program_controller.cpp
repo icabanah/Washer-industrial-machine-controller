@@ -21,6 +21,7 @@ void ProgramControllerClass::init() {
   // Inicializar variables de pausa
   _pausedMinutes = 0;
   _pausedSeconds = 0;
+  _pauseActuatorsStopped = false;
 
   // Inicializar variables de estado de fase
   _preparingPhase = false;
@@ -204,6 +205,9 @@ void ProgramControllerClass::pauseProgram() {
 
 void ProgramControllerClass::resumeProgram() {
   if (_currentState == ESTADO_PAUSA) {
+    // Resetear flag de pausa para permitir reinicio de actuadores
+    _pauseActuatorsStopped = false;
+    
     // Restaurar tiempo restante desde donde se pausó
     _remainingMinutes = _pausedMinutes;
     _remainingSeconds = _pausedSeconds;
@@ -351,39 +355,21 @@ void ProgramControllerClass::_checkSensorConditions() {
 
   // Si estamos preparando la fase, mostrar el estado en el temporizador
   if (_preparingPhase) {
-    // unsigned long elapsedTime = (millis() - _phaseStartTime) / 1000; //
-    // segundos uint8_t prepMinutes = elapsedTime / 60; uint8_t prepSeconds =
-    // elapsedTime % 60;
-
-    // // Mostrar tiempo de preparación con indicador
-    // UIController.updateTime(prepMinutes, prepSeconds);
-    // UIController.updateProgressBar(0); // Barra en 0 durante preparación
 
     // Mostrar mensaje de estado
     String statusMsg = "Preparando: ";
     bool waterOk = Sensors.isWaterLevelReached(targetLevel);
     bool tempOk = Sensors.isTemperatureReached(targetTemp);
-
-    // if (!waterOk) {
-    //   statusMsg += "Llenando... ";
-    // }
-    // if (!tempOk) {
-    //   statusMsg += "Calentando... ";
-    // }
-    // if (waterOk && tempOk) {
-    //   statusMsg = "Iniciando ciclo...";
-    // }
-
-    // Actualizar estado en la UI (esto requerirá un método nuevo en
-    // UIController) Por ahora, usar debug
-    // static unsigned long lastStatusUpdate = 0;
-    // if (millis() - lastStatusUpdate > 5000) { // Cada 5 segundos
-    //   lastStatusUpdate = millis();
-    //   Utils.debug("📊 " + statusMsg + " Agua:" +
-    //   String(Sensors.getCurrentWaterLevel()) + "/" + String(targetLevel) + "
-    //   Temp:" + String(Sensors.getCurrentTemperature()) + "/" +
-    //   String(targetTemp) + "°C");
-    // }
+    if (!waterOk) {
+      statusMsg += "Llenando... ";
+    }
+    if (!tempOk) {
+      statusMsg += "Calentando... ";
+    }
+    if (waterOk && tempOk) {
+      statusMsg = "Iniciando ciclo...";
+    }
+    Hardware.nextionSetText(NEXTION_COMP_MSG, statusMsg);
   }
 
   // Control de llenado de agua
@@ -564,7 +550,7 @@ void ProgramControllerClass::_initializeProgram() {
   // === INICIALIZACIÓN SEGÚN DOCUMENTO DEL CLIENTE ===
 
   // 1. Bloquear puerta (ya verificada en startProgram)
-  Actuators.lockDoor();
+  // Actuators.lockDoor();
 
   // 2. Inicializar variables del programa
   _totalMinutes = Storage.loadTime(_currentProgram, _currentPhase);
@@ -586,36 +572,6 @@ void ProgramControllerClass::_initializeProgram() {
     _maxTandas = 3; // Configurable según necesidades del cliente
   }
 }
-
-// void ProgramControllerClass::_configureProgramType() {
-//   // === CONFIGURACIÓN DE PROGRAMAS SEGÚN DOCUMENTO DEL CLIENTE ===
-
-//   switch (_currentProgram) {
-//     case 0: // Programa 22 - Agua Caliente
-//       Utils.debug("🔥 Configurando Programa 22 - Agua Caliente");
-//       // Activar gestión de temperatura activa para todas las fases
-//       // P22 usa agua caliente con control de temperatura estricto
-//       break;
-
-//     case 1: // Programa 23 - Agua Fría
-//       Utils.debug("❄️ Configurando Programa 23 - Agua Fría");
-//       // Desactivar gestión de temperatura (solo agua fría)
-//       // P23 usa agua fría sin calentamiento
-//       break;
-
-//     case 2: // Programa 24 - Multi-ciclo configurable
-//       Utils.debug("🔄 Configurando Programa 24 - Multi-ciclo");
-//       // Configurar según tipo de agua seleccionado por el usuario
-//       // El tipo de agua se define por fase en los arrays de configuración
-//       break;
-
-//     default:
-//       Utils.debug("❓ Programa desconocido: " + String(_currentProgram));
-//       break;
-//   }
-
-//   Utils.debug("✅ Configuración de programa completada");
-// }
 
 void ProgramControllerClass::_handleTemperatureControl() {
   // === CONTROL DE TEMPERATURA CON DRENAJE PARCIAL SEGÚN DOCUMENTO DEL CLIENTE
@@ -799,16 +755,6 @@ uint8_t ProgramControllerClass::getProgressPercentage() {
   uint16_t remainingTotal = (_remainingMinutes * 60) + _remainingSeconds;
   uint8_t progress = 100 - ((remainingTotal * 100) / _totalSeconds);
 
-  // Debug cada 5 segundos para verificar sincronización
-  // static unsigned long lastDebug = 0;
-  // if (millis() - lastDebug > 5000) { // Cada 5 segundos
-  //   Utils.debug("📊 Progreso: " + String(progress) + "% | Restante: " +
-  //               String(_remainingMinutes) + ":" + String(_remainingSeconds) +
-  //               " | Total: " + String(_totalSeconds) + "s | Timer: " +
-  //               String(_timerRunning ? "ON" : "OFF"));
-  //   lastDebug = millis();
-  // }
-
   return progress;
 }
 
@@ -902,7 +848,8 @@ void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
     setState(ESTADO_EDICION);
 
     // Mostrar pantalla de edición
-    _updateEditDisplay();
+    // _updateEditDisplay();
+    UIController.updateEditDisplay();
   }
 }
 
@@ -1221,13 +1168,13 @@ void ProgramControllerClass::_handlePauseState() {
   // Estado de pausa - El programa está detenido temporalmente
 
   // Asegurar que todos los actuadores estén detenidos
-  static bool actuatorsStopped = false;
-  if (!actuatorsStopped) {
+  if (!_pauseActuatorsStopped) {
+    Actuators.stopAutoRotation(); // Detener permutación durante pausa
     Actuators.stopMotor();
     Actuators.closeWaterValve();
     Actuators.closeSteamValve();
     // Mantener puerta bloqueada por seguridad
-    actuatorsStopped = true;
+    _pauseActuatorsStopped = true;
     Utils.debug("⏸️ Sistema en pausa - actuadores detenidos");
   }
 
@@ -1507,7 +1454,8 @@ void ProgramControllerClass::_decreaseCurrentParameter() {
     break;
   }
 
-  _updateEditDisplay();
+  // _updateEditDisplay();
+  UIController.updateEditDisplay();
 }
 
 void ProgramControllerClass::_increaseCurrentParameter() {
@@ -1554,7 +1502,8 @@ void ProgramControllerClass::_increaseCurrentParameter() {
     break;
   }
 
-  _updateEditDisplay();
+  // _updateEditDisplay();
+  UIController.updateEditDisplay();
 }
 
 void ProgramControllerClass::_selectPreviousParameter() {
@@ -1589,7 +1538,8 @@ void ProgramControllerClass::_selectPreviousParameter() {
     break;
   }
 
-  _updateEditDisplay();
+  // _updateEditDisplay();
+  UIController.updateEditDisplay();
 }
 
 void ProgramControllerClass::_selectNextParameter() {
@@ -1624,19 +1574,7 @@ void ProgramControllerClass::_selectNextParameter() {
     break;
   }
 
-  _updateEditDisplay();
-}
-
-/// @brief
-/// Actualiza la pantalla de edición con los valores actuales.
-/// Este método se encarga de mostrar los valores actuales de los parámetros del
-/// programa en la pantalla de edición. Se debe llamar después de realizar
-/// cambios en los parámetros para reflejarlos en la interfaz de usuario.
-void ProgramControllerClass::_updateEditDisplay() {
-  // Actualizar la pantalla de edición con los valores actuales
-  Serial.println("🔄 Actualizando valores en pantalla de edición");
-
-  // Solo actualizar la pantalla, no reinicializar todo
+  // _updateEditDisplay();
   UIController.updateEditDisplay();
 }
 

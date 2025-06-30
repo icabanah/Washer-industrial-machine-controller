@@ -843,7 +843,7 @@ void UIControllerClass::updateEditDisplay()
   char buffer[20];
 
   // Actualizar programa y fase en edición
-  generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer)); // Sumar 1 porque generarTextoPrograma espera 1,2,3
+  generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_PROG_EDICION, buffer);
 
   // Mostrar fase diferenciada según programa
@@ -860,14 +860,16 @@ void UIControllerClass::updateEditDisplay()
   
   // Deshabilitar edición de fase para P22 y P23 (solo P24 permite editar fases)
   if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
-    // Programas 22 y 23 - deshabilitar componente de fase
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",0"); // Deshabilitar touch
-    // Opcional: cambiar color para indicar que está deshabilitado
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=33840"); // Color gris
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_AGUA) + ",0"); // Deshabilitar touch
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".pco=33840"); // Color gris
   } else {
     // Programa 24 - habilitar componente de fase
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",1"); // Habilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=65535"); // Color normal
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_AGUA) + ",1"); // Habilitar touch
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".pco=65535"); // Color normal
   }
 
   Serial.println("Pantalla de edición actualizada (fase " + String(_programaEnEdicion == 2 ? "habilitada" : "deshabilitada") + " para P" + String(_programaEnEdicion + 22) + ")");

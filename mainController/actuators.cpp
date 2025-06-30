@@ -377,6 +377,7 @@ void ActuatorsClass::_updateMotorDirection() {
 
 void ActuatorsClass::emergencyStop() {
   // Detener todos los actuadores y llevar el sistema a un estado seguro
+  stopAutoRotation(); // IMPORTANTE: Detener temporizador de permutación
   stopMotor();
   stopCentrifuge();
   closeWaterValve();

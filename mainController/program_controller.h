@@ -77,6 +77,7 @@ private:
   // Variables para pausa
   uint8_t _pausedMinutes;
   uint8_t _pausedSeconds;
+  bool _pauseActuatorsStopped;
   
   // Variables de estado de fase
   bool _preparingPhase;
