@@ -322,8 +322,11 @@ uint8_t SensorsClass::_convertPressureToLevel(float pressure) {
 }
 
 bool SensorsClass::isTemperatureReached(uint8_t targetTemp) {
-  // Considerar que se ha alcanzado la temperatura si está dentro del rango definido
-  return Utils.isInRange(_currentTemperature, targetTemp, TEMP_RANGE);
+  // Considerar que se ha alcanzado la temperatura si:
+  // 1. Está dentro del rango definido (target ± 2°C), O
+  // 2. La temperatura actual es igual o mayor al setpoint (si se sobrepasó, se considera alcanzado)
+  return Utils.isInRange(_currentTemperature, targetTemp, TEMP_RANGE) || 
+         (_currentTemperature >= targetTemp);
 }
 
 bool SensorsClass::isWaterLevelReached(uint8_t targetLevel) {

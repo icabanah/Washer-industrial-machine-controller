@@ -78,6 +78,7 @@ private:
   uint8_t _pausedMinutes;
   uint8_t _pausedSeconds;
   bool _pauseActuatorsStopped;
+  bool _pausedPreparingPhase;
   
   // Variables de estado de fase
   bool _preparingPhase;
@@ -88,6 +89,8 @@ private:
   uint8_t _finalDrainSeconds;
   uint8_t _doorWaitMinutes;
   uint8_t _doorWaitSeconds;
+  uint8_t _centrifugeMinutes;
+  uint8_t _centrifugeSeconds;
   
   // Variables para sistema de tandas (Programa 24)
   uint8_t _tandaCounter;
@@ -122,6 +125,7 @@ private:
   void _handleEmergencyState();
   void _handleFinalDrainState();
   void _handleDoorWaitState();
+  void _handleCentrifugeState();
   
   // Métodos para manejar eventos táctiles por página
   void _handleSelectionPageEvents(uint8_t componentId);

@@ -22,6 +22,7 @@ void ProgramControllerClass::init() {
   _pausedMinutes = 0;
   _pausedSeconds = 0;
   _pauseActuatorsStopped = false;
+  _pausedPreparingPhase = false;
 
   // Inicializar variables de estado de fase
   _preparingPhase = false;
@@ -125,7 +126,9 @@ void ProgramControllerClass::setState(uint8_t newState) {
       _finalDrainSeconds = TIEMPO_DRENAJE_FINAL % 60;
       Actuators.openDrainValve();
       Actuators.stopMotor();
+      Actuators.stopAutoRotation();
       Actuators.stopCentrifuge();
+      UIController.updatePhase(5); // Mostrar "Drenaje final"
       Hardware.nextionSetText(NEXTION_COMP_MSG, "Drenaje final");
       break;
       
@@ -134,7 +137,19 @@ void ProgramControllerClass::setState(uint8_t newState) {
       _doorWaitMinutes = TIEMPO_PUERTA_BLOQUEO / 60;
       _doorWaitSeconds = TIEMPO_PUERTA_BLOQUEO % 60;
       Actuators.closeDrainValve();
+      Actuators.stopMotor();
+      Actuators.stopAutoRotation();
+      Actuators.stopCentrifuge();
+      UIController.updatePhase(6); // Mostrar "Enfriando"
       Hardware.nextionSetText(NEXTION_COMP_MSG, "Enfriando - Espere");
+      break;
+      
+    case ESTADO_CENTRIFUGADO:
+      // Inicializar centrifugado
+      _centrifugeMinutes = TIEMPO_CENTRIFUGADO / 60;
+      _centrifugeSeconds = TIEMPO_CENTRIFUGADO % 60;
+      UIController.updatePhase(7); // Mostrar "Centrifugando"
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "Centrifugando...");
       break;
     }
 
@@ -214,6 +229,9 @@ void ProgramControllerClass::pauseProgram() {
     // Preservar tiempo restante para continuar después
     _pausedMinutes = _remainingMinutes;
     _pausedSeconds = _remainingSeconds;
+    
+    // Preservar estado de preparación
+    _pausedPreparingPhase = _preparingPhase;
 
     // Detener temporizador
     _timerRunning = false;
@@ -236,10 +254,12 @@ void ProgramControllerClass::resumeProgram() {
     // Restaurar tiempo restante desde donde se pausó
     _remainingMinutes = _pausedMinutes;
     _remainingSeconds = _pausedSeconds;
+    
+    // Restaurar estado de preparación desde donde se pausó
+    _preparingPhase = _pausedPreparingPhase;
 
-    // Reactivar temporizador (mantener estado actual, no reinicializar)
-    _timerRunning = true;
-    _preparingPhase = false; // No volver a preparación
+    // Solo reactivar temporizador si no estaba en preparación
+    _timerRunning = !_preparingPhase;
 
     // Cambiar estado directamente sin llamar a setState() para evitar _initializeProgram()
     _previousState = _currentState;
@@ -497,15 +517,12 @@ void ProgramControllerClass::_completePhase() {
     Actuators.stopAutoRotation();
     Actuators.stopMotor();
 
-    // La página permanece en ejecución mostrando centrifugado activo
-    // Crear timeout para finalizar centrifugado después del tiempo configurado
-    Utils.debug("⏱️ Programando fin de centrifugado en " +
+    // Transición al estado de centrifugado para manejo controlado
+    Utils.debug("⏱️ Iniciando estado de centrifugado por " +
                 String(TIEMPO_CENTRIFUGADO / 1000) + " segundos");
-
-    Utils.createTimeout(TIEMPO_CENTRIFUGADO, []() {
-      Utils.debug("🌪️ Centrifugado completado - Finalizando programa");
-      ProgramController._finalizeProgramSequence();
-    });
+    
+    // Cambiar al estado de centrifugado
+    setState(ESTADO_CENTRIFUGADO);
 
   } else {
     Utils.debug(
@@ -528,8 +545,8 @@ void ProgramControllerClass::_completePhase() {
     Actuators.stopAutoRotation();
     Actuators.stopMotor();
 
-    // Iniciar temporizador de 1 minuto para puerta bloqueada
-    _startDoorLockTimer();
+    // Transici\u00f3n al estado de drenaje final
+    setState(ESTADO_DRENAJE_FINAL);
   }
 
   // === SISTEMA DE TANDAS PARA PROGRAMA 24 SEGÚN DOCUMENTO DEL CLIENTE ===
@@ -1096,6 +1113,10 @@ void ProgramControllerClass::_handleStateMachine() {
   case ESTADO_ESPERA_PUERTA:
     _handleDoorWaitState();
     break;
+    
+  case ESTADO_CENTRIFUGADO:
+    _handleCentrifugeState();
+    break;
 
   default:
     // Estado desconocido - regresar a IDLE por seguridad
@@ -1410,8 +1431,14 @@ void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
   case NEXTION_ID_BTN_PAUSAR:
     // Pausar/reanudar programa
     if (_currentState == ESTADO_EJECUCION) {
-      Utils.debug("⏸️ Pausando programa");
-      pauseProgram();
+      // Solo permitir pausa si no estamos en fase de preparación
+      if (_preparingPhase) {
+        Utils.debug("⚠️ Pausa bloqueada durante preparación");
+        Hardware.nextionSetText(NEXTION_COMP_MSG, "No se puede pausar durante preparación");
+      } else {
+        Utils.debug("⏸️ Pausando programa");
+        pauseProgram();
+      }
     } else if (_currentState == ESTADO_PAUSA) {
       Utils.debug("▶️ Reanudando programa");
       resumeProgram();
@@ -1725,6 +1752,7 @@ void ProgramControllerClass::_finalizeProgramSequence() {
 void ProgramControllerClass::_handleFinalDrainState() {
   // Manejar el estado de drenaje final
   static unsigned long lastSecondUpdate = 0;
+  static unsigned long lastSensorUpdate = 0;
   unsigned long currentTime = millis();
   
   // Actualizar cada segundo
@@ -1752,11 +1780,19 @@ void ProgramControllerClass::_handleFinalDrainState() {
                       String(_finalDrainSeconds < 10 ? "0" : "") + String(_finalDrainSeconds);
     Hardware.nextionSetText(NEXTION_COMP_MSG, drainMsg);
   }
+  
+  // Actualizar sensores cada 3 segundos para mostrar valores en tiempo real
+  if (currentTime - lastSensorUpdate >= 3000) {
+    lastSensorUpdate = currentTime;
+    UIController.updateTemperature(Sensors.getCurrentTemperature());
+    UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
+  }
 }
 
 void ProgramControllerClass::_handleDoorWaitState() {
   // Manejar el estado de espera para abrir puerta
   static unsigned long lastSecondUpdate = 0;
+  static unsigned long lastSensorUpdate = 0;
   unsigned long currentTime = millis();
   
   // Actualizar cada segundo
@@ -1783,5 +1819,53 @@ void ProgramControllerClass::_handleDoorWaitState() {
     String waitMsg = "Enfriando: " + String(_doorWaitMinutes) + ":" + 
                      String(_doorWaitSeconds < 10 ? "0" : "") + String(_doorWaitSeconds);
     Hardware.nextionSetText(NEXTION_COMP_MSG, waitMsg);
+  }
+  
+  // Actualizar sensores cada 3 segundos para mostrar valores en tiempo real
+  if (currentTime - lastSensorUpdate >= 3000) {
+    lastSensorUpdate = currentTime;
+    UIController.updateTemperature(Sensors.getCurrentTemperature());
+    UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
+  }
+}
+
+void ProgramControllerClass::_handleCentrifugeState() {
+  // Manejar el estado de centrifugado
+  static unsigned long lastSecondUpdate = 0;
+  static unsigned long lastSensorUpdate = 0;
+  unsigned long currentTime = millis();
+  
+  // Actualizar cada segundo
+  if (currentTime - lastSecondUpdate >= 1000) {
+    lastSecondUpdate = currentTime;
+    
+    // Decrementar temporizador de centrifugado
+    if (_centrifugeSeconds > 0) {
+      _centrifugeSeconds--;
+    } else if (_centrifugeMinutes > 0) {
+      _centrifugeMinutes--;
+      _centrifugeSeconds = 59;
+    } else {
+      // Centrifugado completado, detener centrifugado y pasar a drenaje final
+      Utils.debug("Centrifugado completado - Iniciando drenaje final");
+      Actuators.stopCentrifuge();
+      setState(ESTADO_DRENAJE_FINAL);
+      return;
+    }
+    
+    // Actualizar display con tiempo de centrifugado
+    UIController.updateTime(_centrifugeMinutes, _centrifugeSeconds);
+    
+    // Mostrar mensaje de estado
+    String centrifugeMsg = "Centrifugando: " + String(_centrifugeMinutes) + ":" + 
+                           String(_centrifugeSeconds < 10 ? "0" : "") + String(_centrifugeSeconds);
+    Hardware.nextionSetText(NEXTION_COMP_MSG, centrifugeMsg);
+  }
+  
+  // Actualizar sensores cada 3 segundos para mostrar valores en tiempo real
+  if (currentTime - lastSensorUpdate >= 3000) {
+    lastSensorUpdate = currentTime;
+    UIController.updateTemperature(Sensors.getCurrentTemperature());
+    UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
   }
 }

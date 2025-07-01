@@ -380,6 +380,15 @@ void UIControllerClass::updatePhase(uint8_t fase)
     case 4:
       faseTexto = "En preparacion";
       break;
+    case 5:
+      faseTexto = "Drenaje final";
+      break;
+    case 6:
+      faseTexto = "Enfriando";
+      break;
+    case 7:
+      faseTexto = "Centrifugando";
+      break;
     default:
       faseTexto = "No especificado";
       break;
