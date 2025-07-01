@@ -332,7 +332,7 @@ void ProgramControllerClass::_updatePhaseParameters() {
     UIController.updatePhase(_currentPhase); // Convertir índice interno (0-3) a
                                              // número de fase para UI (1-4)
     UIController.updateTime(_remainingMinutes, _remainingSeconds);
-    UIController.updateProgressBar(getTotalProgramProgressPercentage());
+    UIController.updateProgressBar(0); // Inicializar barra de progreso en 0% para nueva fase
 
     Utils.debug("📌 Nueva fase iniciada: " + String(_currentPhase));
   }
@@ -463,7 +463,7 @@ void ProgramControllerClass::_checkSensorConditions() {
     _remainingSeconds = 0;
 
     // Inicializar barra de progreso desde el inicio de esta fase
-    UIController.updateProgressBar(getTotalProgramProgressPercentage());
+    UIController.updateProgressBar(0); // Comenzar desde 0% cuando se cumplen las condiciones
 
     Hardware.nextionSetText(NEXTION_COMP_MSG, "Fase " + String(_currentPhase + 1) + " iniciada");
   }
@@ -1173,7 +1173,7 @@ void ProgramControllerClass::_handleExecutionState() {
       lastSecondUpdate = currentTime;
       _decrementTimer();
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      UIController.updateProgressBar(getTotalProgramProgressPercentage());
+      UIController.updateProgressBar(getProgressPercentage()); // Usar progreso de fase actual
       Actuators.updateTimers();
     }
 
