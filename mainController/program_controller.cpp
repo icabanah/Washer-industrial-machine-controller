@@ -285,7 +285,8 @@ void ProgramControllerClass::resumeProgram() {
 }
 
 void ProgramControllerClass::stopProgram() {
-  if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA) {
+  if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA || 
+      _currentState == ESTADO_DRENAJE_FINAL || _currentState == ESTADO_CENTRIFUGADO) {
     Actuators.emergencyStop(); // Detener todos los actuadores de forma segura
     setState(ESTADO_SELECCION);
     Utils.debug("Programa detenido: " +
@@ -297,7 +298,7 @@ void ProgramControllerClass::setPhase(uint8_t phase) {
   if (phase < NUM_FASES) {
     _currentPhase = phase;
     Storage.savePhase(phase);
-    Utils.debugValue("ProgramControllerClass::setPhase| Fase establecida a: ",
+    Utils.debugValue("Fase establecida a: ",
                      phase);
   }
 }
@@ -321,7 +322,7 @@ void ProgramControllerClass::nextPhase() {
 
     Storage.savePhase(_currentPhase);
     _updatePhaseParameters();
-    Utils.debugValue("ProgramControllerClass::nextPhase| Avanzado a la fase: ",
+    Utils.debugValue("Avanzado a la fase: ",
                      _currentPhase);
   } else {
     _completeProgram();
@@ -1447,8 +1448,18 @@ void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
 
   case NEXTION_ID_BTN_PARAR:
     // Detener programa completamente
-    Utils.debug("⏹️ Deteniendo programa");
-    stopProgram();
+    if (_currentState == ESTADO_ESPERA_PUERTA) {
+      // Bloquear detener durante espera de puerta (es crítico para seguridad)
+      Utils.debug("⚠️ Detener bloqueado durante espera de puerta");
+      Hardware.nextionSetText(NEXTION_COMP_MSG, "No se puede detener durante enfriamiento");
+    } else if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA || 
+               _currentState == ESTADO_DRENAJE_FINAL || _currentState == ESTADO_CENTRIFUGADO) {
+      // Permitir detener en ejecución, pausa, drenaje final y centrifugado
+      Utils.debug("⏹️ Deteniendo programa");
+      stopProgram();
+    } else {
+      Utils.debug("⚠️ Detener no disponible en estado actual: " + String(_currentState));
+    }
     break;
 
   default:
