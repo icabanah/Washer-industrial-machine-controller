@@ -97,9 +97,9 @@
 #define MOTOR_TIEMPO_PAUSA 2000  // Tiempo de pausa entre cambios de dirección (2 segundos)
 
 // Configuración de temporizadores especiales
-#define TIEMPO_DRENAJE_FINAL 60    // 2 minutos de drenaje al final (120 segundos)
-#define TIEMPO_PUERTA_BLOQUEO 60    // 1 minuto adicional antes de desbloquear puerta (60 segundos)
-#define TIEMPO_CENTRIFUGADO 120000  // 2 minutos de centrifugado (120 segundos)
+#define TIEMPO_DRENAJE_FINAL 45    // 2 minutos de drenaje al final (120 segundos)
+#define TIEMPO_PUERTA_BLOQUEO 45    // 1 minuto adicional antes de desbloquear puerta (60 segundos)
+#define TIEMPO_CENTRIFUGADO 45  // 2 minutos de centrifugado (120 segundos)
 
 // Configuración de tareas asíncronas
 #define MAX_ASYNC_TASKS 10 // Número máximo de tareas asíncronas que se pueden gestionar

@@ -491,13 +491,16 @@ void ProgramControllerClass::_checkSensorConditions() {
 }
 
 void ProgramControllerClass::_completePhase() {
-  Utils.debugValue("Fase completada: ", _currentPhase);
+  Utils.debug("🏁 COMPLETANDO FASE - Programa: " + String(_currentProgram) + 
+              ", Fase: " + String(_currentPhase));
 
-  // Verificar si el centrifugado está activado
-  bool centrifugadoEnabled =
-      _isCentrifugadoEnabled(_currentProgram, _currentPhase);
+  // Solo verificar centrifugado si estamos en la última fase
+  if (isLastPhase()) {
+    // Verificar si el centrifugado está activado para la fase actual (última fase)
+    bool centrifugadoEnabled =
+        _isCentrifugadoEnabled(_currentProgram, _currentPhase);
 
-  if (centrifugadoEnabled) {
+    if (centrifugadoEnabled) {
     Utils.debug(
         "🌪️ CENTRIFUGADO ACTIVADO - Ejecutando secuencia con centrifugado");
 
@@ -524,6 +527,7 @@ void ProgramControllerClass::_completePhase() {
     
     // Cambiar al estado de centrifugado
     setState(ESTADO_CENTRIFUGADO);
+    return; // Salir de la función, no continuar con el resto de la lógica
 
   } else {
     Utils.debug(
@@ -548,6 +552,12 @@ void ProgramControllerClass::_completePhase() {
 
     // Transici\u00f3n al estado de drenaje final
     setState(ESTADO_DRENAJE_FINAL);
+    return; // Salir de la funci\u00f3n, no continuar con el resto de la l\u00f3gica
+    }
+  } else {
+    // No estamos en la \u00faltima fase, avanzar a la siguiente fase
+    nextPhase();
+    return;
   }
 
   // === SISTEMA DE TANDAS PARA PROGRAMA 24 SEGÚN DOCUMENTO DEL CLIENTE ===
@@ -714,7 +724,12 @@ bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa,
   if (programa >= NUM_PROGRAMAS || fase >= NUM_FASES) {
     return false;
   }
-  return _centrifugadoPrograma[programa][fase] == 1;
+  
+  bool enabled = _centrifugadoPrograma[programa][fase] == 1;
+  Utils.debug("🔍 Verificando centrifugado P" + String(programa) + 
+              " F" + String(fase) + ": " + String(enabled ? "ACTIVADO" : "DESACTIVADO"));
+  
+  return enabled;
 }
 
 void ProgramControllerClass::_configureActuatorsForPhase() {
@@ -1860,6 +1875,7 @@ void ProgramControllerClass::_handleCentrifugeState() {
       // Centrifugado completado, detener centrifugado y pasar a drenaje final
       Utils.debug("Centrifugado completado - Iniciando drenaje final");
       Actuators.stopCentrifuge();
+      Actuators.openDrainValve(); // Abrir drenaje después del centrifugado
       setState(ESTADO_DRENAJE_FINAL);
       return;
     }
