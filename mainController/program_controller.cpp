@@ -1812,6 +1812,11 @@ void ProgramControllerClass::_handleFinalDrainState() {
     lastSensorUpdate = currentTime;
     UIController.updateTemperature(Sensors.getCurrentTemperature());
     UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
+    
+    // Asegurar que centrifugado y motores estén apagados durante drenaje
+    Actuators.stopCentrifuge();
+    Actuators.stopMotor();
+    Actuators.stopAutoRotation();
   }
 }
 
@@ -1852,6 +1857,11 @@ void ProgramControllerClass::_handleDoorWaitState() {
     lastSensorUpdate = currentTime;
     UIController.updateTemperature(Sensors.getCurrentTemperature());
     UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
+    
+    // Asegurar que centrifugado y motores estén apagados durante espera de puerta
+    Actuators.stopCentrifuge();
+    Actuators.stopMotor();
+    Actuators.stopAutoRotation();
   }
 }
 
@@ -1894,5 +1904,9 @@ void ProgramControllerClass::_handleCentrifugeState() {
     lastSensorUpdate = currentTime;
     UIController.updateTemperature(Sensors.getCurrentTemperature());
     UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
+    
+    // Asegurar que motores estén apagados durante centrifugado (solo centrifugado debe estar activo)
+    Actuators.stopMotor();
+    Actuators.stopAutoRotation();
   }
 }
