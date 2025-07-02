@@ -719,14 +719,31 @@ void ProgramControllerClass::_handleTemperatureControl() {
 
 bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa,
                                                     uint8_t fase) {
-  // Verificar si el centrifugado está habilitado para este programa en la fase especificada
-  // El centrifugado es opcional en cada tanda (fase 2 = Centrifugado)
-  if (programa >= NUM_PROGRAMAS || fase >= NUM_FASES) {
+  // Verificar si el centrifugado está habilitado para este programa en la tanda actual
+  // El centrifugado es opcional en la fase 2 de cada tanda
+  if (programa >= NUM_PROGRAMAS) {
     return false;
   }
   
-  bool enabled = _centrifugadoPrograma[programa][fase] == 1;
-  Utils.debug("Centrifugado P" + String(programa + 22) + " F" + String(fase) + ": " + 
+  // Solo evaluar centrifugado en la fase 2 (fase de centrifugado)
+  if (fase != 2) {
+    return false; // El centrifugado solo aplica en la fase 2
+  }
+  
+  uint8_t tandaIndex;
+  if (programa == 2) { // P24 - usar tanda actual
+    tandaIndex = _tandaCounter; 
+  } else { // P22, P23 - solo tienen 1 tanda (índice 0)
+    tandaIndex = 0;
+  }
+  
+  // Verificar que el índice de tanda sea válido
+  if (tandaIndex >= NUM_FASES) {
+    return false;
+  }
+  
+  bool enabled = _centrifugadoPrograma[programa][tandaIndex] == 1;
+  Utils.debug("Centrifugado P" + String(programa + 22) + " Tanda" + String(tandaIndex + 1) + ": " + 
               String(enabled ? "ON" : "OFF"));
   
   return enabled;
@@ -1687,6 +1704,8 @@ void ProgramControllerClass::_loadProgramData() {
       _times[prog][fase] = Storage.loadTime(prog, fase);
       _rotations[prog][fase] = Storage.loadRotation(prog, fase);
       _tipoAguaPrograma[prog][fase] = Storage.loadTipoAgua(prog, fase);
+      // Para centrifugado: [prog][fase] se interpreta como [prog][tanda]
+      // P22/P23: solo tanda 0, P24: tandas 0,1,2 (fase se usa como índice de tanda)
       _centrifugadoPrograma[prog][fase] = Storage.loadCentrifugado(prog, fase);
     }
   }

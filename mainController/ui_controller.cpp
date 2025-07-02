@@ -1164,7 +1164,7 @@ void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fas
   _valoresTemporales[PARAM_TIEMPO] = Storage.loadTime(programa, fase);
   _valoresTemporales[PARAM_ROTACION] = Storage.loadRotation(programa, fase);
   _valoresTemporales[PARAM_FASE] = Storage.loadPhaseType(programa, fase);
-  _valoresTemporales[PARAM_CENTRIF] = Storage.loadCentrifugado(programa, fase);
+  _valoresTemporales[PARAM_CENTRIF] = Storage.loadCentrifugado(programa, fase); // fase aquí representa tanda
   _valoresTemporales[PARAM_AGUA] = Storage.loadTipoAgua(programa, fase);
 
   showMessage("Parámetros cargados de Storage - P" + String(programa + 22) + " F" + String(fase + 1), 2000);
@@ -1197,7 +1197,7 @@ void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase)
   _temporizadorLim[programa][fase] = _valoresTemporales[PARAM_TIEMPO];
   _rotacionTam[programa][fase] = _valoresTemporales[PARAM_ROTACION];
   _fasesPrograma[programa][fase] = _valoresTemporales[PARAM_FASE];
-  _centrifugadoPrograma[programa][fase] = _valoresTemporales[PARAM_CENTRIF];
+  _centrifugadoPrograma[programa][fase] = _valoresTemporales[PARAM_CENTRIF]; // fase aquí representa tanda
   _tipoAguaPrograma[programa][fase] = _valoresTemporales[PARAM_AGUA];
 
   Serial.println("✅ Parámetros guardados en Storage - P" + String(programa + 22) + " F" + String(fase + 1));

@@ -78,8 +78,8 @@ public:
   uint8_t loadTime(uint8_t program, uint8_t phase);
   void saveRotation(uint8_t program, uint8_t phase, uint8_t rotation);
   uint8_t loadRotation(uint8_t program, uint8_t phase);
-  void saveCentrifugado(uint8_t program, uint8_t phase, uint8_t centrifugado);
-  uint8_t loadCentrifugado(uint8_t program, uint8_t phase);
+  void saveCentrifugado(uint8_t program, uint8_t tandaIndex, uint8_t centrifugado); // tandaIndex: P22/P23=0, P24=0,1,2
+  uint8_t loadCentrifugado(uint8_t program, uint8_t tandaIndex);
   void saveTipoAgua(uint8_t program, uint8_t phase, uint8_t tipoAgua);
   uint8_t loadTipoAgua(uint8_t program, uint8_t phase);
   void savePhaseType(uint8_t program, uint8_t phase, uint8_t phaseType);
