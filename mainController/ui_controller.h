@@ -108,11 +108,10 @@ private:
   uint8_t (*_temperaturaLim)[4];
   uint8_t (*_temporizadorLim)[4];
   uint8_t (*_fasesPrograma)[4];
-  uint8_t (*_centrifugadoPrograma)[4];
+  uint8_t (*_centrifugadoPorTanda)[4];
   uint8_t (*_tipoAguaPrograma)[4];
   
   // Métodos internos para procesar componentes
-  void _handleNextionEvent(const String& event);  // Método obsoleto mantenido por compatibilidad
   void _handleTouchEvent();                        // Nuevo método para eventos táctiles
   void _handleSelectionPageEvent(uint8_t componentId);
   void _handleExecutionPageEvent(uint8_t componentId);

@@ -545,28 +545,28 @@ uint8_t StorageClass::loadRotation(uint8_t program, uint8_t phase) {
   }
 }
 
-void StorageClass::saveCentrifugado(uint8_t program, uint8_t phase, uint8_t centrifugado) {
+void StorageClass::saveCentrifugado(uint8_t program, uint8_t tanda, uint8_t centrifugado) {
   switch (program) {
-    case 0: // P22
+    case 0: // P22 - solo 1 tanda
       saveP22Centrifugado(centrifugado);
       break;
-    case 1: // P23
+    case 1: // P23 - solo 1 tanda
       saveP23Centrifugado(centrifugado);
       break;
-    case 2: // P24
-      saveP24Centrifugado(phase, centrifugado);
+    case 2: // P24 - 3 tandas (0, 1, 2)
+      saveP24Centrifugado(tanda, centrifugado);
       break;
   }
 }
 
-uint8_t StorageClass::loadCentrifugado(uint8_t program, uint8_t phase) {
+uint8_t StorageClass::loadCentrifugado(uint8_t program, uint8_t tanda) {
   switch (program) {
-    case 0: // P22
+    case 0: // P22 - solo 1 tanda
       return loadP22Centrifugado();
-    case 1: // P23
+    case 1: // P23 - solo 1 tanda
       return loadP23Centrifugado();
-    case 2: // P24
-      return loadP24Centrifugado(phase);
+    case 2: // P24 - 3 tandas (0, 1, 2)
+      return loadP24Centrifugado(tanda);
     default:
       return 1;
   }

@@ -29,33 +29,19 @@ public:
   void stopProgram();
   
   // Control de fase
-  void setPhase(uint8_t phase);
   uint8_t getCurrentPhase();
-  void nextPhase();
-  bool isLastPhase();
   
   // Gestión de temporizadores
   void updateTimers();
-  uint8_t getRemainingMinutes();
-  uint8_t getRemainingSeconds();
-  uint8_t getTotalMinutes();
-  uint8_t getTotalSeconds();
-  uint8_t getProgressPercentage();
-  uint8_t getTotalProgramProgressPercentage();
   
   // Gestión de edición
-  void startEditing(uint8_t program, uint8_t phase);
-  void endEditing(); // Terminar edición y volver a selección
-  void editParameter(uint8_t paramType, uint8_t value);
-  void saveEditing();
-  void cancelEditing();
+  void endEditing();
   
   // Manejo de eventos de usuario
   void processUserEvent(const String& event);
   
   // Manejo de emergencias
   void handleEmergency();
-  void resetEmergency();
   
   // Actualización periódica (debe llamarse en cada ciclo)
   void update();
@@ -109,11 +95,19 @@ private:
   uint8_t _times[NUM_PROGRAMAS][NUM_FASES];
   uint8_t _rotations[NUM_PROGRAMAS][NUM_FASES];
   uint8_t _tipoAguaPrograma[NUM_PROGRAMAS][NUM_FASES];
-  uint8_t _centrifugadoPrograma[NUM_PROGRAMAS][NUM_FASES]; // [programa][tanda] - P22/P23: [prog][0], P24: [prog][0,1,2]
+  uint8_t _centrifugadoPorTanda[NUM_PROGRAMAS][NUM_FASES]; // [programa][tanda] - P22/P23: 1 tanda, P24: 3 tandas
   
   void _loadProgramData();
   void _loadCurrentProgramState();
   void _updatePhaseParameters();
+  
+  // Métodos de control de fase (uso interno)
+  void nextPhase();
+  bool isLastPhase();
+  
+  // Métodos de temporizadores (uso interno)
+  uint8_t getProgressPercentage();
+  uint8_t getTotalProgramProgressPercentage();
   void _checkSensorConditions();
   void _decrementTimer();
   void _handleStateMachine();
@@ -132,12 +126,12 @@ private:
   void _handleEditPageEvents(uint8_t componentId);
   void _handleExecutionPageEvents(uint8_t componentId);
   
-  // Métodos auxiliares para edición de parámetros
-  void _decreaseCurrentParameter();
-  void _increaseCurrentParameter();
-  void _selectPreviousParameter();
-  void _selectNextParameter();
-  void _updateEditDisplay();
+  // Métodos de gestión de edición (uso interno)
+  void startEditing(uint8_t program, uint8_t phase);
+  void editParameter(uint8_t paramType, uint8_t value);
+  void saveEditing();
+  void cancelEditing();
+  
   
   // Métodos de programa
   void _initializeProgram();
@@ -145,9 +139,6 @@ private:
   void _completeProgram();
   void _configureProgramType();
   
-  // Métodos auxiliares para progreso total del programa
-  uint16_t _getTotalProgramDuration(uint8_t programa);
-  uint16_t _getElapsedProgramTime(uint8_t programa);
   
   // Control de actuadores según tanda
   void _configureActuatorsForPhase();
@@ -155,7 +146,6 @@ private:
   bool _isCentrifugadoEnabled(uint8_t programa, uint8_t tanda);
   
   // Secuencias especiales del programa
-  void _startDoorLockTimer();
   void _finalizeProgramSequence();
   
   // Manejo de errores

@@ -301,14 +301,6 @@ void ProgramControllerClass::stopProgram() {
   }
 }
 
-void ProgramControllerClass::setPhase(uint8_t phase) {
-  if (phase < NUM_FASES) {
-    _currentPhase = phase;
-    Storage.savePhase(phase);
-    Utils.debugValue("Fase establecida a: ",
-                     phase);
-  }
-}
 
 uint8_t ProgramControllerClass::getCurrentPhase() { return _currentPhase; }
 
@@ -573,7 +565,7 @@ void ProgramControllerClass::_completePhase() {
     // Verificar si hay más tandas pendientes
     if (_tandaCounter < _maxTandas - 1) {
       _tandaCounter++;
-      Utils.debug("🔄 P24 - Completando tanda " + String(_tandaCounter) +
+      Utils.debug("P24 - Completando tanda " + String(_tandaCounter + 1) +
                   " de " + String(_maxTandas));
 
       // Reiniciar desde la primera fase (Llenado) para nueva tanda
@@ -585,7 +577,7 @@ void ProgramControllerClass::_completePhase() {
       _preparingPhase = true;
       _phaseStartTime = millis();
 
-      Utils.debug("🔄 Iniciando tanda " + String(_tandaCounter + 1) +
+      Utils.debug("Iniciando tanda " + String(_tandaCounter + 1) +
                   " - Volviendo a Fase 0 (Llenado)");
 
       // Mostrar progreso de tandas en UI
@@ -595,7 +587,7 @@ void ProgramControllerClass::_completePhase() {
 
       return;
     } else {
-      Utils.debug("✅ P24 - Todas las tandas completadas (" +
+      Utils.debug("P24 - Todas las tandas completadas (" +
                   String(_maxTandas) + " tandas)");
     }
   }
@@ -718,7 +710,7 @@ void ProgramControllerClass::_handleTemperatureControl() {
 }
 
 bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa,
-                                                    uint8_t fase) {
+                                                    uint8_t faseActual) {
   // Verificar si el centrifugado está habilitado para este programa en la tanda actual
   // El centrifugado es opcional en la fase 2 de cada tanda
   if (programa >= NUM_PROGRAMAS) {
@@ -726,24 +718,24 @@ bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa,
   }
   
   // Solo evaluar centrifugado en la fase 2 (fase de centrifugado)
-  if (fase != 2) {
+  if (faseActual != 2) {
     return false; // El centrifugado solo aplica en la fase 2
   }
   
-  uint8_t tandaIndex;
-  if (programa == 2) { // P24 - usar tanda actual
-    tandaIndex = _tandaCounter; 
+  uint8_t tandaActual;
+  if (programa == 2) { // P24 - usar tanda actual (0, 1, 2)
+    tandaActual = _tandaCounter; 
   } else { // P22, P23 - solo tienen 1 tanda (índice 0)
-    tandaIndex = 0;
+    tandaActual = 0;
   }
   
   // Verificar que el índice de tanda sea válido
-  if (tandaIndex >= NUM_FASES) {
+  if (tandaActual >= NUM_FASES) {
     return false;
   }
   
-  bool enabled = _centrifugadoPrograma[programa][tandaIndex] == 1;
-  Utils.debug("Centrifugado P" + String(programa + 22) + " Tanda" + String(tandaIndex + 1) + ": " + 
+  bool enabled = _centrifugadoPorTanda[programa][tandaActual] == 1;
+  Utils.debug("Centrifugado P" + String(programa + 22) + " T" + String(tandaActual + 1) + ": " + 
               String(enabled ? "ON" : "OFF"));
   
   return enabled;
@@ -812,17 +804,6 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
               String(_currentProgram + 22) + " F" + String(_currentPhase));
 }
 
-uint8_t ProgramControllerClass::getRemainingMinutes() {
-  return _remainingMinutes;
-}
-
-uint8_t ProgramControllerClass::getRemainingSeconds() {
-  return _remainingSeconds;
-}
-
-uint8_t ProgramControllerClass::getTotalMinutes() { return _totalMinutes; }
-
-uint8_t ProgramControllerClass::getTotalSeconds() { return _totalSeconds; }
 
 uint8_t ProgramControllerClass::getProgressPercentage() {
   // Durante preparación de fase, mostrar 0%
@@ -841,82 +822,18 @@ uint8_t ProgramControllerClass::getProgressPercentage() {
 }
 
 uint8_t ProgramControllerClass::getTotalProgramProgressPercentage() {
-  // Calcular progreso total del programa basado en duración total
-  uint16_t totalProgramDuration = _getTotalProgramDuration(_currentProgram);
-  if (totalProgramDuration == 0) {
-    return 0;
+  // Progreso simplificado basado en fase actual
+  if (_currentPhase >= NUM_FASES) {
+    return 100;
   }
-
-  uint16_t elapsedTime = _getElapsedProgramTime(_currentProgram);
-  uint8_t totalProgress = (elapsedTime * 100) / totalProgramDuration;
   
-  // Asegurar que no exceda 100%
-  if (totalProgress > 100) {
-    totalProgress = 100;
-  }
-
-  return totalProgress;
+  uint8_t baseProgress = (_currentPhase * 100) / NUM_FASES;
+  uint8_t phaseProgress = getProgressPercentage() / NUM_FASES;
+  
+  return baseProgress + phaseProgress;
 }
 
-uint16_t ProgramControllerClass::_getTotalProgramDuration(uint8_t programa) {
-  // Duración total en minutos para cada programa
-  uint16_t totalDuration = 0;
-  
-  for (uint8_t fase = 0; fase < NUM_FASES; fase++) {
-    uint8_t faseTime = Storage.loadTime(programa, fase);
-    
-    // Para P24, solo contar fases activas (fase 3 = centrifugado = 0 minutos)
-    if (programa == 2 && fase == 3 && faseTime == 0) {
-      continue; // Saltar centrifugado si está deshabilitado
-    }
-    
-    totalDuration += faseTime;
-  }
-  
-  // Para P24, multiplicar por número de tandas (por defecto 3)
-  if (programa == 2) {
-    totalDuration *= _maxTandas;
-  }
-  
-  return totalDuration;
-}
 
-uint16_t ProgramControllerClass::_getElapsedProgramTime(uint8_t programa) {
-  // Tiempo transcurrido del programa completo en minutos
-  uint16_t elapsedTime = 0;
-  
-  // Sumar tiempo de fases completadas
-  for (uint8_t fase = 0; fase < _currentPhase; fase++) {
-    uint8_t faseTime = Storage.loadTime(programa, fase);
-    elapsedTime += faseTime;
-  }
-  
-  // Sumar tiempo transcurrido de la fase actual
-  if (!_preparingPhase && _timerRunning) {
-    uint8_t currentPhaseTotal = Storage.loadTime(programa, _currentPhase);
-    // Calcular tiempo transcurrido: total menos tiempo restante
-    uint8_t currentPhaseElapsed = 0;
-    if (_remainingMinutes < currentPhaseTotal) {
-      currentPhaseElapsed = currentPhaseTotal - _remainingMinutes;
-    }
-    // Si _remainingSeconds > 0, significa que no se ha completado el minuto actual
-    if (_remainingSeconds > 0 && currentPhaseElapsed > 0) {
-      currentPhaseElapsed--;
-    }
-    elapsedTime += currentPhaseElapsed;
-  }
-  
-  // Para P24, agregar tiempo de tandas completadas
-  if (programa == 2 && _tandaCounter > 0) {
-    uint16_t singleCycleDuration = 0;
-    for (uint8_t fase = 0; fase < 3; fase++) { // P24 solo tiene 3 fases activas
-      singleCycleDuration += Storage.loadTime(programa, fase);
-    }
-    elapsedTime += (singleCycleDuration * _tandaCounter);
-  }
-  
-  return elapsedTime;
-}
 
 /// @brief
 /// Inicia el modo de edición para un programa y fase específicos.
@@ -1369,14 +1286,6 @@ void ProgramControllerClass::handleEmergency() {
   }
 }
 
-void ProgramControllerClass::resetEmergency() {
-  // Restablecer el sistema después de una emergencia
-  if (_currentState == ESTADO_EMERGENCIA) {
-    Utils.debug("Restableciendo sistema después de emergencia");
-    Actuators.emergencyReset();
-    setState(ESTADO_SELECCION);
-  }
-}
 
 void ProgramControllerClass::_triggerError(uint8_t errorCode,
                                            const String &errorMessage) {
@@ -1526,174 +1435,6 @@ void ProgramControllerClass::update() {
   _handleStateMachine();
 }
 
-void ProgramControllerClass::_decreaseCurrentParameter() {
-  // Disminuir el valor del parámetro actual respetando límites
-  switch (_editingParameter) {
-  case PARAM_NIVEL:
-    if (_editingParameterValue > MIN_NIVEL) {
-      _editingParameterValue--;
-      Utils.debug("🔽 Nivel disminuido a: " + String(_editingParameterValue));
-    } else {
-      Utils.debug("⚠️ Nivel ya está en el mínimo: " + String(MIN_NIVEL));
-    }
-    break;
-
-  case PARAM_TEMPERATURA:
-    if (_editingParameterValue > MIN_TEMPERATURA) {
-      _editingParameterValue--;
-      Utils.debug("🔽 Temperatura disminuida a: " +
-                  String(_editingParameterValue) + "°C");
-    } else {
-      Utils.debug("⚠️ Temperatura ya está en el mínimo: " +
-                  String(MIN_TEMPERATURA) + "°C");
-    }
-    break;
-
-  case PARAM_TIEMPO:
-    if (_editingParameterValue > MIN_TIEMPO) {
-      _editingParameterValue--;
-      Utils.debug("🔽 Tiempo disminuido a: " + String(_editingParameterValue) +
-                  " min");
-    } else {
-      Utils.debug("⚠️ Tiempo ya está en el mínimo: " + String(MIN_TIEMPO) +
-                  " min");
-    }
-    break;
-
-  case PARAM_ROTACION:
-    if (_editingParameterValue > MIN_ROTACION) {
-      _editingParameterValue--;
-      Utils.debug("🔽 Rotación disminuida a: " +
-                  String(_editingParameterValue));
-    } else {
-      Utils.debug("⚠️ Rotación ya está en el mínimo: " + String(MIN_ROTACION));
-    }
-    break;
-  }
-
-  // _updateEditDisplay();
-  UIController.updateEditDisplay();
-}
-
-void ProgramControllerClass::_increaseCurrentParameter() {
-  // Aumentar el valor del parámetro actual respetando límites
-  switch (_editingParameter) {
-  case PARAM_NIVEL:
-    if (_editingParameterValue < MAX_NIVEL) {
-      _editingParameterValue++;
-      Utils.debug("🔼 Nivel aumentado a: " + String(_editingParameterValue));
-    } else {
-      Utils.debug("⚠️ Nivel ya está en el máximo: " + String(MAX_NIVEL));
-    }
-    break;
-
-  case PARAM_TEMPERATURA:
-    if (_editingParameterValue < MAX_TEMPERATURA) {
-      _editingParameterValue++;
-      Utils.debug("🔼 Temperatura aumentada a: " +
-                  String(_editingParameterValue) + "°C");
-    } else {
-      Utils.debug("⚠️ Temperatura ya está en el máximo: " +
-                  String(MAX_TEMPERATURA) + "°C");
-    }
-    break;
-
-  case PARAM_TIEMPO:
-    if (_editingParameterValue < MAX_TIEMPO) {
-      _editingParameterValue++;
-      Utils.debug("🔼 Tiempo aumentado a: " + String(_editingParameterValue) +
-                  " min");
-    } else {
-      Utils.debug("⚠️ Tiempo ya está en el máximo: " + String(MAX_TIEMPO) +
-                  " min");
-    }
-    break;
-
-  case PARAM_ROTACION:
-    if (_editingParameterValue < MAX_ROTACION) {
-      _editingParameterValue++;
-      Utils.debug("🔼 Rotación aumentada a: " + String(_editingParameterValue));
-    } else {
-      Utils.debug("⚠️ Rotación ya está en el máximo: " + String(MAX_ROTACION));
-    }
-    break;
-  }
-
-  // _updateEditDisplay();
-  UIController.updateEditDisplay();
-}
-
-void ProgramControllerClass::_selectPreviousParameter() {
-  // Cambiar al parámetro anterior en orden cíclico
-  if (_editingParameter > 0) {
-    _editingParameter--;
-  } else {
-    _editingParameter = 3; // Ir al último parámetro (PARAM_ROTACION)
-  }
-
-  // Cargar el valor actual del nuevo parámetro
-  switch (_editingParameter) {
-  case PARAM_NIVEL:
-    _editingParameterValue = _waterLevels[_editingProgram][_editingPhase];
-    Utils.debug("📝 Editando NIVEL - Valor actual: " +
-                String(_editingParameterValue));
-    break;
-  case PARAM_TEMPERATURA:
-    _editingParameterValue = _temperatures[_editingProgram][_editingPhase];
-    Utils.debug("📝 Editando TEMPERATURA - Valor actual: " +
-                String(_editingParameterValue) + "°C");
-    break;
-  case PARAM_TIEMPO:
-    _editingParameterValue = _times[_editingProgram][_editingPhase];
-    Utils.debug("📝 Editando TIEMPO - Valor actual: " +
-                String(_editingParameterValue) + " min");
-    break;
-  case PARAM_ROTACION:
-    _editingParameterValue = _rotations[_editingProgram][_editingPhase];
-    Utils.debug("📝 Editando ROTACIÓN - Valor actual: " +
-                String(_editingParameterValue));
-    break;
-  }
-
-  // _updateEditDisplay();
-  UIController.updateEditDisplay();
-}
-
-void ProgramControllerClass::_selectNextParameter() {
-  // Cambiar al parámetro siguiente en orden cíclico
-  if (_editingParameter < 3) {
-    _editingParameter++;
-  } else {
-    _editingParameter = 0; // Ir al primer parámetro (PARAM_NIVEL)
-  }
-
-  // Cargar el valor actual del nuevo parámetro
-  switch (_editingParameter) {
-  case PARAM_NIVEL:
-    _editingParameterValue = _waterLevels[_editingProgram][_editingPhase];
-    Utils.debug("📝 Editando NIVEL - Valor actual: " +
-                String(_editingParameterValue));
-    break;
-  case PARAM_TEMPERATURA:
-    _editingParameterValue = _temperatures[_editingProgram][_editingPhase];
-    Utils.debug("📝 Editando TEMPERATURA - Valor actual: " +
-                String(_editingParameterValue) + "°C");
-    break;
-  case PARAM_TIEMPO:
-    _editingParameterValue = _times[_editingProgram][_editingPhase];
-    Utils.debug("📝 Editando TIEMPO - Valor actual: " +
-                String(_editingParameterValue) + " min");
-    break;
-  case PARAM_ROTACION:
-    _editingParameterValue = _rotations[_editingProgram][_editingPhase];
-    Utils.debug("📝 Editando ROTACIÓN - Valor actual: " +
-                String(_editingParameterValue));
-    break;
-  }
-
-  // _updateEditDisplay();
-  UIController.updateEditDisplay();
-}
 
 void ProgramControllerClass::_loadProgramData() {
   // Cargar todos los datos de programa desde almacenamiento
@@ -1704,9 +1445,9 @@ void ProgramControllerClass::_loadProgramData() {
       _times[prog][fase] = Storage.loadTime(prog, fase);
       _rotations[prog][fase] = Storage.loadRotation(prog, fase);
       _tipoAguaPrograma[prog][fase] = Storage.loadTipoAgua(prog, fase);
-      // Para centrifugado: [prog][fase] se interpreta como [prog][tanda]
-      // P22/P23: solo tanda 0, P24: tandas 0,1,2 (fase se usa como índice de tanda)
-      _centrifugadoPrograma[prog][fase] = Storage.loadCentrifugado(prog, fase);
+      // Para centrifugado: [prog][fase] representa [prog][tanda]
+      // P22/P23: solo tanda 0, P24: tandas 0,1,2
+      _centrifugadoPorTanda[prog][fase] = Storage.loadCentrifugado(prog, fase);
     }
   }
 
@@ -1716,35 +1457,6 @@ void ProgramControllerClass::_loadProgramData() {
   Utils.debug("Datos de programa cargados desde almacenamiento");
 }
 
-/// @brief
-/// Inicia el temporizador de 1 minuto para puerta bloqueada cuando centrifugado
-/// está desactivado
-void ProgramControllerClass::_startDoorLockTimer() {
-  Utils.debug("🔒 INICIANDO TEMPORIZADOR DE PUERTA BLOQUEADA (1 minuto)");
-
-  // === SECUENCIA SIN CENTRIFUGADO: PUERTA BLOQUEADA 1 MINUTO ===
-  // Puerta permanece bloqueada 1 min más antes de abrir
-  // Temporizador 01:00 (1 minuto) comienza conteo en reversa
-
-  // Configurar temporizador de 1 minuto en pantalla
-  _totalMinutes = 1;
-  _totalSeconds = 60;
-  _remainingMinutes = 1;
-  _remainingSeconds = 0;
-  _timerRunning = true;
-
-  // Mostrar mensaje en pantalla
-  UIController.updateTime(_remainingMinutes, _remainingSeconds);
-  UIController.showMessage("Drenaje - Puerta bloqueada", 2000);
-
-  Utils.debug("⏱️ Temporizador de puerta iniciado: 01:00");
-
-  // Crear timeout para finalizar después de 1 minuto
-  Utils.createTimeout(TIEMPO_PUERTA_BLOQUEO, []() {
-    Utils.debug("⏰ Temporizador de puerta completado");
-    ProgramController._finalizeProgramSequence();
-  });
-}
 
 void ProgramControllerClass::_finalizeProgramSequence() {
   Utils.debug("Finalizando P" + String(_currentProgram + 22));
