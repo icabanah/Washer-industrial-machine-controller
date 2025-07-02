@@ -1185,7 +1185,7 @@ void ProgramControllerClass::_handleExecutionState() {
   if (_preparingPhase) {
     // Mostrar estado de preparación en UI
     // Mostrar mensaje de preparación
-    UIController.updatePhase(4); // Fase 4 = Preparación
+    UIController.updatePhase(0); // Fase 0 = Lavado
 
     // Verificar si se alcanzaron las condiciones necesarias
     _checkSensorConditions();
@@ -1194,6 +1194,7 @@ void ProgramControllerClass::_handleExecutionState() {
     if (!_preparingPhase) {
       Utils.debug("✅ Condiciones alcanzadas - iniciando temporizador de fase");
       UIController.clearPreparationStatus();
+      UIController.updatePhase(1); // Fase 1 = Ejecución
     }
     return;
   }
@@ -1743,6 +1744,7 @@ void ProgramControllerClass::_finalizeProgramSequence() {
 }
 
 void ProgramControllerClass::_handleFinalDrainState() {
+  // UIController.updatePhase(2); // Fase 2 = Drenaje final
   // Manejar el estado de drenaje final
   static unsigned long lastSecondUpdate = 0;
   static unsigned long lastSensorUpdate = 0;
@@ -1761,6 +1763,7 @@ void ProgramControllerClass::_handleFinalDrainState() {
     } else {
       // Drenaje final completado, pasar a espera de puerta
       Hardware.nextionSetText(NEXTION_COMP_MSG, "Drenaje completado");
+      Actuators.stopCentrifuge(); // Asegurar que centrifugado esté detenido
       setState(ESTADO_ESPERA_PUERTA);
       return;
     }
@@ -1806,6 +1809,7 @@ void ProgramControllerClass::_handleDoorWaitState() {
     } else {
       // Espera completada, finalizar programa
       Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa terminado");
+      Actuators.stopCentrifuge(); // Asegurar que centrifugado esté detenido antes de finalizar
       _finalizeProgramSequence();
       return;
     }

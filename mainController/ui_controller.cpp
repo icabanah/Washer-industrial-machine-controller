@@ -378,15 +378,12 @@ void UIControllerClass::updatePhase(uint8_t fase)
       faseTexto = "Centrifugado";
       break;
     case 4:
-      faseTexto = "En preparacion";
-      break;
-    case 5:
       faseTexto = "Drenaje final";
       break;
-    case 6:
+    case 5:
       faseTexto = "Enfriando";
       break;
-    case 7:
+    case 6:
       faseTexto = "Centrifugando";
       break;
     default:
@@ -674,14 +671,6 @@ void UIControllerClass::showMessage(const String &message, uint16_t duration)
   _messageActive = true;
   _messageTimestamp = millis();
   _messageDuration = duration;
-}
-
-void UIControllerClass::playSound(uint8_t soundType)
-{
-  // Reproducir un sonido en la pantalla Nextion
-  // Los tipos pueden ser:
-  // 0: normal, 1: advertencia, 2: alarma
-  Hardware.nextionSendCommand("audio.val=" + String(soundType));
 }
 
 void UIControllerClass::clearPendingEvents()

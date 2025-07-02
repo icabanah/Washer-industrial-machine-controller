@@ -149,10 +149,10 @@ private:
   uint16_t _getTotalProgramDuration(uint8_t programa);
   uint16_t _getElapsedProgramTime(uint8_t programa);
   
-  // Control de actuadores según fase
+  // Control de actuadores según tanda
   void _configureActuatorsForPhase();
   void _handleTemperatureControl();
-  bool _isCentrifugadoEnabled(uint8_t programa, uint8_t fase);
+  bool _isCentrifugadoEnabled(uint8_t programa, uint8_t tanda);
   
   // Secuencias especiales del programa
   void _startDoorLockTimer();
