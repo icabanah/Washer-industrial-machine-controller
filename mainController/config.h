@@ -106,8 +106,10 @@
 
 // Configuración de programas
 #define NUM_PROGRAMAS 3
-#define NUM_FASES 4
+#define NUM_FASES 4  // 0=Llenado, 1=Lavado, 2=Centrifugado(opcional), 3=Drenaje
 #define MAX_NIVEL_ROTACION 3
+
+// P22/P23: 1 tanda × 4 fases, P24: 3 tandas × 4 fases
 
 // === DEFINICIÓN DE ESTADOS ===
 #define ESTADO_SELECCION 0

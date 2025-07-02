@@ -87,6 +87,13 @@ void ProgramControllerClass::setState(uint8_t newState) {
     // Acciones específicas al cambiar de estado
     switch (newState) {
     case ESTADO_SELECCION:
+      // Asegurar que todos los actuadores estén detenidos al volver a selección
+      Actuators.stopMotor();
+      Actuators.stopAutoRotation();
+      Actuators.stopCentrifuge();
+      Actuators.closeWaterValve();
+      Actuators.closeSteamValve();
+      Actuators.closeDrainValve();
       UIController.showSelectionScreen(_currentProgram);
       break;
 
@@ -309,14 +316,15 @@ void ProgramControllerClass::nextPhase() {
   if (_currentPhase < NUM_FASES - 1) {
     _currentPhase++;
 
-    // === VERIFICAR SI LA SIGUIENTE FASE ES CENTRIFUGADO Y ESTÁ DESHABILITADA
-    // ===
-    if (_currentPhase == 3 &&
+    // === VERIFICAR SI LA SIGUIENTE FASE ES CENTRIFUGADO Y ESTÁ DESHABILITADA ===
+    // Fase 2 = Centrifugado (índice 2, pero se muestra como fase 3 en UI)
+    if (_currentPhase == 2 &&
         !_isCentrifugadoEnabled(_currentProgram, _currentPhase)) {
-      // Fase 4 (centrifugado) está deshabilitada, saltar al final
-      Utils.debug(
-          "⏭️ Saltando centrifugado (deshabilitado) - Completando programa");
-      _completeProgram();
+      // Centrifugado está deshabilitado en esta tanda, saltar al drenaje (fase 3)
+      Utils.debug("⏭️ Saltando centrifugado (deshabilitado) - Avanzando a drenaje");
+      _currentPhase++; // Avanzar a fase 3 (drenaje)
+      Storage.savePhase(_currentPhase);
+      _updatePhaseParameters();
       return;
     }
 
@@ -483,6 +491,9 @@ void ProgramControllerClass::_checkSensorConditions() {
     _remainingMinutes = _totalMinutes;
     _remainingSeconds = 0;
 
+    // Actualizar la fase en la pantalla
+    UIController.updatePhase(_currentPhase);
+    
     // Inicializar barra de progreso desde el inicio de esta fase
     UIController.updateProgressBar(0); // Comenzar desde 0% cuando se cumplen las condiciones
 
@@ -491,18 +502,17 @@ void ProgramControllerClass::_checkSensorConditions() {
 }
 
 void ProgramControllerClass::_completePhase() {
-  Utils.debug("🏁 COMPLETANDO FASE - Programa: " + String(_currentProgram) + 
-              ", Fase: " + String(_currentPhase));
+  Utils.debug("Completando P" + String(_currentProgram + 22) + " F" + String(_currentPhase));
 
-  // Solo verificar centrifugado si estamos en la última fase
+  // Solo verificar centrifugado si estamos en la última fase (Drenaje)
   if (isLastPhase()) {
-    // Verificar si el centrifugado está activado para la fase actual (última fase)
+    // Verificar si el centrifugado está activado para esta tanda
+    // El centrifugado se evalúa en la fase 2, pero aquí verificamos si se ejecutó
     bool centrifugadoEnabled =
-        _isCentrifugadoEnabled(_currentProgram, _currentPhase);
+        _isCentrifugadoEnabled(_currentProgram, 2); // Fase 2 = Centrifugado
 
     if (centrifugadoEnabled) {
-    Utils.debug(
-        "🌪️ CENTRIFUGADO ACTIVADO - Ejecutando secuencia con centrifugado");
+    Utils.debug("Iniciando centrifugado");
 
     // === SECUENCIA CON CENTRIFUGADO ===
     // 1) PIN_VALVULA_VAPOR OFF
@@ -521,17 +531,14 @@ void ProgramControllerClass::_completePhase() {
     Actuators.stopAutoRotation();
     Actuators.stopMotor();
 
-    // Transición al estado de centrifugado para manejo controlado
-    Utils.debug("⏱️ Iniciando estado de centrifugado por " +
-                String(TIEMPO_CENTRIFUGADO / 1000) + " segundos");
+    // Transición al estado de centrifugado
     
     // Cambiar al estado de centrifugado
     setState(ESTADO_CENTRIFUGADO);
     return; // Salir de la función, no continuar con el resto de la lógica
 
   } else {
-    Utils.debug(
-        "🚫 CENTRIFUGADO DESACTIVADO - Ejecutando secuencia sin centrifugado");
+    Utils.debug("Sin centrifugado");
 
     // === SECUENCIA SIN CENTRIFUGADO ===
     // 1) PIN_ELECTROV_VAPOR OFF
@@ -560,15 +567,16 @@ void ProgramControllerClass::_completePhase() {
     return;
   }
 
-  // === SISTEMA DE TANDAS PARA PROGRAMA 24 SEGÚN DOCUMENTO DEL CLIENTE ===
-  if (_currentProgram == 2 && isLastPhase()) { // P24 en última fase
+  // === SISTEMA DE TANDAS PARA PROGRAMA 24 ===
+  // P24 tiene 3 tandas, cada tanda tiene 4 fases (Llenado→Lavado→Centrifugado→Drenaje)
+  if (_currentProgram == 2 && isLastPhase()) { // P24 completó una tanda
     // Verificar si hay más tandas pendientes
     if (_tandaCounter < _maxTandas - 1) {
       _tandaCounter++;
       Utils.debug("🔄 P24 - Completando tanda " + String(_tandaCounter) +
                   " de " + String(_maxTandas));
 
-      // Reiniciar desde la primera fase para nueva tanda
+      // Reiniciar desde la primera fase (Llenado) para nueva tanda
       _currentPhase = 0;
       Storage.savePhase(_currentPhase);
 
@@ -578,7 +586,7 @@ void ProgramControllerClass::_completePhase() {
       _phaseStartTime = millis();
 
       Utils.debug("🔄 Iniciando tanda " + String(_tandaCounter + 1) +
-                  " - Volviendo a Fase 1");
+                  " - Volviendo a Fase 0 (Llenado)");
 
       // Mostrar progreso de tandas en UI
       String tandaMsg =
@@ -601,10 +609,7 @@ void ProgramControllerClass::_completePhase() {
 }
 
 void ProgramControllerClass::_completeProgram() {
-  Utils.debug("✅ PROGRAMA COMPLETADO");
-
-  // Iniciar secuencia de drenaje final antes de finalizar
-  Utils.debug("🔄 Programa terminado, iniciando drenaje final");
+  Utils.debug("Programa completado");
   setState(ESTADO_DRENAJE_FINAL);
 }
 
@@ -628,17 +633,12 @@ void ProgramControllerClass::_initializeProgram() {
   _preparingPhase = true;
   _phaseStartTime = millis();
 
-  // 5. Inicializar contador de tandas para P24
-  if (_currentProgram == 2) { // Programa 24 (índice 2)
-    _tandaCounter = 0;
-    _maxTandas = 3; // Configurable según necesidades del cliente
-  }
+  // 5. Inicializar contador de tandas
+  _tandaCounter = 0;
+  _maxTandas = (_currentProgram == 2) ? 3 : 1; // P24=3 tandas, P22/P23=1 tanda
 }
 
 void ProgramControllerClass::_handleTemperatureControl() {
-  // === CONTROL DE TEMPERATURA CON DRENAJE PARCIAL SEGÚN DOCUMENTO DEL CLIENTE
-  // ===
-
   // Solo para programas que requieren control de temperatura
   bool requiresTempControl = false;
   uint8_t tipoAgua = 0; // 0=fría, 1=caliente
@@ -669,7 +669,6 @@ void ProgramControllerClass::_handleTemperatureControl() {
   float currentTemp = Sensors.getCurrentTemperature();
   float targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
 
-  // === CONTROL CON DRENAJE PARCIAL SEGÚN DOCUMENTO ===
   if (currentTemp < targetTemp - 2) {
     // Utils.debug("🌡️ Temperatura baja: " + String(currentTemp) + "°C,
     // objetivo: " + String(targetTemp) + "°C");
@@ -720,14 +719,15 @@ void ProgramControllerClass::_handleTemperatureControl() {
 
 bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa,
                                                     uint8_t fase) {
-  // Verificar si el centrifugado está habilitado para este programa y fase
+  // Verificar si el centrifugado está habilitado para este programa en la fase especificada
+  // El centrifugado es opcional en cada tanda (fase 2 = Centrifugado)
   if (programa >= NUM_PROGRAMAS || fase >= NUM_FASES) {
     return false;
   }
   
   bool enabled = _centrifugadoPrograma[programa][fase] == 1;
-  Utils.debug("🔍 Verificando centrifugado P" + String(programa) + 
-              " F" + String(fase) + ": " + String(enabled ? "ACTIVADO" : "DESACTIVADO"));
+  Utils.debug("Centrifugado P" + String(programa + 22) + " F" + String(fase) + ": " + 
+              String(enabled ? "ON" : "OFF"));
   
   return enabled;
 }
@@ -1726,53 +1726,20 @@ void ProgramControllerClass::_startDoorLockTimer() {
   });
 }
 
-/// @brief
-/// Secuencia final de programa: abrir puerta, limpiar actuadores y volver a
-/// selección
 void ProgramControllerClass::_finalizeProgramSequence() {
-  Utils.debug("🏁 FINALIZANDO PROGRAMA - Secuencia final");
+  Utils.debug("Finalizando P" + String(_currentProgram + 22));
 
-  // === UNA VEZ CONCLUIDO EL TIEMPO DE LA PUERTA ===
-
-  // 1) Puerta se abre
   Actuators.unlockDoor();
-  Utils.debug("🔓 Puerta desbloqueada y abierta");
-
-  // 2) Programa vuelve a página de selección (al final)
-
-  // 3) PIN_ELECTROV_VAPOR OFF
   Actuators.closeSteamValve();
-  Utils.debug("🔥 Vapor desactivado");
-
-  // 4) PIN_VALVULA_DESFOGUE OFF
   Actuators.closeDrainValve();
-  Utils.debug("💧 Válvula de drenaje cerrada");
-
-  // 5) PIN_VALVULA_AGUA OFF
   Actuators.closeWaterValve();
-  Utils.debug("🚰 Válvula de agua cerrada");
-
-  // 6) PIN_CENTRIFUGADO OFF
   Actuators.stopCentrifuge();
-  Utils.debug("🌪️ Centrifugado desactivado");
-
-  // 7) PIN_MOTOR_DIR_A OFF y PIN_MOTOR_DIR_B OFF - salidas detenidas
   Actuators.stopAutoRotation();
   Actuators.stopMotor();
-  Utils.debug("🔄 Todos los motores detenidos");
 
-  // Incrementar contador de uso
   Storage.incrementUsageCounter();
-  Utils.debug("📊 Contador de uso incrementado");
-
-  // Detener temporizador
   _timerRunning = false;
-
-  // 2) Programa vuelve a página de selección
   setState(ESTADO_SELECCION);
-  Utils.debug("📋 Regresando a página de selección");
-
-  Utils.debug("✅ PROGRAMA COMPLETAMENTE FINALIZADO");
 }
 
 void ProgramControllerClass::_handleFinalDrainState() {
