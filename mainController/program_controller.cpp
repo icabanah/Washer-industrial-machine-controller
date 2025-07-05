@@ -1160,6 +1160,11 @@ void ProgramControllerClass::_handleExecutionState() {
     // Verificar si la fase terminó
     if (_remainingMinutes == 0 && _remainingSeconds == 0) {
       _completePhase();
+      if(_isCentrifugadoEnabled(_currentProgram, _currentPhase)) {
+        UIController.updatePhase(2); // Fase 2 = Centrifugado
+      } else {
+        UIController.updatePhase(3); // Fase 3 = Drenaje
+      }
     }
   }
 
@@ -1495,6 +1500,7 @@ void ProgramControllerClass::_handleFinalDrainState() {
       // Drenaje final completado, pasar a espera de puerta
       Hardware.nextionSetText(NEXTION_COMP_MSG, "Drenaje completado");
       Actuators.stopCentrifuge(); // Asegurar que centrifugado esté detenido
+      UIController.updatePhase(3); // Fase 3 = Espera de puerta
       setState(ESTADO_ESPERA_PUERTA);
       return;
     }
@@ -1588,6 +1594,7 @@ void ProgramControllerClass::_handleCentrifugeState() {
       Utils.debug("Centrifugado completado - Iniciando drenaje final");
       Actuators.stopCentrifuge();
       Actuators.openDrainValve(); // Abrir drenaje después del centrifugado
+      UIController.updatePhase(2); // Fase 2 = Drenaje final
       setState(ESTADO_DRENAJE_FINAL);
       return;
     }

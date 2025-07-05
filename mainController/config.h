@@ -9,13 +9,15 @@
 #define PIN_BTN_EMERGENCIA 15 // Pin para botón de emergencia con antirrebote
 
 // Salidas (Actuadores)
-#define PIN_MOTOR_DIR_IZQ 12      // Control dirección izquierda del motor
-#define PIN_MOTOR_DIR_DER 13      // Control dirección derecha del motor
-#define PIN_CENTRIFUGADO 14     // Control centrifugado del motor
-#define PIN_VALVULA_AGUA 27     // Control de la válvula de entrada de agua
-#define PIN_ELECTROV_VAPOR 33   // Control de la electroválvula de vapor para calentar
+#define PIN_MOTOR_DIR_IZQ 12 // Control dirección izquierda del motor
+#define PIN_MOTOR_DIR_DER 13 // Control dirección derecha del motor
+#define PIN_CENTRIFUGADO 14  // Control centrifugado del motor
+#define PIN_VALVULA_AGUA 27  // Control de la válvula de entrada de agua
+#define PIN_ELECTROV_VAPOR                                                     \
+  33 // Control de la electroválvula de vapor para calentar
 #define PIN_VALVULA_DESFOGUE 25 // Control de la válvula de drenaje
-#define PIN_MAGNET_PUERTA 26    // Control del bloqueo electromagnético de la puerta
+#define PIN_MAGNET_PUERTA                                                      \
+  26 // Control del bloqueo electromagnético de la puerta
 
 // Comunicación Serial para Nextion
 #define NEXTION_SERIAL Serial2
@@ -33,8 +35,9 @@
 #define PIN_TEMP_SENSOR 23 // Pin de datos para sensor de temperatura
 
 // Sensor de Puerta (Opcional - para implementación futura)
-// #define PIN_SENSOR_PUERTA 22 // Pin para sensor magnético/reed switch de puerta
-// #define PUERTA_CERRADA_LEVEL LOW // Nivel lógico cuando puerta está cerrada
+// #define PIN_SENSOR_PUERTA 22 // Pin para sensor magnético/reed switch de
+// puerta #define PUERTA_CERRADA_LEVEL LOW // Nivel lógico cuando puerta está
+// cerrada
 
 // === PARÁMETROS DEL SISTEMA ===
 // Límites y configuraciones
@@ -42,7 +45,9 @@
 #define NIVEL_ACTIVO LOW
 
 // Configuración de la pantalla Nextion
-#define NEXTION_TIMEOUT 20               // Timeout para comunicación Nextion en ms (optimizado para respuesta rápida)
+#define NEXTION_TIMEOUT                                                        \
+  20 // Timeout para comunicación Nextion en ms (optimizado para respuesta
+     // rápida)
 #define NEXTION_END_CMD 0xFF, 0xFF, 0xFF // Bytes de finalización de comando
 
 // Configuración de temperatura
@@ -64,7 +69,7 @@
 #define INTERVALO_TEMPORIZADOR 800
 
 // === CONFIGURACIÓN DE MOTOR BIDIRECCIONAL (PERMUTACIÓN EN LAVADO) ===
-// 
+//
 // Tiempos en segundos para cada nivel de rotación
 // Secuencia: DERECHA → PAUSA → IZQUIERDA → PAUSA → [repetir]
 //
@@ -78,14 +83,14 @@
 // +-------+----------+------------+---------+----------------+
 
 // Nivel 1 - Rotación Suave
-#define MOTOR_L1_TIEMPO_DERECHA 5    // Segundos activo hacia la derecha
-#define MOTOR_L1_TIEMPO_IZQUIERDA 5  // Segundos activo hacia la izquierda  
-#define MOTOR_L1_TIEMPO_PAUSA 2      // Segundos de pausa entre cambios
+#define MOTOR_L1_TIEMPO_DERECHA 5   // Segundos activo hacia la derecha
+#define MOTOR_L1_TIEMPO_IZQUIERDA 5 // Segundos activo hacia la izquierda
+#define MOTOR_L1_TIEMPO_PAUSA 2     // Segundos de pausa entre cambios
 
 // Nivel 2 - Rotación Media
-#define MOTOR_L2_TIEMPO_DERECHA 8    // Segundos activo hacia la derecha
-#define MOTOR_L2_TIEMPO_IZQUIERDA 8  // Segundos activo hacia la izquierda
-#define MOTOR_L2_TIEMPO_PAUSA 2      // Segundos de pausa entre cambios
+#define MOTOR_L2_TIEMPO_DERECHA 8   // Segundos activo hacia la derecha
+#define MOTOR_L2_TIEMPO_IZQUIERDA 8 // Segundos activo hacia la izquierda
+#define MOTOR_L2_TIEMPO_PAUSA 2     // Segundos de pausa entre cambios
 
 // Nivel 3 - Rotación Intensa
 #define MOTOR_L3_TIEMPO_DERECHA 10   // Segundos activo hacia la derecha
@@ -93,20 +98,24 @@
 #define MOTOR_L3_TIEMPO_PAUSA 1      // Segundos de pausa entre cambios
 
 // Configuración legacy (mantenida por compatibilidad)
-#define MOTOR_TIEMPO_ON 5000    // Tiempo que permanece activo cada dirección (5 segundos)
-#define MOTOR_TIEMPO_PAUSA 2000  // Tiempo de pausa entre cambios de dirección (2 segundos)
+#define MOTOR_TIEMPO_ON                                                        \
+  5000 // Tiempo que permanece activo cada dirección (5 segundos)
+#define MOTOR_TIEMPO_PAUSA                                                     \
+  2000 // Tiempo de pausa entre cambios de dirección (2 segundos)
 
 // Configuración de temporizadores especiales
-#define TIEMPO_DRENAJE_FINAL 45    // 2 minutos de drenaje al final (120 segundos)
-#define TIEMPO_PUERTA_BLOQUEO 45    // 1 minuto adicional antes de desbloquear puerta (60 segundos)
-#define TIEMPO_CENTRIFUGADO 45  // 2 minutos de centrifugado (120 segundos)
+#define TIEMPO_DRENAJE_FINAL 45 // 2 minutos de drenaje al final (120 segundos)
+#define TIEMPO_PUERTA_BLOQUEO                                                  \
+  45 // 1 minuto adicional antes de desbloquear puerta (60 segundos)
+#define TIEMPO_CENTRIFUGADO 45 // 2 minutos de centrifugado (120 segundos)
 
 // Configuración de tareas asíncronas
-#define MAX_ASYNC_TASKS 10 // Número máximo de tareas asíncronas que se pueden gestionar
+#define MAX_ASYNC_TASKS                                                        \
+  10 // Número máximo de tareas asíncronas que se pueden gestionar
 
 // Configuración de programas
 #define NUM_PROGRAMAS 3
-#define NUM_FASES 4  // 0=Llenado, 1=Lavado, 2=Centrifugado(opcional), 3=Drenaje
+#define NUM_FASES 4 // 0=Llenado, 1=Lavado, 2=Centrifugado(opcional), 3=Drenaje
 #define MAX_NIVEL_ROTACION 3
 
 // P22/P23: 1 tanda × 4 fases, P24: 3 tandas × 4 fases
@@ -143,18 +152,22 @@
 #define NEXTION_PAGE_EMERGENCY 5
 
 // Valores de los parámetros de programa seteado
-#define NEXTION_COMP_SET_PROG "progr_sel"      // Programa en ejecución
-#define NEXTION_COMP_SET_NIVEL "val_nivel"     // Valor del nivel de agua
-#define NEXTION_COMP_SET_TEMP "val_temp"       // Valor de temperatura
-#define NEXTION_COMP_SET_TIEMPO "val_tiempo"   // Valor del tiempo
-#define NEXTION_COMP_SET_ROTACION "val_rotac"  // Nivel de rotación (suave, media o intensa)
-#define NEXTION_COMP_SET_FASE "val_fase"       // Fase de programa (llenado, lavado, Drenaje, Centrifugado (opcional))
-#define NEXTION_COMP_SET_CENTRIF "val_centrif" // Centrifugado activo (1) o inactivo (0)
-#define NEXTION_COMP_SET_AGUA "val_agua"       // tipo de agua (caliente o fria)
-#define NEXTION_COMP_MSG "mensaje"             // Texto del mensaje temporal
+#define NEXTION_COMP_SET_PROG "progr_sel"    // Programa en ejecución
+#define NEXTION_COMP_SET_NIVEL "val_nivel"   // Valor del nivel de agua
+#define NEXTION_COMP_SET_TEMP "val_temp"     // Valor de temperatura
+#define NEXTION_COMP_SET_TIEMPO "val_tiempo" // Valor del tiempo
+#define NEXTION_COMP_SET_ROTACION                                              \
+  "val_rotac" // Nivel de rotación (suave, media o intensa)
+#define NEXTION_COMP_SET_FASE                                                  \
+  "val_fase" // Fase de programa (llenado, lavado, Drenaje, Centrifugado
+             // (opcional))
+#define NEXTION_COMP_SET_CENTRIF                                               \
+  "val_centrif" // Centrifugado activo (1) o inactivo (0)
+#define NEXTION_COMP_SET_AGUA "val_agua" // tipo de agua (caliente o fria)
+#define NEXTION_COMP_MSG "mensaje"       // Texto del mensaje temporal
 
 // === COMPONENTES PÁGINA 0 - BIENVENIDA ===
-#define NEXTION_COMP_TITULO "lbl_titulo"       // Título principal "RH Electronics"
+#define NEXTION_COMP_TITULO "lbl_titulo" // Título principal "RH Electronics"
 #define NEXTION_COMP_SUBTITULO "lbl_subtitulo" // Subtítulo del sistema
 #define NEXTION_COMP_CONTACTO "lbl_contacto"   // Información de contacto
 
@@ -167,7 +180,8 @@
 // Botones de control
 #define NEXTION_COMP_BTN_START "btnComenzar"
 #define NEXTION_COMP_BTN_EDIT "btnEditar"
-#define NEXTION_COMP_PROGRAMA_SEL "val_prog" // Texto del programa seleccionado (ej: "P22")
+#define NEXTION_COMP_PROGRAMA_SEL                                              \
+  "val_prog" // Texto del programa seleccionado (ej: "P22")
 
 // Componentes de selección (usar los comunes para compatibilidad)
 #define NEXTION_COMP_SEL_NIVEL NEXTION_COMP_SET_NIVEL          // "val_nivel"
@@ -178,7 +192,8 @@
 #define NEXTION_COMP_SEL_CENTRIFUGADO NEXTION_COMP_SET_CENTRIF // "val_centrif"
 #define NEXTION_COMP_SEL_TIPO_AGUA NEXTION_COMP_SET_AGUA       // "val_agua"
 #define NEXTION_COMP_MSG_TEXT NEXTION_COMP_MSG                 // "mensaje"
-#define NEXTION_COMP_INFO_FASES NEXTION_COMP_MSG               // "mensaje" para info adicional
+#define NEXTION_COMP_INFO_FASES                                                \
+  NEXTION_COMP_MSG // "mensaje" para info adicional
 
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
@@ -188,16 +203,20 @@
 #define NEXTION_ID_BTN_EDIT 6     // Botón "Editar"
 
 // === COMPONENTES PÁGINA 2 - EJECUCIÓN ===
-#define NEXTION_COMP_PROG_EJECUCION "progr_ejec"         // Programa en ejecución
-#define NEXTION_COMP_FASE_EJECUCION "fase_ejec"          // Fase actual en ejecución
-#define NEXTION_COMP_TIEMPO_EJECUCION "tiempo_ejec"      // Tiempo transcurrido en ejecución
-#define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"          // Temperatura en ejecución
-#define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"        // Nivel en ejecución
-#define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_rot"       // Velocidad de motor
-#define NEXTION_COMP_BARRA_PROGRESO "barra_prog"         // Barra de progreso del proceso
-#define NEXTION_COMP_GAUGE_TEMP_EJECUCION "gauge_temp"   // Gauge de temperatura
-#define NEXTION_COMP_BARRA_NIVEL_EJECUCION "barra_nivel" // Gauge de presión (nivel de agua)
-#define NEXTION_COMP_GAUGE_VEL_EJECUCION "gauge_vel"     // Gauge de presión (nivel de agua)
+#define NEXTION_COMP_PROG_EJECUCION "progr_ejec" // Programa en ejecución
+#define NEXTION_COMP_FASE_EJECUCION "fase_ejec"  // Fase actual en ejecución
+#define NEXTION_COMP_TIEMPO_EJECUCION                                          \
+  "tiempo_ejec" // Tiempo transcurrido en ejecución
+#define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"    // Temperatura en ejecución
+#define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"  // Nivel en ejecución
+#define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_rot" // Velocidad de motor
+#define NEXTION_COMP_BARRA_PROGRESO                                            \
+  "barra_prog" // Barra de progreso del proceso
+#define NEXTION_COMP_GAUGE_TEMP_EJECUCION "gauge_temp" // Gauge de temperatura
+#define NEXTION_COMP_BARRA_NIVEL_EJECUCION                                     \
+  "barra_nivel" // Gauge de presión (nivel de agua)
+#define NEXTION_COMP_GAUGE_VEL_EJECUCION                                       \
+  "gauge_vel" // Gauge de presión (nivel de agua)
 
 // Botones de control
 #define NEXTION_COMP_BTN_PARAR "btnParar"
@@ -209,12 +228,15 @@
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 // Etiquetas de parámetros principales
-#define NEXTION_COMP_PROG_EDICION NEXTION_COMP_SET_PROG // "progr_sel" - Usar componente común
-#define NEXTION_COMP_FASE_EDICION NEXTION_COMP_SET_FASE // "val_fase" - Usar componente común
+#define NEXTION_COMP_PROG_EDICION                                              \
+  NEXTION_COMP_SET_PROG // "progr_sel" - Usar componente común
+#define NEXTION_COMP_FASE_EDICION                                              \
+  NEXTION_COMP_SET_FASE // "val_fase" - Usar componente común
 
 // Componentes de edición
-#define NEXTION_COMP_PARAM_EDITAR "param"             // Texto del parámetro en edición
-#define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Valor del parámetro en edición
+#define NEXTION_COMP_PARAM_EDITAR "param" // Texto del parámetro en edición
+#define NEXTION_COMP_PARAM_VALOR_EDITAR                                        \
+  "param_value" // Valor del parámetro en edición
 
 // Panel derecho - usar componentes comunes para mostrar valores
 #define NEXTION_COMP_VAL_NIVEL_EDIT NEXTION_COMP_SET_NIVEL     // "val_nivel"
@@ -226,36 +248,46 @@
 #define NEXTION_COMP_VAL_AGUA_EDIT NEXTION_COMP_SET_AGUA       // "val_agua"
 
 // === IDs ADICIONALES PARA NAVEGACIÓN ===
-// #define NEXTION_ID_BTN_PROG_ANTERIOR 8  // Botón "Anterior" en selección de programa
-// #define NEXTION_ID_BTN_PROG_SIGUIENTE 5 // Botón "Siguiente" en selección de programa
-// #define NEXTION_ID_BTN_PROG_MAS 6       // Botón "Siguiente" en selección de programa
-// #define NEXTION_ID_BTN_PROG_MENOS 7     // Botón "Siguiente" en selección de programa
+// #define NEXTION_ID_BTN_PROG_ANTERIOR 8  // Botón "Anterior" en selección de
+// programa #define NEXTION_ID_BTN_PROG_SIGUIENTE 5 // Botón "Siguiente" en
+// selección de programa #define NEXTION_ID_BTN_PROG_MAS 6       // Botón
+// "Siguiente" en selección de programa #define NEXTION_ID_BTN_PROG_MENOS 7 //
+// Botón "Siguiente" en selección de programa
 
 // Etiquetas de parámetros
-// #define NEXTION_COMP_BTN_SIGUIENTE "btnSiguiente"     // Botón "Siguiente" para editar parámetro
-// #define NEXTION_COMP_BTN_ANTERIOR "btnAnterior"       // Botón "Anterior" para editar parámetro
-// #define NEXTION_COMP_BTN_MAS "btnMas"                 // Botón "Mas" para editar parámetro
-// #define NEXTION_COMP_BTN_MENOS "btnMenos"             // Botón "Menos" para editar parámetro
-// #define NEXTION_COMP_BTN_GUARDAR "btnGuardar"         // Botón "Guardar" para guardar parámetro
-// #define NEXTION_COMP_BTN_CANCELAR "btnCancelar"       // Botón "Cancelar" para cancelar la edición de parámetro
-#define NEXTION_COMP_PARAM_EDITAR "param"             // Texto "param" para editar un parámetro en específico
-#define NEXTION_COMP_PARAM_VALOR_EDITAR "param_value" // Texto "param" para editar parámetro
+// #define NEXTION_COMP_BTN_SIGUIENTE "btnSiguiente"     // Botón "Siguiente"
+// para editar parámetro #define NEXTION_COMP_BTN_ANTERIOR "btnAnterior" //
+// Botón "Anterior" para editar parámetro #define NEXTION_COMP_BTN_MAS "btnMas"
+// // Botón "Mas" para editar parámetro #define NEXTION_COMP_BTN_MENOS
+// "btnMenos"             // Botón "Menos" para editar parámetro #define
+// NEXTION_COMP_BTN_GUARDAR "btnGuardar"         // Botón "Guardar" para guardar
+// parámetro #define NEXTION_COMP_BTN_CANCELAR "btnCancelar"       // Botón
+// "Cancelar" para cancelar la edición de parámetro
+#define NEXTION_COMP_PARAM_EDITAR                                              \
+  "param" // Texto "param" para editar un parámetro en específico
+#define NEXTION_COMP_PARAM_VALOR_EDITAR                                        \
+  "param_value" // Texto "param" para editar parámetro
 
-#define NEXTION_ID_BTN_PARAM_MENOS 7     // ID de Botón "-" para disminuir parámetro
-#define NEXTION_ID_BTN_PARAM_MAS 6       // ID de Botón "+" para aumentar parámetro
+#define NEXTION_ID_BTN_PARAM_MENOS 7 // ID de Botón "-" para disminuir parámetro
+#define NEXTION_ID_BTN_PARAM_MAS 6   // ID de Botón "+" para aumentar parámetro
 #define NEXTION_ID_BTN_PARAM_ANTERIOR 8  // ID de Botón anterior para parámetro
 #define NEXTION_ID_BTN_PARAM_SIGUIENTE 5 // ID de Botón siguiente parámetro
 #define NEXTION_ID_BTN_GUARDAR 3         // ID de Botón "Guardar"
 #define NEXTION_ID_BTN_CANCELAR 4        // ID de Botón "Cancelar"
 
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
-#define NEXTION_ID_PARAM_NIVEL_EDIT 18   // Valor actual del nivel en panel derecho
-#define NEXTION_ID_PARAM_TEMP_EDIT 19    // Valor actual de temperatura en panel derecho
-#define NEXTION_ID_PARAM_TIEMPO_EDIT 20  // Valor actual del tiempo en panel derecho
-#define NEXTION_ID_PARAM_ROTAC_EDIT 21   // Valor actual de rotación en panel derecho
-#define NEXTION_ID_PARAM_FASE_EDIT 22    // Valor actual de fase en panel derecho
-#define NEXTION_ID_PARAM_CENTRIF_EDIT 23 // Valor actual de fase en panel derecho
-#define NEXTION_ID_PARAM_AGUA_EDIT 24    // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_NIVEL_EDIT                                            \
+  18 // Valor actual del nivel en panel derecho
+#define NEXTION_ID_PARAM_TEMP_EDIT                                             \
+  19 // Valor actual de temperatura en panel derecho
+#define NEXTION_ID_PARAM_TIEMPO_EDIT                                           \
+  20 // Valor actual del tiempo en panel derecho
+#define NEXTION_ID_PARAM_ROTAC_EDIT                                            \
+  21 // Valor actual de rotación en panel derecho
+#define NEXTION_ID_PARAM_FASE_EDIT 22 // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_CENTRIF_EDIT                                          \
+  23                                  // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_AGUA_EDIT 24 // Valor actual de fase en panel derecho
 
 // === PARÁMETROS EDITABLES ===
 #define PARAM_NIVEL 0
@@ -301,8 +333,10 @@
 #define TEXT_PARAM_AGUA "Tipo Agua"
 
 // === CONFIGURACIÓN DE EDICIÓN ===
-#define EDIT_TIMEOUT_MS 30000    // Timeout para salir automáticamente de edición (30 segundos)
-#define PARAM_BLINK_INTERVAL 500 // Intervalo de parpadeo para parámetro en edición (ms)
+#define EDIT_TIMEOUT_MS                                                        \
+  30000 // Timeout para salir automáticamente de edición (30 segundos)
+#define PARAM_BLINK_INTERVAL                                                   \
+  500 // Intervalo de parpadeo para parámetro en edición (ms)
 
 // ===== DECLARACIONES DE FUNCIONES DE CONFIGURACIÓN =====
 
@@ -334,6 +368,7 @@ void generarTextoPrograma(int numeroPrograma, char *buffer, int tamanioBuffer);
 bool esParametroValido(int tipoParam, int valor);
 
 // Funciones de formateo para display
-void formatearParametroConUnidad(int tipoParam, int valor, char *buffer, int tamanioBuffer);
+void formatearParametroConUnidad(int tipoParam, int valor, char *buffer,
+                                 int tamanioBuffer);
 
 #endif // CONFIG_H

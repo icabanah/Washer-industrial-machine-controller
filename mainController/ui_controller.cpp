@@ -383,9 +383,6 @@ void UIControllerClass::updatePhase(uint8_t fase)
     case 5:
       faseTexto = "Enfriando";
       break;
-    case 6:
-      faseTexto = "Centrifugando";
-      break;
     default:
       faseTexto = "No especificado";
       break;
