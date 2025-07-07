@@ -39,7 +39,7 @@ uint8_t TemporizadorLim[3][4] = {
     {6, 12, 4, 0}  // P24: Ciclo más corto, sin centrifugado
 };
 
-// Fases según documento: 1=Llenado, 2=Lavado, 3=Drenaje, 4=Centrifugado
+// Fases según documento: 1=Llenado, 2=Lavado, 3=Centrifugado, 4=Drenaje
 uint8_t FasesPrograma[3][4] = {
     {1, 2, 3, 4}, // P22: Secuencia completa con centrifugado
     {1, 2, 3, 4}, // P23: Secuencia completa con centrifugado
@@ -372,10 +372,10 @@ void UIControllerClass::updatePhase(uint8_t fase)
       faseTexto = "Lavado";
       break;
     case 2:
-      faseTexto = "Drenaje";
+      faseTexto = "Centrifugado";
       break;
     case 3:
-      faseTexto = "Centrifugado";
+      faseTexto = "Drenaje";
       break;
     case 4:
       faseTexto = "Drenaje final";

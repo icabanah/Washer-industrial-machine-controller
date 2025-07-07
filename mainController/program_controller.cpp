@@ -127,26 +127,18 @@ void ProgramControllerClass::setState(uint8_t newState) {
       UIController.showEmergencyScreen();
       break;
       
-    case ESTADO_DRENAJE_FINAL:
-      // Inicializar drenaje final
-      _finalDrainMinutes = TIEMPO_DRENAJE_FINAL / 60;
-      _finalDrainSeconds = TIEMPO_DRENAJE_FINAL % 60;
-      Actuators.openDrainValve();
-      Actuators.stopMotor();
-      Actuators.stopAutoRotation();
-      Actuators.stopCentrifuge();
-      UIController.updatePhase(4); // Mostrar "Drenaje final"
-      Hardware.nextionSetText(NEXTION_COMP_MSG, "Drenaje final");
-      break;
       
     case ESTADO_ESPERA_PUERTA:
-      // Inicializar espera para abrir puerta
+      // Inicializar espera para abrir puerta (enfriando)
       _doorWaitMinutes = TIEMPO_PUERTA_BLOQUEO / 60;
       _doorWaitSeconds = TIEMPO_PUERTA_BLOQUEO % 60;
-      Actuators.closeDrainValve();
-      Actuators.stopMotor();
-      Actuators.stopAutoRotation();
-      Actuators.stopCentrifuge();
+      // Durante enfriamiento: drenaje abierto para goteo, centrifugado y motores apagados
+      Actuators.openDrainValve();    // Mantener abierto para goteo de últimas gotas
+      Actuators.stopMotor();         // Motores de dirección apagados
+      Actuators.stopAutoRotation();  // Sin rotación automática
+      Actuators.stopCentrifuge();    // Centrifugado apagado
+      Actuators.closeSteamValve();   // Cerrar vapor
+      Actuators.closeWaterValve();   // Cerrar agua
       UIController.updatePhase(5); // Mostrar "Enfriando"
       Hardware.nextionSetText(NEXTION_COMP_MSG, "Enfriando - Espere");
       break;
@@ -155,7 +147,7 @@ void ProgramControllerClass::setState(uint8_t newState) {
       // Inicializar centrifugado
       _centrifugeMinutes = TIEMPO_CENTRIFUGADO / 60;
       _centrifugeSeconds = TIEMPO_CENTRIFUGADO % 60;
-      UIController.updatePhase(3); // Mostrar "Centrifugando"
+      UIController.updatePhase(2); // Mostrar "Centrifugando"
       Hardware.nextionSetText(NEXTION_COMP_MSG, "Centrifugando...");
       break;
     }
@@ -293,7 +285,7 @@ void ProgramControllerClass::resumeProgram() {
 
 void ProgramControllerClass::stopProgram() {
   if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA || 
-      _currentState == ESTADO_DRENAJE_FINAL || _currentState == ESTADO_CENTRIFUGADO) {
+      _currentState == ESTADO_CENTRIFUGADO) {
     Actuators.emergencyStop(); // Detener todos los actuadores de forma segura
     setState(ESTADO_SELECCION);
     Utils.debug("Programa detenido: " +
@@ -309,7 +301,7 @@ void ProgramControllerClass::nextPhase() {
     _currentPhase++;
 
     // === VERIFICAR SI LA SIGUIENTE FASE ES CENTRIFUGADO Y ESTÁ DESHABILITADA ===
-    // Fase 2 = Centrifugado (índice 2, pero se muestra como fase 3 en UI)
+    // Fase 2 = Centrifugado
     if (_currentPhase == 2 &&
         !_isCentrifugadoEnabled(_currentProgram, _currentPhase)) {
       // Centrifugado está deshabilitado en esta tanda, saltar al drenaje (fase 3)
@@ -350,8 +342,7 @@ void ProgramControllerClass::_updatePhaseParameters() {
     _timerRunning = false;
 
     // Actualizar la interfaz de usuario
-    UIController.updatePhase(_currentPhase); // Convertir índice interno (0-3) a
-                                             // número de fase para UI (1-4)
+    UIController.updatePhase(_currentPhase); // Mostrar la fase actual en la UI
     UIController.updateTime(_remainingMinutes, _remainingSeconds);
     UIController.updateProgressBar(0); // Inicializar barra de progreso en 0% para nueva fase
 
@@ -465,14 +456,26 @@ void ProgramControllerClass::_checkSensorConditions() {
   }
 
   // Verificar si se han alcanzado las condiciones para iniciar el temporizador
-  if (Sensors.isWaterLevelReached(targetLevel) &&
-      Sensors.isTemperatureReached(targetTemp) && !_timerRunning) {
+  // En fase 1 (lavado), las condiciones ya se cumplieron en llenado, iniciar directamente
+  bool conditionsReached = false;
+  if (_currentPhase == 1) {
+    // En lavado, asumir que condiciones ya se cumplieron en llenado
+    conditionsReached = true;
+  } else {
+    // En otras fases, verificar condiciones normalmente
+    conditionsReached = Sensors.isWaterLevelReached(targetLevel) && 
+                       Sensors.isTemperatureReached(targetTemp);
+  }
+  
+  if (conditionsReached && !_timerRunning) {
 
-    // Iniciar rotación automática si es necesaria para esta fase
-    uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
-    if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
-      Actuators.startAutoRotation(rotLevel);
-      Hardware.nextionSetText(NEXTION_COMP_MSG, "Rotacion L" + String(rotLevel) + " iniciada");
+    // Iniciar rotación automática SOLO si estamos en fase 1 (lavado)
+    if (_currentPhase == 1) { // Solo en fase de lavado
+      uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
+      if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
+        Actuators.startAutoRotation(rotLevel);
+        Hardware.nextionSetText(NEXTION_COMP_MSG, "Rotacion L" + String(rotLevel) + " iniciada");
+      }
     }
 
     // Iniciar el temporizador cuando se alcanzan las condiciones necesarias
@@ -585,7 +588,13 @@ void ProgramControllerClass::_completePhase() {
     }
   }
   
-  // Para fases 0 (Llenado) - avanzar normalmente a la siguiente fase
+  // Para fase 0 (Llenado) - avanzar a lavado (fase 1)
+  if (_currentPhase == 0) {
+    nextPhase(); // Avanza a fase 1 (lavado)
+    return;
+  }
+  
+  // Para fase sin manejar - esto no debería ocurrir, pero por seguridad
   if (_currentPhase < 3) {
     nextPhase();
     return;
@@ -594,12 +603,8 @@ void ProgramControllerClass::_completePhase() {
 
 void ProgramControllerClass::_completeProgram() {
   Utils.debug("Programa completado");
-  // Para P22/P23 ir directamente a enfriando, para P24 usar drenaje final solo entre tandas
-  if (_currentProgram == 0 || _currentProgram == 1) {
-    setState(ESTADO_ESPERA_PUERTA); // Enfriando
-  } else {
-    setState(ESTADO_DRENAJE_FINAL); // P24 o casos especiales
-  }
+  // Para P22/P23 ir directamente a enfriando, para P24 también ir directamente a enfriando
+  setState(ESTADO_ESPERA_PUERTA); // Enfriando para todos los programas
 }
 
 void ProgramControllerClass::_initializeProgram() {
@@ -608,23 +613,30 @@ void ProgramControllerClass::_initializeProgram() {
   // 1. Bloquear puerta (ya verificada en startProgram)
   // Actuators.lockDoor();
 
-  // 2. Inicializar variables del programa
+  // 2. Inicializar fase al comienzo (LLENADO)
+  _currentPhase = 0;  // Siempre comenzar desde fase 0 (llenado)
+  Storage.savePhase(_currentPhase);
+
+  // 3. Inicializar variables del programa
   _totalMinutes = Storage.loadTime(_currentProgram, _currentPhase);
   _totalSeconds = _totalMinutes * 60;
   _remainingMinutes = _totalMinutes;
   _remainingSeconds = 0;
   _timerRunning = false;
 
-  // 3. Cargar parámetros del programa según tipo
+  // 4. Cargar parámetros del programa según tipo
   // _configureProgramType();
 
-  // 4. Inicializar estado de preparación
+  // 5. Inicializar estado de preparación
   _preparingPhase = true;
   _phaseStartTime = millis();
 
-  // 5. Inicializar contador de tandas
+  // 6. Inicializar contador de tandas
   _tandaCounter = 0;
   _maxTandas = (_currentProgram == 2) ? 3 : 1; // P24=3 tandas, P22/P23=1 tanda
+  
+  // 7. Actualizar UI para mostrar la fase inicial correcta (llenado)
+  UIController.updatePhase(_currentPhase); // Asegurar que muestre fase 0 (llenado)
 }
 
 void ProgramControllerClass::_handleTemperatureControl() {
@@ -788,12 +800,23 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
     // 3) PIN_VALVULA_DESFOGUE OFF - mantener agua
     Actuators.closeDrainValve();
 
-    // 5) Motores ON con permutación - activar rotación según configuración
-    uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
-    if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
-      Actuators.startAutoRotation(rotLevel);
-      Utils.debug("🔄 Iniciando rotación con permutación nivel: " +
-                  String(rotLevel));
+    // 4) PIN_CENTRIFUGADO OFF - centrifugado solo en fase 2 específica
+    if (_currentPhase != 2) {
+      Actuators.stopCentrifuge();
+    }
+
+    // 5) Motores ON con permutación - activar rotación SOLO en fase 1 (lavado)
+    if (_currentPhase == 1) { // Solo en fase de lavado
+      uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
+      if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
+        Actuators.startAutoRotation(rotLevel);
+        Utils.debug("🔄 Iniciando rotación con permutación nivel: " +
+                    String(rotLevel));
+      }
+    } else {
+      // En todas las demás fases, asegurar que motores estén apagados
+      Actuators.stopAutoRotation();
+      Actuators.stopMotor();
     }
   }
 
@@ -1053,9 +1076,6 @@ void ProgramControllerClass::_handleStateMachine() {
     _handleEmergencyState();
     break;
     
-  case ESTADO_DRENAJE_FINAL:
-    _handleFinalDrainState();
-    break;
     
   case ESTADO_ESPERA_PUERTA:
     _handleDoorWaitState();
@@ -1116,7 +1136,7 @@ void ProgramControllerClass::_handleExecutionState() {
   if (_preparingPhase) {
     // Mostrar estado de preparación en UI
     // Mostrar mensaje de preparación
-    UIController.updatePhase(0); // Fase 0 = Lavado
+    UIController.updatePhase(_currentPhase); // Mostrar fase actual durante preparación
 
     // Verificar si se alcanzaron las condiciones necesarias
     _checkSensorConditions();
@@ -1125,7 +1145,7 @@ void ProgramControllerClass::_handleExecutionState() {
     if (!_preparingPhase) {
       Utils.debug("✅ Condiciones alcanzadas - iniciando temporizador de fase");
       UIController.clearPreparationStatus();
-      UIController.updatePhase(1); // Fase 1 = Ejecución
+      UIController.updatePhase(_currentPhase); // Mostrar fase actual una vez que comienza
     }
     return;
   }
@@ -1157,29 +1177,26 @@ void ProgramControllerClass::_handleExecutionState() {
     // Verificar si la fase terminó
     if (_remainingMinutes == 0 && _remainingSeconds == 0) {
       _completePhase();
-      if(_isCentrifugadoEnabled(_currentProgram, _currentPhase)) {
-        UIController.updatePhase(3); // Fase 3 = Centrifugado
-      } else {
-        UIController.updatePhase(2); // Fase 2 = Drenaje
-      }
+      // La UI se actualiza automáticamente en _completePhase() y las transiciones de estado
     }
   }
 
   // 4. Control de temperatura con drenaje parcial según documento del cliente
   _handleTemperatureControl();
 
-  // 5. Control del motor según nivel de rotación
-  if (Storage.loadRotation(_currentProgram, _currentPhase) > 0) {
-    // Asegurar que el motor esté funcionando con el patrón correcto
+  // 5. Control del motor SOLO en fase 1 (lavado)
+  if (_currentPhase == 1 && Storage.loadRotation(_currentProgram, _currentPhase) > 0) {
+    // Asegurar que el motor esté funcionando con el patrón correcto solo en lavado
     if (!Actuators.isMotorRunning()) {
       uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
       Actuators.startAutoRotation(rotLevel);
     }
   } else {
-    // Sin rotación en esta fase
+    // En todas las demás fases o sin rotación - motores apagados
     if (Actuators.isMotorRunning()) {
       Actuators.stopMotor();
-      Utils.debug("⏹️ Motor detenido - Sin rotación en esta fase");
+      Actuators.stopAutoRotation();
+      Utils.debug("⏹️ Motor detenido - Solo funciona en fase 1 (lavado)");
     }
   }
 }
@@ -1397,8 +1414,8 @@ void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
       Utils.debug("⚠️ Detener bloqueado durante espera de puerta");
       Hardware.nextionSetText(NEXTION_COMP_MSG, "No se puede detener durante enfriamiento");
     } else if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA || 
-               _currentState == ESTADO_DRENAJE_FINAL || _currentState == ESTADO_CENTRIFUGADO) {
-      // Permitir detener en ejecución, pausa, drenaje final y centrifugado
+               _currentState == ESTADO_CENTRIFUGADO) {
+      // Permitir detener en ejecución, pausa y centrifugado
       Utils.debug("⏹️ Deteniendo programa");
       stopProgram();
     } else {
@@ -1476,53 +1493,6 @@ void ProgramControllerClass::_finalizeProgramSequence() {
   setState(ESTADO_SELECCION);
 }
 
-void ProgramControllerClass::_handleFinalDrainState() {
-  // UIController.updatePhase(2); // Fase 2 = Drenaje final
-  // Manejar el estado de drenaje final
-  static unsigned long lastSecondUpdate = 0;
-  static unsigned long lastSensorUpdate = 0;
-  unsigned long currentTime = millis();
-  
-  // Actualizar cada segundo
-  if (currentTime - lastSecondUpdate >= 1000) {
-    lastSecondUpdate = currentTime;
-    
-    // Decrementar temporizador de drenaje
-    if (_finalDrainSeconds > 0) {
-      _finalDrainSeconds--;
-    } else if (_finalDrainMinutes > 0) {
-      _finalDrainMinutes--;
-      _finalDrainSeconds = 59;
-    } else {
-      // Drenaje final completado, pasar a espera de puerta
-      Hardware.nextionSetText(NEXTION_COMP_MSG, "Drenaje completado");
-      Actuators.stopCentrifuge(); // Asegurar que centrifugado esté detenido
-      UIController.updatePhase(5); // Fase 5 = Enfriando
-      setState(ESTADO_ESPERA_PUERTA);
-      return;
-    }
-    
-    // Actualizar display con tiempo de drenaje
-    UIController.updateTime(_finalDrainMinutes, _finalDrainSeconds);
-    
-    // Mostrar mensaje de estado
-    String drainMsg = "Drenaje: " + String(_finalDrainMinutes) + ":" + 
-                      String(_finalDrainSeconds < 10 ? "0" : "") + String(_finalDrainSeconds);
-    Hardware.nextionSetText(NEXTION_COMP_MSG, drainMsg);
-  }
-  
-  // Actualizar sensores cada 3 segundos para mostrar valores en tiempo real
-  if (currentTime - lastSensorUpdate >= 3000) {
-    lastSensorUpdate = currentTime;
-    UIController.updateTemperature(Sensors.getCurrentTemperature());
-    UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
-    
-    // Asegurar que centrifugado y motores estén apagados durante drenaje
-    Actuators.stopCentrifuge();
-    Actuators.stopMotor();
-    Actuators.stopAutoRotation();
-  }
-}
 
 void ProgramControllerClass::_handleDoorWaitState() {
   // Manejar el estado de espera para abrir puerta

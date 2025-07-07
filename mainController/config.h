@@ -307,7 +307,7 @@
 #define MAX_TIEMPO 60
 #define MIN_ROTACION 1
 #define MAX_ROTACION 3
-#define MIN_FASE 1 // 1=llenado, 2=lavado, 3=drenaje, 4=centrifugado
+#define MIN_FASE 1 // 1=llenado, 2=lavado, 3=centrifugado, 4=drenaje
 #define MAX_FASE 4
 #define MIN_CENTRIF 0 // 0=inactivo, 1=activo
 #define MAX_CENTRIF 1
