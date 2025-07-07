@@ -462,7 +462,7 @@ void ProgramControllerClass::_checkSensorConditions() {
     // Marcar condiciones como alcanzadas
     _conditionsReached = true;
     
-    // Si estamos en fase 0 (llenado), transicionar automáticamente a fase 1 (lavado)
+    // SOLO hacer transición automática desde fase 0 (llenado) a fase 1 (lavado)
     if (_currentPhase == 0) {
       Utils.debug("Condiciones alcanzadas en llenado, transicionando a lavado");
       _currentPhase = 1;
@@ -484,7 +484,7 @@ void ProgramControllerClass::_checkSensorConditions() {
       Hardware.nextionSetText(NEXTION_COMP_MSG,
                               "Fase " + String(_currentPhase + 1) + " iniciada");
     } else {
-      // Para otras fases, solo iniciar el temporizador
+      // Para otras fases (1, 2, 3), solo iniciar el temporizador - NO hacer transiciones automáticas
       _timerRunning = true;
       _preparingPhase = false;
       
