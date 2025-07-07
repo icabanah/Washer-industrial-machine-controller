@@ -38,6 +38,7 @@ void ProgramControllerClass::init() {
   // Inicializar variables de edición
   _editingProgram = 0; // Inicializar con programa P22 (índice 0) por defecto
   _editingPhase = 0;
+  _editingTanda = 0; // Inicializar con tanda 0 por defecto
   _editingParameter = 0;
   _editingParameterValue = 0;
   _isEditing = false;
@@ -342,8 +343,7 @@ void ProgramControllerClass::_updatePhaseParameters() {
     // Actualizar la interfaz de usuario
     UIController.updatePhase(_currentPhase); // Mostrar la fase actual en la UI
     UIController.updateTime(_remainingMinutes, _remainingSeconds);
-    UIController.updateProgressBar(
-        0); // Inicializar barra de progreso en 0% para nueva fase
+    UIController.updateProgressBar(getProgressPercentage()); // Usar cálculo correcto de progreso
 
     Utils.debug("📌 Nueva fase iniciada: " + String(_currentPhase));
   }
@@ -789,7 +789,10 @@ uint8_t ProgramControllerClass::getProgressPercentage() {
     return 0;
 
   uint16_t remainingTotal = (_remainingMinutes * 60) + _remainingSeconds;
-  uint8_t progress = 100 - ((remainingTotal * 100) / _totalSeconds);
+  
+  // Usar aritmética de 32 bits para evitar overflow en la multiplicación
+  uint32_t progressCalc = (uint32_t)(remainingTotal) * 100;
+  uint8_t progress = 100 - (progressCalc / _totalSeconds);
 
   return progress;
 }
@@ -818,6 +821,7 @@ void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
   if (program < NUM_PROGRAMAS && phase < NUM_FASES) {
     _editingProgram = program;
     _editingPhase = phase;
+    _editingTanda = 0; // Inicializar con tanda 0 (P22/P23: solo 1 tanda, P24: primera de 3)
     _editingParameter = PARAM_NIVEL; // Comenzar editando el nivel
     _editingParameterValue =
         _waterLevels[program][phase]; // Cargar valor actual
@@ -825,40 +829,95 @@ void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
 
     setState(ESTADO_EDICION);
 
+    // Actualizar UI específica según el programa
+    _updateEditScreenForProgram();
+    
     // Mostrar pantalla de edición
-    // _updateEditDisplay();
     UIController.updateEditDisplay();
   }
+}
+
+void ProgramControllerClass::_updateEditScreenForProgram() {
+  // Configurar pantalla de edición según el programa
+  if (_editingProgram <= 1) {
+    // P22/P23: Solo 1 tanda, mostrar "1" fijo
+    Hardware.nextionSetText(NEXTION_COMP_SET_FASE, "1"); // Mostrar "1" (1 tanda)
+    // Nota: Para deshabilitar visualmente el componente se podría cambiar color o usar otro método
+  } else {
+    // P24: 3 tandas, mostrar tanda actual
+    Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(_editingTanda + 1)); // Mostrar tanda actual (1-3)
+  }
+  
+  // Cargar y mostrar los valores de la tanda actual
+  _loadEditingParametersForCurrentTanda();
+}
+
+void ProgramControllerClass::_loadEditingParametersForCurrentTanda() {
+  // Cargar parámetros según el programa y tanda
+  uint8_t tandaIndex = _editingTanda;
+  
+  if (_editingProgram <= 1) {
+    // P22/P23: usar _editingPhase como índice (solo 1 tanda)
+    tandaIndex = _editingPhase;
+  }
+  
+  // Actualizar componentes de la pantalla con los valores actuales
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_NIVEL_EDIT, _waterLevels[_editingProgram][tandaIndex]);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_TEMP_EDIT, _temperatures[_editingProgram][tandaIndex]);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_TIEMPO_EDIT, _times[_editingProgram][tandaIndex]);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_ROTAC_EDIT, _rotations[_editingProgram][tandaIndex]);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_AGUA_EDIT, _tipoAguaPrograma[_editingProgram][tandaIndex]);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_CENTRIF_EDIT, _centrifugadoPorTanda[_editingProgram][tandaIndex]);
 }
 
 void ProgramControllerClass::editParameter(uint8_t paramType, uint8_t value) {
   if (!_isEditing)
     return;
 
+  // Determinar el índice correcto según el programa
+  uint8_t storageIndex = _editingPhase; // P22/P23 usan fase
+  if (_editingProgram == 2) { // P24 usa tanda
+    storageIndex = _editingTanda;
+  }
+
   // Guardar el nuevo valor según el tipo de parámetro
   switch (paramType) {
-  case 0: // Nivel de agua
-    _waterLevels[_editingProgram][_editingPhase] = value;
-    Storage.saveWaterLevel(_editingProgram, _editingPhase, value);
+  case PARAM_NIVEL: // Nivel de agua
+    _waterLevels[_editingProgram][storageIndex] = value;
+    Storage.saveWaterLevel(_editingProgram, storageIndex, value);
     break;
 
-  case 1: // Temperatura
-    _temperatures[_editingProgram][_editingPhase] = value;
-    Storage.saveTemperature(_editingProgram, _editingPhase, value);
+  case PARAM_TEMPERATURA: // Temperatura
+    _temperatures[_editingProgram][storageIndex] = value;
+    Storage.saveTemperature(_editingProgram, storageIndex, value);
     break;
 
-  case 2: // Tiempo
-    _times[_editingProgram][_editingPhase] = value;
-    Storage.saveTime(_editingProgram, _editingPhase, value);
+  case PARAM_TIEMPO: // Tiempo
+    _times[_editingProgram][storageIndex] = value;
+    Storage.saveTime(_editingProgram, storageIndex, value);
     break;
 
-  case 3: // Rotación
-    _rotations[_editingProgram][_editingPhase] = value;
-    Storage.saveRotation(_editingProgram, _editingPhase, value);
+  case PARAM_ROTACION: // Rotación
+    _rotations[_editingProgram][storageIndex] = value;
+    Storage.saveRotation(_editingProgram, storageIndex, value);
+    break;
+
+  case PARAM_AGUA: // Tipo de agua
+    _tipoAguaPrograma[_editingProgram][storageIndex] = value;
+    Storage.saveTipoAgua(_editingProgram, storageIndex, value);
+    break;
+
+  case PARAM_CENTRIF: // Centrifugado
+    _centrifugadoPorTanda[_editingProgram][storageIndex] = value;
+    Storage.saveCentrifugado(_editingProgram, storageIndex, value);
     break;
   }
 
-  Utils.debug("Parámetro editado");
+  // Actualizar la pantalla con el nuevo valor
+  _loadEditingParametersForCurrentTanda();
+  
+  Utils.debug("Parámetro editado para P" + String(_editingProgram + 22) + 
+             " Tanda " + String(storageIndex + 1) + ": " + String(value));
 }
 
 void ProgramControllerClass::saveEditing() {
@@ -1254,11 +1313,67 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
 }
 
 void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
-  // Utils.debug("🔧 Delegando evento de edición a UIController - Componente: "
-  // + String(componentId));
+  // Utils.debug("🔧 Manejando evento de edición - Componente: " + String(componentId));
 
-  // Delegar completamente el manejo de eventos al UIController
+  // Para P24: Manejar botones +/- cuando estemos editando tandas
+  if (_editingProgram == 2 && _editingParameter == PARAM_FASE) {
+    if (componentId == NEXTION_ID_BTN_PARAM_MAS) {
+      _incrementTanda();
+      return;
+    } else if (componentId == NEXTION_ID_BTN_PARAM_MENOS) {
+      _decrementTanda();
+      return;
+    }
+  }
+
+  // Manejar eventos específicos del programa controller
+  if (componentId == NEXTION_ID_PARAM_FASE_EDIT) {
+    // El usuario presionó el campo de tanda/fase
+    if (_editingProgram == 2) { // Solo para P24
+      _handleTandaSelection();
+      return; // No delegar este evento al UIController
+    }
+  }
+
+  // Delegar todos los demás eventos al UIController
   UIController.handleEditPageEvent(componentId);
+}
+
+void ProgramControllerClass::_handleTandaSelection() {
+  // Ciclar entre las 3 tandas del P24
+  _editingTanda = (_editingTanda + 1) % 3; // 0, 1, 2
+  
+  Utils.debug("📝 P24 - Cambiando a tanda " + String(_editingTanda + 1));
+  
+  // Actualizar la pantalla para mostrar la nueva tanda
+  Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(_editingTanda + 1));
+  
+  // Cargar y mostrar los parámetros de la nueva tanda
+  _loadEditingParametersForCurrentTanda();
+}
+
+void ProgramControllerClass::_incrementTanda() {
+  if (_editingProgram == 2) { // Solo para P24
+    _editingTanda = (_editingTanda + 1) % 3; // 0→1→2→0
+    Utils.debug("📝 P24 - Incrementando a tanda " + String(_editingTanda + 1));
+    _updateTandaDisplay();
+  }
+}
+
+void ProgramControllerClass::_decrementTanda() {
+  if (_editingProgram == 2) { // Solo para P24
+    _editingTanda = (_editingTanda + 2) % 3; // 0→2→1→0 (equivale a -1 pero sin negativos)
+    Utils.debug("📝 P24 - Decrementando a tanda " + String(_editingTanda + 1));
+    _updateTandaDisplay();
+  }
+}
+
+void ProgramControllerClass::_updateTandaDisplay() {
+  // Actualizar la pantalla para mostrar la nueva tanda
+  Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(_editingTanda + 1));
+  
+  // Cargar y mostrar los parámetros de la nueva tanda
+  _loadEditingParametersForCurrentTanda();
 }
 
 void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {

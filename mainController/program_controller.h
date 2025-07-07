@@ -57,7 +57,7 @@ private:
   uint8_t _remainingMinutes;
   uint8_t _remainingSeconds;
   uint8_t _totalMinutes;
-  uint8_t _totalSeconds;
+  uint16_t _totalSeconds;
   bool _timerRunning;
   
   // Variables para pausa
@@ -86,6 +86,7 @@ private:
   // Variables para edición
   uint8_t _editingProgram;
   uint8_t _editingPhase;
+  uint8_t _editingTanda; // Tanda actualmente siendo editada (solo para P24)
   uint8_t _editingParameter; // Parámetro actualmente siendo editado
   uint8_t _editingParameterValue; // Valor del parámetro siendo editado
   bool _isEditing;
@@ -132,6 +133,12 @@ private:
   void editParameter(uint8_t paramType, uint8_t value);
   void saveEditing();
   void cancelEditing();
+  void _updateEditScreenForProgram(); // Actualizar pantalla de edición según programa
+  void _loadEditingParametersForCurrentTanda(); // Cargar parámetros de la tanda actual
+  void _handleTandaSelection(); // Manejar selección de tanda en P24
+  void _incrementTanda(); // Incrementar tanda con botón +
+  void _decrementTanda(); // Decrementar tanda con botón -
+  void _updateTandaDisplay(); // Actualizar display de tanda
   
   
   // Métodos de programa
