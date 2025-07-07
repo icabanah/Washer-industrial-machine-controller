@@ -69,6 +69,7 @@ private:
   // Variables de estado de fase
   bool _preparingPhase;
   unsigned long _phaseStartTime;
+  bool _conditionsReached; // Bandera global para condiciones alcanzadas
   
   // Variables para secuencia final
   uint8_t _finalDrainMinutes;

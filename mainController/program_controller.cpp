@@ -27,6 +27,7 @@ void ProgramControllerClass::init() {
   // Inicializar variables de estado de fase
   _preparingPhase = false;
   _phaseStartTime = 0;
+  _conditionsReached = false;
 
   // Inicializar variables de secuencia final
   _finalDrainMinutes = 0;
@@ -343,6 +344,7 @@ void ProgramControllerClass::_updatePhaseParameters() {
     _preparingPhase = true;
     _phaseStartTime = millis();
     _timerRunning = false;
+    _conditionsReached = false; // Reiniciar bandera de condiciones
 
     // Actualizar la interfaz de usuario
     UIController.updatePhase(_currentPhase); // Mostrar la fase actual en la UI
@@ -397,25 +399,52 @@ void ProgramControllerClass::_decrementTimer() {
 /// fase actual. Este método se encarga de verificar si se han alcanzado las
 /// condiciones de temperatura y nivel de agua
 void ProgramControllerClass::_checkSensorConditions() {
-  // Verificar las condiciones de temperatura y nivel de agua según la fase
-  // actual
-  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
+  // Si ya se alcanzaron las condiciones, no hacer nada más
+  if (_conditionsReached) {
+    return;
+  }
+
+  // Obtener valores objetivo para la fase actual
   uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
+  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
 
   // Actualizar la interfaz con los valores actuales
   UIController.updateTemperature(Sensors.getCurrentTemperature());
   UIController.updateWaterLevel(Sensors.getCurrentWaterLevel());
 
-  // Si estamos preparando la fase, mostrar el estado en Nextion
+  // Determinar si se requiere control de temperatura
+  bool requiresTempControl = false;
+  uint8_t tipoAgua = 0; // 0=fría, 1=caliente
+
+  // Determinar si se requiere control según programa y fase
+  switch (_currentProgram) {
+  case 0: // P22 - Agua caliente
+    requiresTempControl = true;
+    tipoAgua = 1;
+    break;
+
+  case 1: // P23 - Agua fría
+    requiresTempControl = false;
+    tipoAgua = 0;
+    break;
+
+  case 2: // P24 - Configurable por fase
+    // Verificar el tipo de agua configurado para esta fase
+    tipoAgua = Storage.loadTipoAgua(_currentProgram, _currentPhase);
+    requiresTempControl = (tipoAgua == 1); // Solo si usa agua caliente
+    break;
+  }
+
+  // Mostrar estado en Nextion solo si estamos preparando la fase
   if (_preparingPhase) {
     String statusMsg = "Preparando: ";
     bool waterOk = Sensors.isWaterLevelReached(targetLevel);
-    bool tempOk = Sensors.isTemperatureReached(targetTemp);
+    bool tempOk = !requiresTempControl || Sensors.isTemperatureReached(targetTemp);
 
     if (!waterOk) {
       statusMsg += "Llenando... ";
     }
-    if (!tempOk && (_currentProgram == 0)) { // Solo P22 requiere calentamiento
+    if (!tempOk && requiresTempControl) {
       statusMsg += "Calentando... ";
     }
     if (waterOk && tempOk) {
@@ -424,109 +453,99 @@ void ProgramControllerClass::_checkSensorConditions() {
     Hardware.nextionSetText(NEXTION_COMP_MSG, statusMsg);
   }
 
-  // Control de llenado y temperatura por programa
-  // P22 (índice 0): Agua caliente - usar vapor/electroválvula para llenado y
-  // calentamiento
-  if (_currentProgram == 0) {
-    if (Sensors.getCurrentWaterLevel() < targetLevel ||
-        Sensors.getCurrentTemperature() < targetTemp) {
-      Actuators.openSteamValve(); // PIN_ELECTROV_VAPOR para agua caliente
-    } else {
-      Actuators.closeSteamValve();
-    }
-  }
-  // P23 (índice 1): Agua fría, sin calentamiento
-  else if (_currentProgram == 1) {
-    if (Sensors.getCurrentWaterLevel() < targetLevel ||
-        Sensors.getCurrentTemperature() < targetTemp) {
-      Actuators.openWaterValve();
-    } else {
-      Actuators.closeWaterValve();
-    }
-  }
-  // P24 (índice 2): Configurable según parámetros
-  else if (_currentProgram == 2) {
-    // Obtener tipo de agua para esta fase específica
-    uint8_t tipoAgua = Storage.loadTipoAgua(_currentProgram, _currentPhase);
-
-    // Control diferenciado según tipo de agua
-    if (tipoAgua == 1) {
-      // AGUA CALIENTE: Control completo de nivel y temperatura
-      bool needsWater = Sensors.getCurrentWaterLevel() < targetLevel;
-      bool needsHeat = Sensors.getCurrentTemperature() < targetTemp;
-
-      if (needsWater) {
-        // Abrir válvula de agua normal para llenar
-        Actuators.openWaterValve();
+  // === CONTROL DE ACTUADORES SEGÚN FASE ===
+  if (_currentPhase == 0) {
+    // FASE 0: LLENADO - Control de nivel y temperatura
+    if (tipoAgua == 1 && requiresTempControl) {
+      // AGUA CALIENTE: Control de nivel + temperatura
+      if (Sensors.getCurrentWaterLevel() < targetLevel) {
+        Actuators.openSteamValve();
+        if (Sensors.getCurrentTemperature() < targetTemp) {
+          Actuators.openSteamValve();
+        } else {
+          Actuators.closeSteamValve();
+        }
       } else {
-        // Nivel alcanzado, cerrar válvula de agua
-        Actuators.closeWaterValve();
+        Actuators.closeSteamValve();
       }
 
-      if (needsHeat && Sensors.getCurrentWaterLevel() >= targetLevel) {
-        // Solo activar vapor cuando ya hay suficiente agua para calentamiento
+      // Control de temperatura
+      if (Sensors.getCurrentTemperature() < targetTemp - 2) {
         Actuators.openSteamValve();
-      } else {
-        // Temperatura alcanzada o sin agua suficiente, cerrar vapor
+      } else if (Sensors.getCurrentTemperature() > targetTemp + 2) {
         Actuators.closeSteamValve();
       }
     } else {
-      // AGUA FRÍA: Solo control de nivel (sin temperatura)
+      // AGUA FRÍA: Solo control de nivel
       if (Sensors.getCurrentWaterLevel() < targetLevel) {
-        // Solo llenar con agua fría normal
         Actuators.openWaterValve();
       } else {
-        // Nivel alcanzado, cerrar válvula
         Actuators.closeWaterValve();
       }
-
-      // Asegurar que vapor esté cerrado (agua fría no requiere calentamiento)
       Actuators.closeSteamValve();
     }
+  } else if (_currentPhase == 1) {
+    // FASE 1: LAVADO - Mantener condiciones
+    if (tipoAgua == 1 && requiresTempControl) {
+      if (Sensors.getCurrentTemperature() < targetTemp - 2) {
+        Actuators.openSteamValve();
+      } else if (Sensors.getCurrentTemperature() > targetTemp + 2) {
+        Actuators.closeSteamValve();
+      }
+    }
+  } else if (_currentPhase == 2) {
+    // FASE 2: CENTRIFUGADO - Cerrar todas las válvulas
+    Actuators.closeWaterValve();
+    Actuators.closeSteamValve();
+    Actuators.closeDrainValve();
+  } else if (_currentPhase == 3) {
+    // FASE 3: DRENAJE - Control de drenaje
+    if (Sensors.getCurrentWaterLevel() > 1) {
+      Actuators.openDrainValve();
+    } else {
+      Actuators.closeDrainValve();
+    }
+    Actuators.closeWaterValve();
+    Actuators.closeSteamValve();
   }
 
-  // Verificar si se han alcanzado las condiciones para iniciar el temporizador
-  // En fase 1 (lavado), las condiciones ya se cumplieron en llenado, iniciar
-  // directamente
-  bool conditionsReached = false;
-  if (_currentPhase == 1) {
-    // En lavado, asumir que condiciones ya se cumplieron en llenado
-    conditionsReached = true;
-  } else {
-    // En otras fases, verificar condiciones normalmente
-    conditionsReached = Sensors.isWaterLevelReached(targetLevel) &&
-                        Sensors.isTemperatureReached(targetTemp);
-  }
+  // === VERIFICAR SI SE ALCANZARON LAS CONDICIONES ===
+  bool levelReached = Sensors.isWaterLevelReached(targetLevel);
+  bool tempReached = !requiresTempControl || Sensors.isTemperatureReached(targetTemp);
 
-  if (conditionsReached && !_timerRunning) {
-
-    // Iniciar rotación automática SOLO si estamos en fase 1 (lavado)
-    if (_currentPhase == 1) { // Solo en fase de lavado
+  if (levelReached && tempReached) {
+    // Marcar condiciones como alcanzadas
+    _conditionsReached = true;
+    
+    // Si estamos en fase 0 (llenado), transicionar automáticamente a fase 1 (lavado)
+    if (_currentPhase == 0) {
+      Utils.debug("Condiciones alcanzadas en llenado, transicionando a lavado");
+      _currentPhase = 1;
+      Storage.savePhase(_currentPhase);
+      _updatePhaseParameters();
+      
+      // Iniciar rotación automática en fase 1 (lavado)
       uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
       if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
         Actuators.startAutoRotation(rotLevel);
         Hardware.nextionSetText(NEXTION_COMP_MSG,
                                 "Rotacion L" + String(rotLevel) + " iniciada");
       }
+      
+      // Iniciar el temporizador para la fase de lavado
+      _timerRunning = true;
+      _preparingPhase = false;
+      
+      Hardware.nextionSetText(NEXTION_COMP_MSG,
+                              "Fase " + String(_currentPhase + 1) + " iniciada");
+    } else {
+      // Para otras fases, solo iniciar el temporizador
+      _timerRunning = true;
+      _preparingPhase = false;
+      
+      Hardware.nextionSetText(NEXTION_COMP_MSG,
+                              "Fase " + String(_currentPhase + 1) + " iniciada");
     }
-
-    // Iniciar el temporizador cuando se alcanzan las condiciones necesarias
-    _timerRunning = true;
-    _preparingPhase = false;
-
-    // Reiniciar el temporizador a los valores configurados
-    _remainingMinutes = _totalMinutes;
-    _remainingSeconds = 0;
-
-    // Actualizar la fase en la pantalla
-    UIController.updatePhase(_currentPhase);
-
-    // Inicializar barra de progreso desde el inicio de esta fase
-    UIController.updateProgressBar(
-        0); // Comenzar desde 0% cuando se cumplen las condiciones
-
-    Hardware.nextionSetText(NEXTION_COMP_MSG,
-                            "Fase " + String(_currentPhase + 1) + " iniciada");
   }
 }
 
@@ -672,6 +691,9 @@ void ProgramControllerClass::_initializeProgram() {
   // 7. Actualizar UI para mostrar la fase inicial correcta (llenado)
   UIController.updatePhase(
       _currentPhase); // Asegurar que muestre fase 0 (llenado)
+  
+  // 8. Reiniciar bandera de condiciones
+  _conditionsReached = false;
 }
 
 void ProgramControllerClass::_handleTemperatureControl() {
@@ -1176,7 +1198,7 @@ void ProgramControllerClass::_handleExecutionState() {
     if (!_preparingPhase) {
       Utils.debug("✅ Condiciones alcanzadas - iniciando temporizador de fase");
       // UIController.clearPreparationStatus();
-      UIController.updatePhase(1); // Mostrar fase actual una vez que comienza
+      UIController.updatePhase(_currentPhase); // Mostrar fase actual una vez que comienza
     }
     return;
   }
@@ -1611,12 +1633,6 @@ void ProgramControllerClass::_handleCentrifugeState() {
 
     // Actualizar display con tiempo de centrifugado
     UIController.updateTime(_centrifugeMinutes, _centrifugeSeconds);
-
-    // Mostrar mensaje de estado
-    String centrifugeMsg = "Centrifugando: " + String(_centrifugeMinutes) +
-                           ":" + String(_centrifugeSeconds < 10 ? "0" : "") +
-                           String(_centrifugeSeconds);
-    Hardware.nextionSetText(NEXTION_COMP_MSG, centrifugeMsg);
   }
 
   // Actualizar sensores cada 3 segundos para mostrar valores en tiempo real
