@@ -589,7 +589,15 @@ void ProgramControllerClass::_completePhase() {
   // Fase 1 (Lavado) → Verificar si va a Centrifugado (Fase 2) o Drenaje (Fase
   // 3)
   if (_currentPhase == 1) {
-    bool centrifugadoEnabled = _isCentrifugadoEnabled(_currentProgram, 2);
+    // Para P22/P23: usar índice 3 (posición final del centrifugado)
+    // Para P24: usar tanda actual
+    uint8_t indexCentrifugado = (_currentProgram == 2) ? _tandaCounter : 3;
+    bool centrifugadoEnabled = _centrifugadoPorTanda[_currentProgram][indexCentrifugado] == 1;
+    
+    Utils.debug("Verificando centrifugado P" + String(_currentProgram + 22) + 
+               " índice[" + String(indexCentrifugado) + "] = " + 
+               String(_centrifugadoPorTanda[_currentProgram][indexCentrifugado]) +
+               " → " + String(centrifugadoEnabled ? "HABILITADO" : "DESHABILITADO"));
     if (centrifugadoEnabled) {
       // Ir directamente a centrifugado sin pasar por nextPhase()
       _currentPhase = 2; // Establecer fase 2
