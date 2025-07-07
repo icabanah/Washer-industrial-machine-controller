@@ -533,14 +533,14 @@ void ProgramControllerClass::_controlActuatorsForPhase() {
     if (tipoAgua == 1 && requiresTempControl) {
       // AGUA CALIENTE: Control de nivel + temperatura
       if (Sensors.getCurrentWaterLevel() < targetLevel) {
-        Actuators.openWaterValve();
+        Actuators.openSteamValve();
         if (Sensors.getCurrentTemperature() < targetTemp) {
           Actuators.openSteamValve();
         } else {
           Actuators.closeSteamValve();
         }
       } else {
-        Actuators.closeWaterValve();
+        Actuators.closeSteamValve();
       }
 
       // Control de temperatura
@@ -614,6 +614,24 @@ void ProgramControllerClass::_completePhase() {
       nextPhase();       // Va a fase 3 (drenaje)
       return;
     }
+  }
+
+  // Fase 2 (Centrifugado) → Ir a Drenaje (Fase 3)
+  if (_currentPhase == 2) {
+    Utils.debug("Centrifugado completado, avanzando a drenaje");
+    _currentPhase = 3; // Ir a fase 3 (drenaje)
+    Storage.savePhase(_currentPhase);
+    _updatePhaseParameters();
+    
+    // Configurar actuadores para drenaje
+    Actuators.stopCentrifuge();
+    Actuators.openDrainValve();
+    Actuators.closeWaterValve();
+    Actuators.closeSteamValve();
+    
+    // Volver al estado de ejecución para manejar el drenaje
+    setState(ESTADO_EJECUCION);
+    return;
   }
 
   // Fase 3 (Drenaje) → Lógica según el programa
@@ -1657,17 +1675,9 @@ void ProgramControllerClass::_handleCentrifugeState() {
       _centrifugeMinutes--;
       _centrifugeSeconds = 59;
     } else {
-      // Centrifugado completado, avanzar a la fase de drenaje (fase 3)
-      Utils.debug("Centrifugado completado - Avanzando a fase de drenaje");
-      Actuators.stopCentrifuge();
-
-      // Avanzar a la fase 3 (Drenaje) y continuar ejecución normal
-      _currentPhase = 3;
-      Storage.savePhase(_currentPhase);
-      _updatePhaseParameters();
-
-      setState(
-          ESTADO_EJECUCION); // Volver a ejecución para completar el drenaje
+      // Centrifugado completado, usar _completePhase() para manejar la transición
+      Utils.debug("Centrifugado completado - llamando _completePhase()");
+      _completePhase();
       return;
     }
 
