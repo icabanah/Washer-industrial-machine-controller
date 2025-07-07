@@ -257,32 +257,6 @@ uint8_t ActuatorsClass::getCurrentRotationLevel() {
   return _currentRotationLevel;
 }
 
-void ActuatorsClass::updateTimers() {
-  // Esta función es llamada periódicamente desde Utils.updateTasks()
-  // a través del temporizador principal
-  
-  // Centrifugado simple - no requiere actualización
-  
-  // Verificar si hay rotación automática activa
-  if (_autoRotationActive && _currentRotationLevel > 0) {
-    // En lugar de actualizar directamente el motor aquí,
-    // esto ahora se maneja a través del temporizador recurrente
-    // creado en startAutoRotation
-    
-    // Lógica adicional para control de actuadores basado en tiempo
-    // que no requiera un temporizador independiente
-    
-    // Ejemplo: Log de estado cada cierto tiempo
-    // static unsigned long lastLogTime = 0;
-    // if (millis() - lastLogTime > 10000) { // Cada 10 segundos
-    //   lastLogTime = millis();
-    //   Utils.debug("Estado motor: " + String(_motorState) + 
-    //               " / Rotación: " + String(_currentRotationLevel) +
-    //               " / Segundos: " + String(_motorSeconds));
-    // }
-  }
-}
-
 // Método público para incrementar segundos del motor
 void ActuatorsClass::incrementMotorSeconds() {
   _motorSeconds++;
@@ -445,6 +419,15 @@ void ActuatorsClass::completePartialDrain() {
   closeDrainValve();
   _partialDrainActive = false;
   Utils.debug("✅ Drenaje parcial completado");
+}
+
+void ActuatorsClass::updateTimers() {
+  // Actualizar temporizadores de actuadores
+  // Este método se llama periódicamente para manejar tareas temporizadas
+  
+  // Los temporizadores se manejan mediante las tareas asíncronas
+  // registradas en Utils.runTask(), no requieren actualización manual
+  // adicional aquí ya que los callbacks se ejecutan automáticamente
 }
 
 

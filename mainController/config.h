@@ -12,9 +12,9 @@
 #define PIN_MOTOR_DIR_IZQ 12 // Control dirección izquierda del motor
 #define PIN_MOTOR_DIR_DER 13 // Control dirección derecha del motor
 #define PIN_CENTRIFUGADO 14  // Control centrifugado del motor
-#define PIN_VALVULA_AGUA 27  // Control de la válvula de entrada de agua
+#define PIN_VALVULA_AGUA 27  // Control de la válvula de agua fría (P23)
 #define PIN_ELECTROV_VAPOR                                                     \
-  33 // Control de la electroválvula de vapor para calentar
+  33 // Control de la electroválvula de agua caliente (P22)
 #define PIN_VALVULA_DESFOGUE 25 // Control de la válvula de drenaje
 #define PIN_MAGNET_PUERTA                                                      \
   26 // Control del bloqueo electromagnético de la puerta
@@ -98,20 +98,16 @@
 #define MOTOR_L3_TIEMPO_PAUSA 1      // Segundos de pausa entre cambios
 
 // Configuración legacy (mantenida por compatibilidad)
-#define MOTOR_TIEMPO_ON                                                        \
-  5000 // Tiempo que permanece activo cada dirección (5 segundos)
-#define MOTOR_TIEMPO_PAUSA                                                     \
-  2000 // Tiempo de pausa entre cambios de dirección (2 segundos)
+#define MOTOR_TIEMPO_ON 5000 // Tiempo que permanece activo cada dirección (5 segundos)
+#define MOTOR_TIEMPO_PAUSA 2000 // Tiempo de pausa entre cambios de dirección (2 segundos)
 
 // Configuración de temporizadores especiales
-#define TIEMPO_DRENAJE_FINAL 45 // 2 minutos de drenaje al final (120 segundos)
-#define TIEMPO_PUERTA_BLOQUEO                                                  \
-  45 // 1 minuto adicional antes de desbloquear puerta (60 segundos)
-#define TIEMPO_CENTRIFUGADO 45 // 2 minutos de centrifugado (120 segundos)
+#define TIEMPO_DRENAJE 45 // 2 minutos de drenaje al final
+#define TIEMPO_PUERTA_BLOQUEO 45 // 45 seg antes de desbloquear puerta
+#define TIEMPO_CENTRIFUGADO 45 // 45inutos de centrifugado
 
 // Configuración de tareas asíncronas
-#define MAX_ASYNC_TASKS                                                        \
-  10 // Número máximo de tareas asíncronas que se pueden gestionar
+#define MAX_ASYNC_TASKS 10 // Número máximo de tareas asíncronas que se pueden gestionar
 
 // Configuración de programas
 #define NUM_PROGRAMAS 3
@@ -131,6 +127,13 @@
 #define ESTADO_DRENAJE_FINAL 7
 #define ESTADO_ESPERA_PUERTA 8
 #define ESTADO_CENTRIFUGADO 9
+
+// === ESTADOS DE FASES (Máquina de estados para fases) ===
+#define FASE_LLENANDO 0      // Llenando agua y calentando
+#define FASE_LAVADO 1        // Lavado con rotación de motor
+#define FASE_CENTRIFUGA 2    // Centrifugado
+#define FASE_DRENAJE 3       // Drenaje de agua
+#define FASE_ENFRIAMIENTO 4  // Enfriamiento final
 
 // === CÓDIGOS DE ERROR ===
 #define ERROR_NINGUNO 0

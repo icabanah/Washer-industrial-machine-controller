@@ -69,7 +69,7 @@ private:
   // Variables de estado de fase
   bool _preparingPhase;
   unsigned long _phaseStartTime;
-  bool _conditionsReached; // Bandera global para condiciones alcanzadas
+  uint8_t _currentPhaseState; // Estado actual de la máquina de fases
   
   // Variables para secuencia final
   uint8_t _finalDrainMinutes;
@@ -119,9 +119,8 @@ private:
   void _handlePauseState();
   void _handleErrorState();
   void _handleEmergencyState();
-  void _handleFinalDrainState();
-  void _handleDoorWaitState();
-  void _handleCentrifugeState();
+  void _handlePhaseStateMachine(); // Máquina de estados de fases
+  void _initializePhaseState(); // Inicializar parámetros para nueva fase
   
   // Métodos para manejar eventos táctiles por página
   void _handleSelectionPageEvents(uint8_t componentId);
@@ -137,7 +136,6 @@ private:
   
   // Métodos de programa
   void _initializeProgram();
-  void _completePhase();
   void _completeProgram();
   void _configureProgramType();
   
