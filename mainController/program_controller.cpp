@@ -453,61 +453,6 @@ void ProgramControllerClass::_checkSensorConditions() {
     Hardware.nextionSetText(NEXTION_COMP_MSG, statusMsg);
   }
 
-  // === CONTROL DE ACTUADORES SEGÚN FASE ===
-  if (_currentPhase == 0) {
-    // FASE 0: LLENADO - Control de nivel y temperatura
-    if (tipoAgua == 1 && requiresTempControl) {
-      // AGUA CALIENTE: Control de nivel + temperatura
-      if (Sensors.getCurrentWaterLevel() < targetLevel) {
-        Actuators.openSteamValve();
-        if (Sensors.getCurrentTemperature() < targetTemp) {
-          Actuators.openSteamValve();
-        } else {
-          Actuators.closeSteamValve();
-        }
-      } else {
-        Actuators.closeSteamValve();
-      }
-
-      // Control de temperatura
-      if (Sensors.getCurrentTemperature() < targetTemp - 2) {
-        Actuators.openSteamValve();
-      } else if (Sensors.getCurrentTemperature() > targetTemp + 2) {
-        Actuators.closeSteamValve();
-      }
-    } else {
-      // AGUA FRÍA: Solo control de nivel
-      if (Sensors.getCurrentWaterLevel() < targetLevel) {
-        Actuators.openWaterValve();
-      } else {
-        Actuators.closeWaterValve();
-      }
-      Actuators.closeSteamValve();
-    }
-  } else if (_currentPhase == 1) {
-    // FASE 1: LAVADO - Mantener condiciones
-    if (tipoAgua == 1 && requiresTempControl) {
-      if (Sensors.getCurrentTemperature() < targetTemp - 2) {
-        Actuators.openSteamValve();
-      } else if (Sensors.getCurrentTemperature() > targetTemp + 2) {
-        Actuators.closeSteamValve();
-      }
-    }
-  } else if (_currentPhase == 2) {
-    // FASE 2: CENTRIFUGADO - Cerrar todas las válvulas
-    Actuators.closeWaterValve();
-    Actuators.closeSteamValve();
-    Actuators.closeDrainValve();
-  } else if (_currentPhase == 3) {
-    // FASE 3: DRENAJE - Control de drenaje
-    if (Sensors.getCurrentWaterLevel() > 1) {
-      Actuators.openDrainValve();
-    } else {
-      Actuators.closeDrainValve();
-    }
-    Actuators.closeWaterValve();
-    Actuators.closeSteamValve();
-  }
 
   // === VERIFICAR SI SE ALCANZARON LAS CONDICIONES ===
   bool levelReached = Sensors.isWaterLevelReached(targetLevel);
@@ -547,6 +492,92 @@ void ProgramControllerClass::_checkSensorConditions() {
                               "Fase " + String(_currentPhase + 1) + " iniciada");
     }
   }
+}
+
+void ProgramControllerClass::_controlActuatorsForPhase() {
+  // Solo controlar actuadores si NO estamos en estados que manejan actuadores específicamente
+  if (_currentState == ESTADO_CENTRIFUGADO || _currentState == ESTADO_ESPERA_PUERTA) {
+    return; // Estos estados manejan sus propios actuadores
+  }
+
+  // Obtener valores objetivo para la fase actual
+  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
+  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
+
+  // Determinar si se requiere control de temperatura
+  bool requiresTempControl = false;
+  uint8_t tipoAgua = 0; // 0=fría, 1=caliente
+
+  // Determinar si se requiere control según programa y fase
+  switch (_currentProgram) {
+  case 0: // P22 - Agua caliente
+    requiresTempControl = true;
+    tipoAgua = 1;
+    break;
+
+  case 1: // P23 - Agua fría
+    requiresTempControl = false;
+    tipoAgua = 0;
+    break;
+
+  case 2: // P24 - Configurable por fase
+    // Verificar el tipo de agua configurado para esta fase
+    tipoAgua = Storage.loadTipoAgua(_currentProgram, _currentPhase);
+    requiresTempControl = (tipoAgua == 1); // Solo si usa agua caliente
+    break;
+  }
+
+  // === CONTROL DE ACTUADORES SEGÚN FASE ===
+  if (_currentPhase == 0) {
+    // FASE 0: LLENADO - Control de nivel y temperatura
+    if (tipoAgua == 1 && requiresTempControl) {
+      // AGUA CALIENTE: Control de nivel + temperatura
+      if (Sensors.getCurrentWaterLevel() < targetLevel) {
+        Actuators.openWaterValve();
+        if (Sensors.getCurrentTemperature() < targetTemp) {
+          Actuators.openSteamValve();
+        } else {
+          Actuators.closeSteamValve();
+        }
+      } else {
+        Actuators.closeWaterValve();
+      }
+
+      // Control de temperatura
+      if (Sensors.getCurrentTemperature() < targetTemp - 2) {
+        Actuators.openSteamValve();
+      } else if (Sensors.getCurrentTemperature() > targetTemp + 2) {
+        Actuators.closeSteamValve();
+      }
+    } else {
+      // AGUA FRÍA: Solo control de nivel
+      if (Sensors.getCurrentWaterLevel() < targetLevel) {
+        Actuators.openWaterValve();
+      } else {
+        Actuators.closeWaterValve();
+      }
+      Actuators.closeSteamValve();
+    }
+  } else if (_currentPhase == 1) {
+    // FASE 1: LAVADO - Mantener condiciones
+    if (tipoAgua == 1 && requiresTempControl) {
+      if (Sensors.getCurrentTemperature() < targetTemp - 2) {
+        Actuators.openSteamValve();
+      } else if (Sensors.getCurrentTemperature() > targetTemp + 2) {
+        Actuators.closeSteamValve();
+      }
+    }
+  } else if (_currentPhase == 3) {
+    // FASE 3: DRENAJE - Control de drenaje
+    if (Sensors.getCurrentWaterLevel() > 1) {
+      Actuators.openDrainValve();
+    } else {
+      Actuators.closeDrainValve();
+    }
+    Actuators.closeWaterValve();
+    Actuators.closeSteamValve();
+  }
+  // Nota: Fase 2 (centrifugado) se maneja en ESTADO_CENTRIFUGADO
 }
 
 void ProgramControllerClass::_completePhase() {
@@ -1191,9 +1222,6 @@ void ProgramControllerClass::_handleExecutionState() {
     // Mostrar mensaje de preparación
     UIController.updatePhase(0); // Mostrar fase actual durante preparación
 
-    // Verificar si se alcanzaron las condiciones necesarias
-    _checkSensorConditions();
-
     // Si las condiciones se cumplieron, iniciar el temporizador
     if (!_preparingPhase) {
       Utils.debug("✅ Condiciones alcanzadas - iniciando temporizador de fase");
@@ -1508,6 +1536,18 @@ void ProgramControllerClass::update() {
   if (UIController.hasUserAction()) {
     String action = UIController.getUserAction();
     processUserEvent(action);
+  }
+
+  // === VERIFICACIÓN GLOBAL DE CONDICIONES DE SENSORES ===
+  // Se ejecuta en todos los estados donde hay un programa activo
+  if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_CENTRIFUGADO) {
+    _checkSensorConditions();
+  }
+
+  // === CONTROL GLOBAL DE ACTUADORES ===
+  // Se ejecuta solo en estados que requieren control automático de válvulas
+  if (_currentState == ESTADO_EJECUCION) {
+    _controlActuatorsForPhase();
   }
 
   // Actualizar según el estado actual

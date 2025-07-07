@@ -110,6 +110,7 @@ private:
   uint8_t getProgressPercentage();
   uint8_t getTotalProgramProgressPercentage();
   void _checkSensorConditions();
+  void _controlActuatorsForPhase(); // Control separado de actuadores
   void _decrementTimer();
   void _handleStateMachine();
   void _handleSelectionState();
