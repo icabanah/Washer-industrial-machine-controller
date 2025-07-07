@@ -294,6 +294,8 @@ void ProgramControllerClass::stopProgram() {
 
 uint8_t ProgramControllerClass::getCurrentPhase() { return _currentPhase; }
 
+uint8_t ProgramControllerClass::getCurrentEditingTanda() { return _editingTanda; }
+
 void ProgramControllerClass::nextPhase() {
   if (_currentPhase < NUM_FASES - 1) {
     _currentPhase++;
@@ -1329,10 +1331,16 @@ void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
   // Manejar eventos específicos del programa controller
   if (componentId == NEXTION_ID_PARAM_FASE_EDIT) {
     // El usuario presionó el campo de tanda/fase
-    if (_editingProgram == 2) { // Solo para P24
+    if (_editingProgram == 2) { 
+      // P24: activar edición de tanda y permitir usar botones +/-
+      _editingParameter = PARAM_FASE;
       _handleTandaSelection();
-      return; // No delegar este evento al UIController
+      Utils.debug("P24: Tanda seleccionada para edición - usar +/- para cambiar");
+    } else {
+      // P22/P23: solo 1 tanda, mostrar mensaje informativo  
+      Utils.debug("P22/P23: Solo 1 tanda disponible");
     }
+    return; // No delegar este evento al UIController en ningún caso
   }
 
   // Delegar todos los demás eventos al UIController
@@ -1374,6 +1382,10 @@ void ProgramControllerClass::_updateTandaDisplay() {
   
   // Cargar y mostrar los parámetros de la nueva tanda
   _loadEditingParametersForCurrentTanda();
+  
+  // Notificar al UIController que actualice la visualización
+  UIController.updateParameterDisplay();
+  UIController.updateRightPanel();
 }
 
 void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {

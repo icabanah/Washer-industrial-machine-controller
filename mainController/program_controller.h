@@ -31,6 +31,9 @@ public:
   // Control de fase
   uint8_t getCurrentPhase();
   
+  // Control de tanda (para edición)
+  uint8_t getCurrentEditingTanda();
+  
   // Gestión de temporizadores
   void updateTimers();
   

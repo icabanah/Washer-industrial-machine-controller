@@ -35,6 +35,7 @@ public:
   // Nuevas funciones para selección directa de parámetros
   void selectParameter(uint8_t param);
   void selectPhase();
+  void selectTanda();
   void selectCentrifuge(); 
   void selectWater();
   

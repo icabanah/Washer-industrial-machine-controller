@@ -190,7 +190,7 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, String(Storage.loadTemperature(programa, fase)) + "°C");
   Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, String(Storage.loadTime(programa, fase)) + " min");
   Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(Storage.loadRotation(programa, fase)));
-  Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(Storage.loadPhaseType(programa, fase)));
+  Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(fase + 1)); // Mostrar número de fase (1-4)
   Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, Storage.loadCentrifugado(programa, fase) ? "Activo" : "Inactivo");
   Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, Storage.loadTipoAgua(programa, fase) ? "Caliente" : "Fría");
   
@@ -219,6 +219,9 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase){
   // Cambiar a la página de edición
   Hardware.nextionSetPage(NEXTION_PAGE_EDIT);
   _currentPage = NEXTION_PAGE_EDIT; // Actualizar página actual
+
+  // Actualizar información del programa seleccionado
+  _updateProgramInfo(programa);
 
   // Actualizar toda la pantalla con los valores iniciales
   updateEditDisplay();
@@ -850,6 +853,10 @@ void UIControllerClass::updateEditDisplay()
   updateParameterDisplay();
   updateRightPanel();
   
+  // Configurar colores estándar para todos los botones del panel derecho
+  Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=50712"); // Color de fondo estándar para centrifuga
+  Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".bco=50712"); // Color de fondo estándar para tipo agua
+  
   // Deshabilitar edición de fase para P22 y P23 (solo P24 permite editar fases)
   if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",0"); // Deshabilitar touch
@@ -913,8 +920,8 @@ void UIControllerClass::updateRightPanel()
   Hardware.nextionSetText(NEXTION_COMP_VAL_ROTAC_EDIT, buffer);
 
   // Actualizar fase en panel derecho (valor del parámetro fase, no la fase en edición)
-  formatearParametroConUnidad(PARAM_FASE, _valoresTemporales[PARAM_FASE], buffer, sizeof(buffer));
-  Hardware.nextionSetText(NEXTION_COMP_VAL_FASE_EDIT, buffer);
+  // formatearParametroConUnidad(PARAM_FASE, _valoresTemporales[PARAM_FASE], buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_VAL_FASE_EDIT, String(PARAM_FASE));
   
   // Actualizar centrifugado en panel derecho
   formatearParametroConUnidad(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
@@ -985,7 +992,9 @@ void UIControllerClass::handleEditPageEvent(int componentId)
     break;
 
   case NEXTION_ID_PARAM_FASE_EDIT:
-    selectPhase();
+    // Este caso debería ser manejado por ProgramController
+    // para selección de tanda en lugar de fase
+    selectTanda();
     break;
 
   case NEXTION_ID_PARAM_CENTRIF_EDIT:
@@ -1110,7 +1119,12 @@ void UIControllerClass::handleSaveParameters()
       return;
     }
 
-    _saveParametersToStorage(_programaEnEdicion, _faseEnEdicion);
+    // Para P24, usar la tanda actual del ProgramController
+    uint8_t indexToUse = _faseEnEdicion;
+    if (_programaEnEdicion == 2) { // P24
+      indexToUse = ProgramController.getCurrentEditingTanda();
+    }
+    _saveParametersToStorage(_programaEnEdicion, indexToUse);
 
     // Mostrar mensaje de confirmación
     showMessage("Programa guardado exitosamente", 2000);
@@ -1378,6 +1392,21 @@ void UIControllerClass::selectPhase(){
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
   updateRightPanel();
+}
+
+void UIControllerClass::selectTanda(){
+  if (!_modoEdicionActivo)
+    return;
+    
+  // Esta funcionalidad está implementada en ProgramController
+  // para manejar la selección de tanda y actualizar el panel derecho
+  if (_programaEnEdicion == 2) {
+    // P24: permitir selección de tanda (manejado por ProgramController)
+    showMessage("Tanda seleccionada", 1000);
+  } else {
+    // P22/P23: solo 1 tanda, mostrar información
+    showMessage("P" + String(_programaEnEdicion + 22) + " tiene 1 tanda", 2000);
+  }
 }
 
 /**
