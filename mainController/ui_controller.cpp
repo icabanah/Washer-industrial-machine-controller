@@ -854,8 +854,8 @@ void UIControllerClass::updateEditDisplay()
   updateRightPanel();
   
   // Configurar colores estándar para todos los botones del panel derecho
-  Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=50712"); // Color de fondo estándar para centrifuga
-  Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".bco=50712"); // Color de fondo estándar para tipo agua
+  Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=65535"); // Color de fondo estándar para centrifuga
+  Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".bco=65535"); // Color de fondo estándar para tipo agua
   
   // Deshabilitar edición de fase para P22 y P23 (solo P24 permite editar fases)
   if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {

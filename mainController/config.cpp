@@ -1,6 +1,6 @@
 // config.cpp
 // Funciones de utilidad para gestión de configuración del controlador de lavadora industrial
-// Autor: Ingeniero Electrónico Senior
+// Autor: Isaías Daniel Cabana
 // Proyecto: Controlador de Lavadora Industrial - ESP32 + Nextion
 // Ubicación: Arequipa, Perú
 
