@@ -9,7 +9,7 @@ void ProgramControllerClass::init() {
   _currentState = ESTADO_SELECCION;
   _previousState = ESTADO_SELECCION;
   _currentProgram = 0; // Inicializar con programa P22 (índice 0) por defecto
-  _currentPhase = 0;
+  _currentPhase = 0; // fase llenado
 
   // Inicializar variables de temporizador
   _remainingMinutes = 0;

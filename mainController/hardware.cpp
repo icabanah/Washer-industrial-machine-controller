@@ -292,20 +292,6 @@ bool HardwareClass::_readNextionResponse()
       }
     }
 
-    // Debug detallado de eventos (filtrados automáticos 0x1A y 0x02)
-    // Serial.print("🔍 Evento Nextion Raw [");
-    // Serial.print(index);
-    // Serial.print(" bytes]: ");
-    // for (int i = 0; i < index; i++)
-    // {
-    //   Serial.print("0x");
-    //   if (rawBytes[i] < 16)
-    //     Serial.print("0");
-    //   Serial.print(rawBytes[i], HEX);
-    //   Serial.print(" ");
-    // }
-    // Serial.println();
-
     // Interpretar eventos táctiles específicos
     // Formato típico de evento táctil: 0x65 [PageID] [ComponentID] [EventType]
     if (index >= 4 && rawBytes[0] == 0x65)
@@ -315,16 +301,10 @@ bool HardwareClass::_readNextionResponse()
       _touchComponent = rawBytes[2];
       _touchEventType = rawBytes[3];
 
-      // Serial.println("✅ EVENTO TÁCTIL DETECTADO:");
-      // Serial.print("   Página: " + String(_touchPage));
-      // Serial.println("   Componente: " + String(_touchComponent));
-      // Serial.println("   Tipo: " + String(_touchEventType) + (_touchEventType == 1 ? " (PRESIONADO)" : " (LIBERADO)"));
-
       return true;
     }
 
     // Otros tipos de respuesta (no táctiles)
-    // Serial.println("📄 Respuesta no táctil: " + _nextionLastEvent);
     return true;
   }
 
@@ -370,7 +350,7 @@ bool HardwareClass::isNextionInitComplete()
 /// - Intenta cambiar a la página 0 y enviar un comando de texto simple.
 void HardwareClass::testNextionConnectivity()
 {
-  Serial.println("🔧 === PRUEBA DE CONECTIVIDAD NEXTION ===");
+  // Serial.println("🔧 === PRUEBA DE CONECTIVIDAD NEXTION ===");
 
   // Verificar si hay respuesta de la pantalla
   NEXTION_SERIAL.flush(); // Limpiar buffer
