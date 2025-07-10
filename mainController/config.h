@@ -22,7 +22,7 @@
 // Comunicación Serial para Nextion
 #define NEXTION_SERIAL Serial2
 // #define NEXTION_BAUD_RATE 115200
-#define NEXTION_BAUD_RATE 57600
+#define NEXTION_BAUD_RATE 115200
 #define NEXTION_RX_PIN 16 // ESP32 U2_RXD pin conectado al TX de Nextion
 #define NEXTION_TX_PIN 17 // ESP32 U2_TXD pin conectado al RX de Nextion
 
