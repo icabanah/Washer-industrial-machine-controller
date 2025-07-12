@@ -69,7 +69,7 @@ void HardwareClass::_initNextion()
   // En lugar de usar delay, programamos una tarea para completar la inicialización
   // después de que la pantalla haya tenido tiempo de inicializarse
   Utils.createTimeout(500, completeNextionInitCallback);
-  Serial.println("HardwareClass::_initNextion| Iniciando pantalla Nextion. Completando inicialización en 500ms...");
+  Serial.println("Iniciando pantalla Nextion. Completando inicialización en 500ms...");
 }
 
 void HardwareClass::_completeNextionInit()

@@ -39,7 +39,7 @@ void setup()
   Hardware.init();
   Utils.init();
   Storage.init();
-  Storage.initializeDefaultValues(); // Inicializar valores predeterminados si es necesario
+  // Storage.initializeDefaultValues(); // Inicializar valores predeterminados si es necesario
   Sensors.init();
   Actuators.init();
   UIController.init();
@@ -59,7 +59,7 @@ void setup()
   delay(1000); // Esperar que la pantalla termine de inicializarse
   // Serial.println("Probando conectividad con pantalla Nextion...");
   // Hardware.testNextionConnectivity();
-
+ 
   // Registrar callbacks para el temporizador principal
   // Esto centraliza la gestión del tiempo y evita múltiples temporizadores desincronizados
   Utils.registerTimerCallback([](){

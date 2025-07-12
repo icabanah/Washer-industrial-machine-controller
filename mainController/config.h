@@ -212,14 +212,18 @@
   "tiempo_ejec" // Tiempo transcurrido en ejecución
 #define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"    // Temperatura en ejecución
 #define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"  // Nivel en ejecución
-#define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_rot" // Velocidad de motor
-#define NEXTION_COMP_BARRA_PROGRESO                                            \
-  "barra_prog" // Barra de progreso del proceso
-#define NEXTION_COMP_GAUGE_TEMP_EJECUCION "gauge_temp" // Gauge de temperatura
+#define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_ejec" // Velocidad de motor
+// #define NEXTION_COMP_BARRA_PROGRESO                                            \
+// "barra_prog" // Barra de progreso del proceso
+#define NEXTION_COMP_BARRA_TEMP_EJECUCION                                     \
+  "barra_temp" // Gauge de presión (nivel de agua)
+// #define NEXTION_COMP_GAUGE_TEMP_EJECUCION "gauge_temp" // Gauge de temperatura
 #define NEXTION_COMP_BARRA_NIVEL_EJECUCION                                     \
   "barra_nivel" // Gauge de presión (nivel de agua)
-#define NEXTION_COMP_GAUGE_VEL_EJECUCION                                       \
-  "gauge_vel" // Gauge de presión (nivel de agua)
+#define NEXTION_COMP_BARRA_VELOC_EJECUCION                                     \
+  "barra_veloc" // Gauge de presión (nivel de agua)
+// #define NEXTION_COMP_GAUGE_VEL_EJECUCION                                       \
+//   "gauge_vel" // Gauge de presión (nivel de agua)
 
 // Botones de control
 #define NEXTION_COMP_BTN_PARAR "btnParar"
@@ -249,27 +253,6 @@
 #define NEXTION_COMP_VAL_FASE_EDIT NEXTION_COMP_SET_FASE       // "val_fase"
 #define NEXTION_COMP_VAL_CENTRIF_EDIT NEXTION_COMP_SET_CENTRIF // "val_centrif"
 #define NEXTION_COMP_VAL_AGUA_EDIT NEXTION_COMP_SET_AGUA       // "val_agua"
-
-// === IDs ADICIONALES PARA NAVEGACIÓN ===
-// #define NEXTION_ID_BTN_PROG_ANTERIOR 8  // Botón "Anterior" en selección de
-// programa #define NEXTION_ID_BTN_PROG_SIGUIENTE 5 // Botón "Siguiente" en
-// selección de programa #define NEXTION_ID_BTN_PROG_MAS 6       // Botón
-// "Siguiente" en selección de programa #define NEXTION_ID_BTN_PROG_MENOS 7 //
-// Botón "Siguiente" en selección de programa
-
-// Etiquetas de parámetros
-// #define NEXTION_COMP_BTN_SIGUIENTE "btnSiguiente"     // Botón "Siguiente"
-// para editar parámetro #define NEXTION_COMP_BTN_ANTERIOR "btnAnterior" //
-// Botón "Anterior" para editar parámetro #define NEXTION_COMP_BTN_MAS "btnMas"
-// // Botón "Mas" para editar parámetro #define NEXTION_COMP_BTN_MENOS
-// "btnMenos"             // Botón "Menos" para editar parámetro #define
-// NEXTION_COMP_BTN_GUARDAR "btnGuardar"         // Botón "Guardar" para guardar
-// parámetro #define NEXTION_COMP_BTN_CANCELAR "btnCancelar"       // Botón
-// "Cancelar" para cancelar la edición de parámetro
-#define NEXTION_COMP_PARAM_EDITAR                                              \
-  "param" // Texto "param" para editar un parámetro en específico
-#define NEXTION_COMP_PARAM_VALOR_EDITAR                                        \
-  "param_value" // Texto "param" para editar parámetro
 
 #define NEXTION_ID_BTN_PARAM_MENOS 7 // ID de Botón "-" para disminuir parámetro
 #define NEXTION_ID_BTN_PARAM_MAS 6   // ID de Botón "+" para aumentar parámetro
