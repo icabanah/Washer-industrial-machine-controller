@@ -21,6 +21,9 @@ void StorageClass::init() {
   if (_preferences.begin(STORAGE_NAMESPACE, false)) {
     _initialized = true;
     
+    // Inicializar valores por defecto si es la primera vez
+    initializeDefaultValues();
+    
     // Validar configuraciones al iniciar
     if (!validateSettings()) {
       resetToDefaults();
@@ -29,6 +32,8 @@ void StorageClass::init() {
     // Si falla la inicialización, intentar una vez más
     if (_preferences.begin(STORAGE_NAMESPACE, false)) {
       _initialized = true;
+      // Inicializar valores por defecto si es la primera vez
+      initializeDefaultValues();
     }
   }
 }
@@ -41,6 +46,9 @@ uint8_t StorageClass::readByte(const char* key, uint8_t defaultValue) {
 void StorageClass::writeByte(const char* key, uint8_t value) {
   if (!_initialized) return;
   _preferences.putUChar(key, value);
+  // Forzar sincronización inmediata con la flash
+  _preferences.end();
+  _preferences.begin(STORAGE_NAMESPACE, false);
 }
 
 uint16_t StorageClass::readWord(const char* key, uint16_t defaultValue) {
@@ -51,6 +59,9 @@ uint16_t StorageClass::readWord(const char* key, uint16_t defaultValue) {
 void StorageClass::writeWord(const char* key, uint16_t value) {
   if (!_initialized) return;
   _preferences.putUShort(key, value);
+  // Forzar sincronización inmediata con la flash
+  _preferences.end();
+  _preferences.begin(STORAGE_NAMESPACE, false);
 }
 
 void StorageClass::saveProgram(uint8_t program) {
@@ -151,21 +162,26 @@ bool StorageClass::validateSettings() {
   uint8_t program = readByte("programa", 0);
   uint8_t phase = readByte("fase", 0);
   
-  return (program < NUM_PROGRAMAS && phase < NUM_FASES);
+  // Validación más permisiva - solo fallar en casos extremos
+  bool programValid = program < NUM_PROGRAMAS;
+  bool phaseValid = phase < NUM_FASES;
+  bool hasDefaults = readByte("defaults_v2", 0) == 1;
+  
+  // Solo es inválido si NO tiene defaults Y (programa inválido O fase inválida)
+  return hasDefaults || (programValid && phaseValid);
 }
 
 void StorageClass::resetToDefaults() {
-  // Resetear configuraciones básicas
+  // Resetear SOLO configuraciones básicas del sistema, NO los datos de programas
   saveProgram(0);
   savePhase(0);
   saveTimer(0, 0);
   writeWord("contador", 0);
   
-  // Llamar a la inicialización optimizada
-  writeByte("defaults_v2", 0); // Forzar reinicialización
+  // Inicializar valores por defecto SOLO si no existen (preservar datos existentes)
   initializeDefaultValues();
   
-  Utils.debug("🔄 Sistema reseteado a valores predeterminados optimizados");
+  Utils.debug("🔄 Sistema reseteado - configuraciones básicas restauradas");
 }
 
 bool StorageClass::loadAllProgramSettings(uint8_t program, uint8_t (&waterLevels)[NUM_FASES],
@@ -214,9 +230,9 @@ bool StorageClass::saveAllProgramSettings(uint8_t program, const uint8_t (&water
  * P22 y P23 usan valores únicos, P24 usa matriz por fases
  */
 void StorageClass::initializeDefaultValues() {
-  // Verificar si ya existen valores guardados (usar valores optimizados)
-  if (loadP22WaterLevel() == 0 || !readByte("defaults_v2", 0)) {
-    // Utils.debug("🔧 Inicializando valores predeterminados OPTIMIZADOS...");
+  // Verificar SOLO si ya se han inicializado los valores por defecto
+  if (!readByte("defaults_v2", 0)) {
+    Utils.debug("🔧 Primera inicialización - configurando valores predeterminados...");
     
     // === PROGRAMA P22 - AGUA CALIENTE (Valores únicos) ===
     saveP22WaterLevel(2);        // Nivel 2 
@@ -274,6 +290,8 @@ void StorageClass::initializeDefaultValues() {
     
     Utils.debug("🗂️ OPTIMIZACIÓN: P22 y P23 usan valores únicos, P24 usa matriz");
     Utils.debug("✅ Valores predeterminados OPTIMIZADOS inicializados correctamente");
+  } else {
+    Utils.debug("📂 Valores de configuración existentes cargados - preservando datos del usuario");
   }
 }
 //   Serial.println("=====================================");

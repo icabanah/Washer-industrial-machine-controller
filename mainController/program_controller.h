@@ -157,6 +157,7 @@ private:
   
   // Secuencias especiales del programa
   void _finalizeProgramSequence();
+  void _finalizeProgramWithDrainOpen();
   
   // Manejo de errores
   void _triggerError(uint8_t errorCode, const String& errorMessage);

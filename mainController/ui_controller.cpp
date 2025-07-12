@@ -470,24 +470,21 @@ void UIControllerClass::_handleSelectionPageEvent(uint8_t componentId)
     _lastUserAction = "PROGRAM_1";
     _userActionPending = true;
     UIController.showMessage("Programa P22 seleccionado", 2000);
-    _updateProgramInfo(0); // Actualizar info del programa P22
-    // showMessage("Programa P22 seleccionado", 2000);
+    // Nota: No actualizar aquí - se hace en ProgramController al cambiar el programa
   }
   else if (componentId == NEXTION_ID_BTN_PROGRAM2)
   {
     _lastUserAction = "PROGRAM_2";
     _userActionPending = true;
-    UIController.showMessage("Programa P22 seleccionado", 2000);
-    _updateProgramInfo(1); // Actualizar info del programa P23
-    // showMessage("Programa P23 seleccionado", 2000);
+    UIController.showMessage("Programa P23 seleccionado", 2000);
+    // Nota: No actualizar aquí - se hace en ProgramController al cambiar el programa
   }
   else if (componentId == NEXTION_ID_BTN_PROGRAM3)
   {
     _lastUserAction = "PROGRAM_3";
     _userActionPending = true;
-    UIController.showMessage("Programa P22 seleccionado", 2000);
-    _updateProgramInfo(2); // Actualizar info del programa P24
-    // showMessage("Programa P24 seleccionado", 2000);
+    UIController.showMessage("Programa P24 seleccionado", 2000);
+    // Nota: No actualizar aquí - se hace en ProgramController al cambiar el programa
   }
   else if (componentId == NEXTION_ID_BTN_START)
   {
@@ -562,7 +559,7 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   uint8_t centrifugado = Storage.loadCentrifugado(programa, 0); // Tanda 0 para todos
   uint8_t tipoAgua = Storage.loadTipoAgua(programa, 0, 0);
 
-  // Mostrar valores actualizados
+  // Actualizar valores del panel derecho (sin parpadeo gracias a campos vacíos en HMI)
   Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, String(nivel));
   Hardware.nextionSetText(NEXTION_COMP_SEL_TEMP, String(temp) + "°C");
   Hardware.nextionSetText(NEXTION_COMP_SEL_TIEMPO, String(tiempo) + " min");
@@ -570,8 +567,6 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   Hardware.nextionSetText(NEXTION_COMP_SEL_FASE, String(faseTipo));
   Hardware.nextionSetText(NEXTION_COMP_SEL_CENTRIFUGADO, centrifugado ? "Activo" : "Inactivo");
   Hardware.nextionSetText(NEXTION_COMP_SEL_TIPO_AGUA, tipoAgua ? "Caliente" : "Fría");
-
-  Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, String(rotacion));
 
   // Si es el programa P24 (índice 2), mostrar información adicional de múltiples fases
   if (programa == 2)

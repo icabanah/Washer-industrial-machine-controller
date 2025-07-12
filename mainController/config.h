@@ -102,9 +102,9 @@
 #define MOTOR_TIEMPO_PAUSA 2000 // Tiempo de pausa entre cambios de dirección (2 segundos)
 
 // Configuración de temporizadores especiales
-#define TIEMPO_DRENAJE 45 // 2 minutos de drenaje al final
-#define TIEMPO_PUERTA_BLOQUEO 45 // 45 seg antes de desbloquear puerta
-#define TIEMPO_CENTRIFUGADO 45 // 45inutos de centrifugado
+#define TIEMPO_DRENAJE 45 // 45 segundos de drenaje al final
+#define TIEMPO_PUERTA_BLOQUEO 60 // 60 segundos (1 minuto) antes de desbloquear puerta
+#define TIEMPO_CENTRIFUGADO 45 // 45 segundos de centrifugado
 
 // Configuración de tareas asíncronas
 #define MAX_ASYNC_TASKS 10 // Número máximo de tareas asíncronas que se pueden gestionar
@@ -225,8 +225,8 @@
 #define NEXTION_COMP_BTN_PAUSAR "btnPausar"
 
 // Información de estado
-#define NEXTION_ID_BTN_PAUSAR 10 // Botón "Pausar"
-#define NEXTION_ID_BTN_PARAR 7   // Botón "Parar"
+#define NEXTION_ID_BTN_PAUSAR 6 // Botón "Pausar"
+#define NEXTION_ID_BTN_PARAR 5   // Botón "Parar"
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 // Etiquetas de parámetros principales
