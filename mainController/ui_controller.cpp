@@ -132,17 +132,22 @@ void UIControllerClass::showSelectionScreen(uint8_t programa)
 {
   Utils.debug("Programa seleccionado: " + String(programa + 22));
 
-  // Cambiar a la página de selección
-  Hardware.nextionSetPage(NEXTION_PAGE_SELECTION);
-  _currentPage = NEXTION_PAGE_SELECTION; // Actualizar página actual
+  // Cambiar de página SOLO si no estamos ya en la página de selección
+  if (_currentPage != NEXTION_PAGE_SELECTION) {
+    Hardware.nextionSetPage(NEXTION_PAGE_SELECTION);
+    _currentPage = NEXTION_PAGE_SELECTION;
+    Utils.debug("Cambiando a página de selección");
+  } else {
+    Utils.debug("Ya en página de selección - solo actualizando componentes");
+  }
 
-  // Actualizar información del programa seleccionado
+  // Actualizar información del programa seleccionado (solo componentes individuales)
   _updateProgramInfo(programa);
 
   // Actualizar texto del botón START según estado de puerta
   updateStartButtonText();
 
-  // Resaltar el botón del programa seleccionado
+  // Resaltar el botón del programa seleccionado (solo componentes individuales)
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM1, (programa == 0) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (programa == 1) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (programa == 2) ? 1 : 0);
@@ -587,6 +592,31 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   }
 
   Serial.println("Información del programa P" + String(programa + 22) + " actualizada desde Storage");
+}
+
+/**
+ * @brief Actualiza SOLO el panel derecho con información del programa (sin cambiar página ni botones)
+ * @param programa Programa del cual mostrar información (0-2)
+ */
+void UIControllerClass::updateProgramPanel(uint8_t programa)
+{
+  // Cargar valores desde Storage (igual que _updateProgramInfo pero más rápido)
+  uint8_t nivel = Storage.loadWaterLevel(programa, 0, 0);
+  uint8_t temp = Storage.loadTemperature(programa, 0, 0);
+  uint8_t tiempo = Storage.loadTime(programa, 0);
+  uint8_t rotacion = Storage.loadRotation(programa, 0);
+  uint8_t faseTipo = Storage.loadPhaseType(programa, 0, 0);
+  uint8_t centrifugado = Storage.loadCentrifugado(programa, 0);
+  uint8_t tipoAgua = Storage.loadTipoAgua(programa, 0, 0);
+
+  // Actualizar SOLO el panel derecho (sin tocar botones ni cambiar páginas)
+  Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, String(nivel));
+  Hardware.nextionSetText(NEXTION_COMP_SEL_TEMP, String(temp) + "°C");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_TIEMPO, String(tiempo) + " min");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, String(rotacion) + " RPM");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_FASE, String(faseTipo));
+  Hardware.nextionSetText(NEXTION_COMP_SEL_CENTRIFUGADO, centrifugado ? "Activo" : "Inactivo");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_TIPO_AGUA, tipoAgua ? "Caliente" : "Fría");
 }
 
 bool UIControllerClass::hasUserAction()

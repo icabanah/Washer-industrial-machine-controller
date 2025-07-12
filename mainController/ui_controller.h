@@ -62,6 +62,7 @@ public:
   void updateEmergencyAlert(bool state);            // Actualizar alerta de emergencia
   void updateErrorDisplay(bool blinkState);         // Actualizar display de error con parpadeo
   void updateProgramInfo(uint8_t programa);         // Actualizar información del programa en selección
+  void updateProgramPanel(uint8_t programa);        // Actualizar SOLO panel derecho (sin cambiar página)
   void updatePreparationStatus(unsigned long prepTime); // Mostrar estado de preparación (llenado/calentamiento)
   void clearPreparationStatus();                    // Limpiar estado de preparación
   

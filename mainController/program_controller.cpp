@@ -4,6 +4,13 @@
 // Instancia global
 ProgramControllerClass ProgramController;
 
+/// @brief Actualizar solo botones de programa (función auxiliar rápida)
+void ProgramControllerClass::_updateProgramButtons() {
+  Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM1, (_currentProgram == 0) ? 1 : 0);
+  Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (_currentProgram == 1) ? 1 : 0);
+  Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (_currentProgram == 2) ? 1 : 0);
+}
+
 void ProgramControllerClass::init() {
   // Inicializar variables de estado
   _currentState = ESTADO_SELECCION;
@@ -1263,8 +1270,9 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     _currentProgram = 0; // Índice interno 0 = P22
     Storage.saveProgram(_currentProgram);
     Utils.debug("📋 Programa 1 seleccionado directamente (P22)");
-    UIController.showSelectionScreen(
-        _currentProgram); // Pasar índice 0 directamente
+    // Actualización rápida: solo panel derecho + botones
+    UIController.updateProgramPanel(_currentProgram);
+    _updateProgramButtons();
     break;
 
   case NEXTION_ID_BTN_PROGRAM2:
@@ -1272,8 +1280,9 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     _currentProgram = 1; // Índice interno 1 = P23
     Storage.saveProgram(_currentProgram);
     Utils.debug("📋 Programa 2 seleccionado directamente (P23)");
-    UIController.showSelectionScreen(
-        _currentProgram); // Pasar índice 1 directamente
+    // Actualización rápida: solo panel derecho + botones
+    UIController.updateProgramPanel(_currentProgram);
+    _updateProgramButtons();
     break;
 
   case NEXTION_ID_BTN_PROGRAM3:
@@ -1281,8 +1290,9 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     _currentProgram = 2; // Índice interno 2 = P24
     Storage.saveProgram(_currentProgram);
     Utils.debug("📋 Programa 3 seleccionado directamente (P24)");
-    UIController.showSelectionScreen(
-        _currentProgram); // Pasar índice 2 directamente
+    // Actualización rápida: solo panel derecho + botones
+    UIController.updateProgramPanel(_currentProgram);
+    _updateProgramButtons();
     break;
 
   case NEXTION_ID_BTN_START:

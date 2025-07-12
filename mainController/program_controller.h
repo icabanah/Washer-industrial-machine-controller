@@ -8,6 +8,7 @@
 #include "storage.h"
 #include "sensors.h"
 #include "actuators.h"
+#include "hardware.h"
 #include "ui_controller.h"
 
 
@@ -158,6 +159,9 @@ private:
   // Secuencias especiales del programa
   void _finalizeProgramSequence();
   void _finalizeProgramWithDrainOpen();
+  
+  // Funciones auxiliares rápidas para UI
+  void _updateProgramButtons();
   
   // Manejo de errores
   void _triggerError(uint8_t errorCode, const String& errorMessage);
