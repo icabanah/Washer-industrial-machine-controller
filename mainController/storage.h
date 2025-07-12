@@ -71,9 +71,9 @@ public:
   
   // === MÉTODOS DE COMPATIBILIDAD (para transición gradual) ===
   void saveWaterLevel(uint8_t program, uint8_t phase, uint8_t level);
-  uint8_t loadWaterLevel(uint8_t program, uint8_t phase);
+  uint8_t loadWaterLevel(uint8_t program, uint8_t tanda, uint8_t phase);
   void saveTemperature(uint8_t program, uint8_t phase, uint8_t temperature);
-  uint8_t loadTemperature(uint8_t program, uint8_t phase);
+  uint8_t loadTemperature(uint8_t program, uint8_t tanda, uint8_t phase);
   void saveTime(uint8_t program, uint8_t phase, uint8_t time);
   uint8_t loadTime(uint8_t program, uint8_t phase);
   void saveRotation(uint8_t program, uint8_t phase, uint8_t rotation);

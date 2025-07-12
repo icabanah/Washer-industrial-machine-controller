@@ -216,7 +216,7 @@ bool StorageClass::saveAllProgramSettings(uint8_t program, const uint8_t (&water
 void StorageClass::initializeDefaultValues() {
   // Verificar si ya existen valores guardados (usar valores optimizados)
   if (loadP22WaterLevel() == 0 || !readByte("defaults_v2", 0)) {
-    Utils.debug("🔧 Inicializando valores predeterminados OPTIMIZADOS...");
+    // Utils.debug("🔧 Inicializando valores predeterminados OPTIMIZADOS...");
     
     // === PROGRAMA P22 - AGUA CALIENTE (Valores únicos) ===
     saveP22WaterLevel(2);        // Nivel 2 
@@ -224,7 +224,7 @@ void StorageClass::initializeDefaultValues() {
     saveP22Time(50);             // 50 minutos
     saveP22Rotation(2);          // Rotación 2
     saveP22Centrifugado(1);      // Centrifugado activo
-    Utils.debug("✅ P22 configurado: Nivel=2, Temp=30°C, Tiempo=50min, Rot=2, Centrif=Activo");
+    // Utils.debug("✅ P22 configurado: Nivel=2, Temp=30°C, Tiempo=50min, Rot=2, Centrif=Activo");
     
     // === PROGRAMA P23 - AGUA FRÍA (Valores únicos) ===
     saveP23WaterLevel(2);        // Nivel 2
@@ -232,7 +232,7 @@ void StorageClass::initializeDefaultValues() {
     saveP23Time(40);             // 40 minutos
     saveP23Rotation(2);          // Rotación 2
     saveP23Centrifugado(1);      // Centrifugado activo
-    Utils.debug("✅ P23 configurado: Nivel=2, Temp=20°C, Tiempo=40min, Rot=2, Centrif=Activo");
+    // Utils.debug("✅ P23 configurado: Nivel=2, Temp=20°C, Tiempo=40min, Rot=2, Centrif=Activo");
     
     // === PROGRAMA P24 - MULTI-CICLO (Matriz por fases) ===
     // Fase 0: Prelavado intenso
@@ -451,14 +451,14 @@ void StorageClass::saveWaterLevel(uint8_t program, uint8_t phase, uint8_t level)
   }
 }
 
-uint8_t StorageClass::loadWaterLevel(uint8_t program, uint8_t phase) {
+uint8_t StorageClass::loadWaterLevel(uint8_t program, uint8_t tanda, uint8_t phase) {
   switch (program) {
     case 0: // P22
-      return loadP22WaterLevel(); // Ignora la fase
+      return loadP22WaterLevel(); // Ignora la tanda y la fase
     case 1: // P23
-      return loadP23WaterLevel(); // Ignora la fase  
+      return loadP23WaterLevel(); // Ignora la tanda y la fase
     case 2: // P24
-      return loadP24WaterLevel(phase);
+      return loadP24WaterLevel(tanda, phase);
     default:
       return 2; // Valor predeterminado
   }
@@ -478,14 +478,14 @@ void StorageClass::saveTemperature(uint8_t program, uint8_t phase, uint8_t tempe
   }
 }
 
-uint8_t StorageClass::loadTemperature(uint8_t program, uint8_t phase) {
+uint8_t StorageClass::loadTemperature(uint8_t program, uint8_t tanda, uint8_t phase) {
   switch (program) {
     case 0: // P22
       return loadP22Temperature();
     case 1: // P23
       return loadP23Temperature();
     case 2: // P24
-      return loadP24Temperature(phase);
+      return loadP24Temperature(tanda, phase);
     default:
       return 25;
   }

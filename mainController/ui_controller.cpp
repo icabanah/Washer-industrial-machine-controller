@@ -16,9 +16,9 @@ UIControllerClass UIController;
 // Programa 24 (P24): Multi-ciclo configurable - 3 fases, sin centrifugado
 
 uint8_t NivelAgua[3][4] = {
-    {3, 4, 2, 1}, // P22: Llenado alto, Lavado máximo, Drenaje bajo, Centrifugado mínimo
-    {3, 4, 2, 1}, // P23: Igual que P22 pero con agua fría
-    {2, 3, 2, 0}  // P24: Multi-ciclo, sin centrifugado (fase 4 = 0)
+    {3, 4, 2, 1}, // P22:
+    {3, 4, 2, 1}, // P23: 
+    {2, 3, 2, 0}  // P24: 
 };
 
 uint8_t RotacionTam[3][4] = {
@@ -90,7 +90,7 @@ void UIControllerClass::init()
   // Inicializar valores temporales (expandido para 7 parámetros)
   for (int i = 0; i < 7; i++)
   {
-    _valoresTemporales[i] = 0;
+    _valoresTemporales[i] = 0; // Array para: [nivel, temp, tiempo, rotacion, tanda, centrifugado, tipoAgua]
   }
 
   Serial.println("UI Controller inicializado con sistema de limpieza de eventos");
@@ -104,7 +104,7 @@ void UIControllerClass::showWelcomeScreen()
   // Cambiar a la página de bienvenida
   Hardware.nextionSetPage(NEXTION_PAGE_WELCOME);
   _currentPage = NEXTION_PAGE_WELCOME; // Actualizar página actual
-  delay(100);                          // Pausa breve para asegurar cambio de página
+  // delay(100);                          // Pausa breve para asegurar cambio de página
 
   // Establecer textos de bienvenida usando los componentes correctos de la documentación
   // Serial.println("Enviando comando para título...");
@@ -115,9 +115,6 @@ void UIControllerClass::showWelcomeScreen()
 
   // Serial.println("Enviando comando para contacto...");
   Hardware.nextionSetText(NEXTION_COMP_CONTACTO, "958970967");
-
-  // Activar animación de inicio si existe (ejemplo)
-  // Hardware.nextionSendCommand("anim.en=1");
 }
 
 /// @brief
@@ -334,14 +331,6 @@ void UIControllerClass::updateWaterLevel(uint8_t nivel)
   // Esto hace que cada nivel del sensor sea muy visible en la barra
   uint8_t barValue = nivel * 25; // 0->0, 1->25, 2->50, 3->75, 4->100
   Hardware.nextionSetValue(NEXTION_COMP_BARRA_NIVEL_EJECUCION, barValue);
-
-  // Debug para verificar mapeo
-  // static uint8_t lastLevel = 255;
-  // if (nivel != lastLevel)
-  // {
-  //   Utils.debug("💧 Nivel agua: " + String(nivel) + " -> Barra: " + String(barValue) + "%");
-  //   lastLevel = nivel;
-  // }
 }
 
 void UIControllerClass::updateRotation(uint8_t rotacion)
@@ -353,14 +342,6 @@ void UIControllerClass::updateRotation(uint8_t rotacion)
   // Mapear nivel de rotación (0-4) al rango del gauge en Nextion (0-100)
   uint8_t gaugeValue = rotacion * 25; // 0->0, 1->25, 2->50, 3->75, 4->100
   Hardware.nextionSetValue(NEXTION_COMP_GAUGE_VEL_EJECUCION, gaugeValue);
-
-  // Debug para verificar mapeo
-  // static uint8_t lastRotation = 255;
-  // if (rotacion != lastRotation)
-  // {
-  //   Utils.debug("⚙️ Rotación: " + String(rotacion) + " -> Gauge: " + String(gaugeValue) + "%");
-  //   lastRotation = rotacion;
-  // }
 }
 
 void UIControllerClass::updatePhase(uint8_t fase)
@@ -499,19 +480,25 @@ void UIControllerClass::_handleSelectionPageEvent(uint8_t componentId)
   {
     _lastUserAction = "PROGRAM_1";
     _userActionPending = true;
-    showMessage("Programa P22 seleccionado", 2000);
+    UIController.showMessage("Programa P22 seleccionado", 2000);
+    _updateProgramInfo(0); // Actualizar info del programa P22
+    // showMessage("Programa P22 seleccionado", 2000);
   }
   else if (componentId == NEXTION_ID_BTN_PROGRAM2)
   {
     _lastUserAction = "PROGRAM_2";
     _userActionPending = true;
-    showMessage("Programa P23 seleccionado", 2000);
+    UIController.showMessage("Programa P22 seleccionado", 2000);
+    _updateProgramInfo(1); // Actualizar info del programa P23
+    // showMessage("Programa P23 seleccionado", 2000);
   }
   else if (componentId == NEXTION_ID_BTN_PROGRAM3)
   {
     _lastUserAction = "PROGRAM_3";
     _userActionPending = true;
-    showMessage("Programa P24 seleccionado", 2000);
+    UIController.showMessage("Programa P22 seleccionado", 2000);
+    _updateProgramInfo(2); // Actualizar info del programa P24
+    // showMessage("Programa P24 seleccionado", 2000);
   }
   else if (componentId == NEXTION_ID_BTN_START)
   {
@@ -595,24 +582,7 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   Hardware.nextionSetText(NEXTION_COMP_SEL_CENTRIFUGADO, centrifugado ? "Activo" : "Inactivo");
   Hardware.nextionSetText(NEXTION_COMP_SEL_TIPO_AGUA, tipoAgua ? "Caliente" : "Fría");
 
-  // Convertir valor numérico de rotación a texto descriptivo
-  String rotacionTexto;
-  switch (rotacion)
-  {
-  case 1:
-    rotacionTexto = "Suave";
-    break;
-  case 2:
-    rotacionTexto = "Media";
-    break;
-  case 3:
-    rotacionTexto = "Intensa";
-    break;
-  default:
-    rotacionTexto = "Desconocido";
-    break;
-  }
-  Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, rotacionTexto);
+  Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, String(rotacion));
 
   // Si es el programa P24 (índice 2), mostrar información adicional de múltiples fases
   if (programa == 2)
