@@ -58,7 +58,6 @@ public:
   void updateWaterLevel(uint8_t nivel);
   void updateRotation(uint8_t rotacion);
   void updatePhase(uint8_t fase);
-  void updateProgressBar(uint8_t progress);
   void updatePauseIndicator(bool visible);         // Mostrar/ocultar indicador de pausa
   void updateEmergencyAlert(bool state);            // Actualizar alerta de emergencia
   void updateErrorDisplay(bool blinkState);         // Actualizar display de error con parpadeo

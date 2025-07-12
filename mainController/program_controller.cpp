@@ -345,7 +345,7 @@ void ProgramControllerClass::_updatePhaseParameters() {
     // Actualizar la interfaz de usuario
     UIController.updatePhase(_currentPhase); // Mostrar la fase actual en la UI
     UIController.updateTime(_remainingMinutes, _remainingSeconds);
-    UIController.updateProgressBar(getProgressPercentage()); // Usar cálculo correcto de progreso
+    // Nota: Barra de progreso eliminada del HMI
 
     Utils.debug("📌 Nueva fase iniciada: " + String(_currentPhase));
   }
@@ -404,8 +404,8 @@ void ProgramControllerClass::_checkSensorConditions() {
   }
 
   // Obtener valores objetivo para la fase actual
-  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
-  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
+  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, 0, _currentPhase);
+  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, 0, _currentPhase);
 
   // Determinar si se requiere control de temperatura
   bool requiresTempControl = false;
@@ -418,7 +418,7 @@ void ProgramControllerClass::_checkSensorConditions() {
     break;
   case 2: // P24 - Configurable por fase
     requiresTempControl =
-        (Storage.loadTipoAgua(_currentProgram, _currentPhase) == 1);
+        (Storage.loadTipoAgua(_currentProgram, 0, _currentPhase) == 1);
     break;
   }
 
@@ -458,8 +458,8 @@ void ProgramControllerClass::_controlActuatorsForPhase() {
   // Control de actuadores para las fases del programa
 
   // Obtener valores objetivo para la fase actual
-  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
-  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
+  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, 0, _currentPhase);
+  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, 0, _currentPhase);
 
   // Determinar si se requiere control de temperatura
   bool requiresTempControl = false;
@@ -479,7 +479,7 @@ void ProgramControllerClass::_controlActuatorsForPhase() {
 
   case 2: // P24 - Configurable por fase
     // Verificar el tipo de agua configurado para esta fase
-    tipoAgua = Storage.loadTipoAgua(_currentProgram, _currentPhase);
+    tipoAgua = Storage.loadTipoAgua(_currentProgram, 0, _currentPhase);
     requiresTempControl = (tipoAgua == 1); // Solo si usa agua caliente
     break;
   }
@@ -595,7 +595,7 @@ void ProgramControllerClass::_handleTemperatureControl() {
   }
 
   float currentTemp = Sensors.getCurrentTemperature();
-  float targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
+  float targetTemp = Storage.loadTemperature(_currentProgram, 0, _currentPhase);
 
   if (currentTemp < targetTemp - 2) {
     // Utils.debug("🌡️ Temperatura baja: " + String(currentTemp) + "°C,
@@ -639,7 +639,7 @@ void ProgramControllerClass::_handleTemperatureControl() {
   }
 
   // Cerrar válvula de agua si se alcanzó el nivel objetivo
-  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
+  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, 0, _currentPhase);
   if (Sensors.getCurrentWaterLevel() >= targetLevel) {
     Actuators.closeWaterValve();
   }
@@ -679,8 +679,8 @@ bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa,
 
 void ProgramControllerClass::_configureActuatorsForPhase() {
   // Configurar actuadores según el flujo específico del Programa 22
-  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, _currentPhase);
-  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, _currentPhase);
+  uint8_t targetLevel = Storage.loadWaterLevel(_currentProgram, 0, _currentPhase);
+  uint8_t targetTemp = Storage.loadTemperature(_currentProgram, 0, _currentPhase);
 
   // ESTADO INICIAL: Al presionar "iniciar" (antes de que llegue agua y
   // temperatura)
@@ -886,12 +886,12 @@ void ProgramControllerClass::editParameter(uint8_t paramType, uint8_t value) {
   switch (paramType) {
   case PARAM_NIVEL: // Nivel de agua
     _waterLevels[_editingProgram][storageIndex] = value;
-    Storage.saveWaterLevel(_editingProgram, storageIndex, value);
+    Storage.saveWaterLevel(_editingProgram, 0, storageIndex, value);
     break;
 
   case PARAM_TEMPERATURA: // Temperatura
     _temperatures[_editingProgram][storageIndex] = value;
-    Storage.saveTemperature(_editingProgram, storageIndex, value);
+    Storage.saveTemperature(_editingProgram, 0, storageIndex, value);
     break;
 
   case PARAM_TIEMPO: // Tiempo
@@ -906,7 +906,7 @@ void ProgramControllerClass::editParameter(uint8_t paramType, uint8_t value) {
 
   case PARAM_AGUA: // Tipo de agua
     _tipoAguaPrograma[_editingProgram][storageIndex] = value;
-    Storage.saveTipoAgua(_editingProgram, storageIndex, value);
+    Storage.saveTipoAgua(_editingProgram, 0, storageIndex, value);
     break;
 
   case PARAM_CENTRIF: // Centrifugado
@@ -949,9 +949,9 @@ void ProgramControllerClass::saveEditing() {
   }
 
   // Guardar en almacenamiento persistente usando métodos individuales
-  Storage.saveWaterLevel(_editingProgram, _editingPhase,
+  Storage.saveWaterLevel(_editingProgram, 0, _editingPhase,
                          _waterLevels[_editingProgram][_editingPhase]);
-  Storage.saveTemperature(_editingProgram, _editingPhase,
+  Storage.saveTemperature(_editingProgram, 0, _editingPhase,
                           _temperatures[_editingProgram][_editingPhase]);
   Storage.saveTime(_editingProgram, _editingPhase,
                    _times[_editingProgram][_editingPhase]);
@@ -1458,11 +1458,11 @@ void ProgramControllerClass::_loadProgramData() {
   // Cargar todos los datos de programa desde almacenamiento
   for (uint8_t prog = 0; prog < NUM_PROGRAMAS; prog++) {
     for (uint8_t fase = 0; fase < NUM_FASES; fase++) {
-      _waterLevels[prog][fase] = Storage.loadWaterLevel(prog, fase);
-      _temperatures[prog][fase] = Storage.loadTemperature(prog, fase);
+      _waterLevels[prog][fase] = Storage.loadWaterLevel(prog, 0, fase);
+      _temperatures[prog][fase] = Storage.loadTemperature(prog, 0, fase);
       _times[prog][fase] = Storage.loadTime(prog, fase);
       _rotations[prog][fase] = Storage.loadRotation(prog, fase);
-      _tipoAguaPrograma[prog][fase] = Storage.loadTipoAgua(prog, fase);
+      _tipoAguaPrograma[prog][fase] = Storage.loadTipoAgua(prog, 0, fase);
       // Para centrifugado: [prog][fase] representa [prog][tanda]
       // P22/P23: solo tanda 0, P24: tandas 0,1,2
       _centrifugadoPorTanda[prog][fase] = Storage.loadCentrifugado(prog, fase);
@@ -1526,7 +1526,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
       lastSecondUpdate = currentTime;
       _decrementTimer();
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      UIController.updateProgressBar(getProgressPercentage());
+      // Nota: Barra de progreso eliminada del HMI
 
       // Verificar si el lavado terminó
       if (_remainingMinutes == 0 && _remainingSeconds == 0) {
@@ -1561,7 +1561,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
       lastSecondUpdate = currentTime;
       _decrementTimer();
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      UIController.updateProgressBar(getProgressPercentage());
+      // Nota: Barra de progreso eliminada del HMI
 
       // Verificar si el centrifugado terminó
       if (_remainingMinutes == 0 && _remainingSeconds == 0) {
@@ -1581,7 +1581,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
       lastSecondUpdate = currentTime;
       _decrementTimer();
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      UIController.updateProgressBar(getProgressPercentage());
+      // Nota: Barra de progreso eliminada del HMI
 
       // Verificar si el drenaje terminó
       if (_remainingMinutes == 0 && _remainingSeconds == 0) {
@@ -1607,7 +1607,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
       lastSecondUpdate = currentTime;
       _decrementTimer();
       UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      UIController.updateProgressBar(getProgressPercentage());
+      // Nota: Barra de progreso eliminada del HMI
 
       // Verificar si el enfriamiento terminó
       if (_remainingMinutes == 0 && _remainingSeconds == 0) {
@@ -1709,7 +1709,7 @@ void ProgramControllerClass::_initializePhaseState() {
   Storage.savePhase(_currentPhase);
   UIController.updatePhase(_currentPhase);
   UIController.updateTime(_remainingMinutes, _remainingSeconds);
-  UIController.updateProgressBar(getProgressPercentage());
+  // Nota: Barra de progreso eliminada del HMI
 
   Utils.debug("Fase iniciada: " + String(_currentPhaseState) + " (Fase " +
               String(_currentPhase) + ")");

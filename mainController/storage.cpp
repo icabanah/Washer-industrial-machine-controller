@@ -112,12 +112,12 @@ const char* StorageClass::_getPhaseKey(uint8_t program, uint8_t phase) {
   return key;
 }
 
-void StorageClass::savePhaseType(uint8_t program, uint8_t phase, uint8_t phaseType) {
+void StorageClass::savePhaseType(uint8_t program, uint8_t tanda, uint8_t phase, uint8_t phaseType) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return;
   writeByte(_getPhaseKey(program, phase), phaseType);
 }
 
-uint8_t StorageClass::loadPhaseType(uint8_t program, uint8_t phase) {
+uint8_t StorageClass::loadPhaseType(uint8_t program, uint8_t tanda, uint8_t phase) {
   if (program >= NUM_PROGRAMAS || phase >= NUM_FASES) return 1; // Default: llenado
   return readByte(_getPhaseKey(program, phase), 1);
 }
@@ -179,8 +179,8 @@ bool StorageClass::loadAllProgramSettings(uint8_t program, uint8_t (&waterLevels
   
   // Cargar todas las configuraciones para el programa especificado
   for (uint8_t fase = 0; fase < NUM_FASES; fase++) {
-    waterLevels[fase] = loadWaterLevel(program, fase);
-    temperatures[fase] = loadTemperature(program, fase);
+    waterLevels[fase] = loadWaterLevel(program, 0, fase);
+    temperatures[fase] = loadTemperature(program, 0, fase);
     times[fase] = loadTime(program, fase);
     rotations[fase] = loadRotation(program, fase);
   }
@@ -199,8 +199,8 @@ bool StorageClass::saveAllProgramSettings(uint8_t program, const uint8_t (&water
   
   // Guardar todas las configuraciones para el programa especificado
   for (uint8_t fase = 0; fase < NUM_FASES; fase++) {
-    saveWaterLevel(program, fase, waterLevels[fase]);
-    saveTemperature(program, fase, temperatures[fase]);
+    saveWaterLevel(program, 0, fase, waterLevels[fase]);
+    saveTemperature(program, 0, fase, temperatures[fase]);
     saveTime(program, fase, times[fase]);
     saveRotation(program, fase, rotations[fase]);
   }
@@ -437,7 +437,7 @@ const char* StorageClass::_getP24Key(const char* param, uint8_t phase) {
 
 // === MÉTODOS DE COMPATIBILIDAD (para transición gradual) ===
 
-void StorageClass::saveWaterLevel(uint8_t program, uint8_t phase, uint8_t level) {
+void StorageClass::saveWaterLevel(uint8_t program, uint8_t tanda, uint8_t phase, uint8_t level) {
   switch (program) {
     case 0: // P22
       saveP22WaterLevel(level); // Ignora la fase, P22 tiene un solo valor
@@ -458,13 +458,13 @@ uint8_t StorageClass::loadWaterLevel(uint8_t program, uint8_t tanda, uint8_t pha
     case 1: // P23
       return loadP23WaterLevel(); // Ignora la tanda y la fase
     case 2: // P24
-      return loadP24WaterLevel(tanda, phase);
+      return loadP24WaterLevel(phase);
     default:
       return 2; // Valor predeterminado
   }
 }
 
-void StorageClass::saveTemperature(uint8_t program, uint8_t phase, uint8_t temperature) {
+void StorageClass::saveTemperature(uint8_t program, uint8_t tanda, uint8_t phase, uint8_t temperature) {
   switch (program) {
     case 0: // P22
       saveP22Temperature(temperature);
@@ -485,7 +485,7 @@ uint8_t StorageClass::loadTemperature(uint8_t program, uint8_t tanda, uint8_t ph
     case 1: // P23
       return loadP23Temperature();
     case 2: // P24
-      return loadP24Temperature(tanda, phase);
+      return loadP24Temperature(phase);
     default:
       return 25;
   }
@@ -572,7 +572,7 @@ uint8_t StorageClass::loadCentrifugado(uint8_t program, uint8_t tanda) {
   }
 }
 
-void StorageClass::saveTipoAgua(uint8_t program, uint8_t phase, uint8_t tipoAgua) {
+void StorageClass::saveTipoAgua(uint8_t program, uint8_t tanda, uint8_t phase, uint8_t tipoAgua) {
   switch (program) {
     case 0: // P22
       // P22 siempre usa agua caliente (1), ignorar parámetro
@@ -586,7 +586,7 @@ void StorageClass::saveTipoAgua(uint8_t program, uint8_t phase, uint8_t tipoAgua
   }
 }
 
-uint8_t StorageClass::loadTipoAgua(uint8_t program, uint8_t phase) {
+uint8_t StorageClass::loadTipoAgua(uint8_t program, uint8_t tanda, uint8_t phase) {
   switch (program) {
     case 0: // P22
       return 1; // Siempre agua caliente

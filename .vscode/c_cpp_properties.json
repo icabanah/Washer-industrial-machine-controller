@@ -4,18 +4,18 @@
             "name": "ESP32-WROOM-DA",
             "includePath": [
                 "${workspaceFolder}/**",
-                // "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.2.0/**",
-                // "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/tools/**",
-                // "C:/Users/Daniele/Documents/Arduino/libraries/**",
-                // "C:/Users/DANIELE/Documents/Arduino/libraries/OneWire",
-                // "C:/Users/DANIELE/Documents/Arduino/libraries/DallasTemperature",
-                // "C:/Users/DANIELE/Documents/Arduino/libraries/HX710B",
+                "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.2.0/**",
+                "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/tools/**",
+                "C:/Users/Daniele/Documents/Arduino/libraries/**",
+                "C:/Users/DANIELE/Documents/Arduino/libraries/OneWire",
+                "C:/Users/DANIELE/Documents/Arduino/libraries/DallasTemperature",
+                "C:/Users/DANIELE/Documents/Arduino/libraries/HX710B",
                 
-                "C:/Users/autom/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.2.1/**",
-                "C:/Users/autom/AppData/Local/Arduino15/packages/esp32/tools/**",
-                "C:/Users/autom/Documents/Arduino/libraries/**",
-                "C:/Users/autom/Documents/Arduino/libraries/OneWire", // v2.3.8
-                "C:/Users/autom/Documents/Arduino/libraries/DallasTemperature", // v4.0.3
+                // "C:/Users/autom/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.2.1/**",
+                // "C:/Users/autom/AppData/Local/Arduino15/packages/esp32/tools/**",
+                // "C:/Users/autom/Documents/Arduino/libraries/**",
+                // "C:/Users/autom/Documents/Arduino/libraries/OneWire", // v2.3.8
+                // "C:/Users/autom/Documents/Arduino/libraries/DallasTemperature", // v4.0.3
                 // "C:/Users/autom/Documents/Arduino/libraries/HX710B",
             ],
             "defines": [
@@ -26,7 +26,8 @@
                 "HAVE_CONFIG_H",
                 "MBEDTLS_CONFIG_FILE=\"mbedtls/esp_config.h\""
             ],
-            "compilerPath": "C:/Users/autom/AppData/Local/Arduino15/packages/esp32/tools/esp-x32/2411/bin/xtensa-esp32-elf-g++.exe",
+            "compilerPath": "C:/Users/Daniele/AppData/Local/Arduino15/packages/esp32/tools/esp-x32/2411/bin/xtensa-esp32-elf-g++.exe",
+            // "compilerPath": "C:/Users/autom/AppData/Local/Arduino15/packages/esp32/tools/esp-x32/2411/bin/xtensa-esp32-elf-g++.exe",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"

@@ -182,17 +182,10 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
   updateTemperature(Sensors.getCurrentTemperature()); // Usar temperatura real del sensor
   updateRotation(Actuators.getCurrentRotationLevel()); // Usar rotación real del actuator
   
-  // Actualizar parámetros objetivo del programa en el panel derecho usando Storage
-  Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, String(Storage.loadWaterLevel(programa, fase)));
-  Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, String(Storage.loadTemperature(programa, fase)) + "°C");
-  Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, String(Storage.loadTime(programa, fase)) + " min");
-  Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(Storage.loadRotation(programa, fase)));
-  Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(fase + 1)); // Mostrar número de fase (1-4)
-  Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, Storage.loadCentrifugado(programa, fase) ? "Activo" : "Inactivo");
-  Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, Storage.loadTipoAgua(programa, fase) ? "Caliente" : "Fría");
+  // Nota: Panel derecho eliminado de la página de ejecución en el HMI
   
   // Inicializar barra de progreso
-  updateProgressBar(0); // Se actualizar\u00e1 desde ProgramController
+  // Nota: Barra de progreso eliminada del HMI
 
   Serial.println("Mostrando pantalla de ejecución de programa");
 }
@@ -317,8 +310,9 @@ void UIControllerClass::updateTemperature(float temperatura)
   // Actualizar texto de temperatura con 1 decimal
   Hardware.nextionSetText(NEXTION_COMP_TEMP_EJECUCION, String(temperatura, 1) + "°C");
 
-  // Actualizar medidor visual si existe
-  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_TEMP_EJECUCION, (uint16_t)temperatura);
+  // Actualizar barra de temperatura (mapear 0-100°C al rango 0-100)
+  uint8_t barValue = (uint8_t)constrain(temperatura, 0, 100);
+  Hardware.nextionSetValue(NEXTION_COMP_BARRA_TEMP_EJECUCION, barValue);
 }
 
 void UIControllerClass::updateWaterLevel(uint8_t nivel)
@@ -338,10 +332,10 @@ void UIControllerClass::updateRotation(uint8_t rotacion)
   // Actualizar texto de velocidad de rotación en pantalla de ejecución
   Hardware.nextionSetText(NEXTION_COMP_VELOCIDAD_EJECUCION, String(rotacion));
 
-  // Actualizar gauge de velocidad (apuntador)
-  // Mapear nivel de rotación (0-4) al rango del gauge en Nextion (0-100)
-  uint8_t gaugeValue = rotacion * 25; // 0->0, 1->25, 2->50, 3->75, 4->100
-  Hardware.nextionSetValue(NEXTION_COMP_GAUGE_VEL_EJECUCION, gaugeValue);
+  // Actualizar barra de velocidad
+  // Mapear nivel de rotación (0-4) al rango de la barra en Nextion (0-100)
+  uint8_t barValue = rotacion * 25; // 0->0, 1->25, 2->50, 3->75, 4->100
+  Hardware.nextionSetValue(NEXTION_COMP_BARRA_VELOC_EJECUCION, barValue);
 }
 
 void UIControllerClass::updatePhase(uint8_t fase)
@@ -372,11 +366,6 @@ void UIControllerClass::updatePhase(uint8_t fase)
   Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, faseTexto);
 }
 
-void UIControllerClass::updateProgressBar(uint8_t progress)
-{
-  // Actualizar barra de progreso usando el componente correcto de la documentación
-  Hardware.nextionSendCommand(String(NEXTION_COMP_BARRA_PROGRESO) + ".val=" + String(progress));
-}
 
 void UIControllerClass::processEvents()
 {
@@ -565,13 +554,13 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   // Cargar valores desde Storage
   // NOTA: Para P22/P23 (valores únicos), todas las fases devuelven el mismo valor
   // Para P24 (matriz), se usa la fase 0 como representativa para la pantalla de selección
-  uint8_t nivel = Storage.loadWaterLevel(programa, 0);
-  uint8_t temp = Storage.loadTemperature(programa, 0);
+  uint8_t nivel = Storage.loadWaterLevel(programa, 0, 0);
+  uint8_t temp = Storage.loadTemperature(programa, 0, 0);
   uint8_t tiempo = Storage.loadTime(programa, 0);
   uint8_t rotacion = Storage.loadRotation(programa, 0);
-  uint8_t faseTipo = Storage.loadPhaseType(programa, 0);
+  uint8_t faseTipo = Storage.loadPhaseType(programa, 0, 0);
   uint8_t centrifugado = Storage.loadCentrifugado(programa, 0); // Tanda 0 para todos
-  uint8_t tipoAgua = Storage.loadTipoAgua(programa, 0);
+  uint8_t tipoAgua = Storage.loadTipoAgua(programa, 0, 0);
 
   // Mostrar valores actualizados
   Hardware.nextionSetText(NEXTION_COMP_SEL_NIVEL, String(nivel));
@@ -1137,13 +1126,13 @@ void UIControllerClass::handleCancelEdit()
 void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fase)
 {
   // Cargar valores directamente desde Storage
-  _valoresTemporales[PARAM_NIVEL] = Storage.loadWaterLevel(programa, fase);
-  _valoresTemporales[PARAM_TEMPERATURA] = Storage.loadTemperature(programa, fase);
+  _valoresTemporales[PARAM_NIVEL] = Storage.loadWaterLevel(programa, 0, fase);
+  _valoresTemporales[PARAM_TEMPERATURA] = Storage.loadTemperature(programa, 0, fase);
   _valoresTemporales[PARAM_TIEMPO] = Storage.loadTime(programa, fase);
   _valoresTemporales[PARAM_ROTACION] = Storage.loadRotation(programa, fase);
-  _valoresTemporales[PARAM_FASE] = Storage.loadPhaseType(programa, fase);
+  _valoresTemporales[PARAM_FASE] = Storage.loadPhaseType(programa, 0, fase);
   _valoresTemporales[PARAM_CENTRIF] = Storage.loadCentrifugado(programa, fase); // fase representa tanda
-  _valoresTemporales[PARAM_AGUA] = Storage.loadTipoAgua(programa, fase);
+  _valoresTemporales[PARAM_AGUA] = Storage.loadTipoAgua(programa, 0, fase);
 
   showMessage("Parámetros cargados de Storage - P" + String(programa + 22) + " F" + String(fase + 1), 2000);
 }
@@ -1161,13 +1150,13 @@ void UIControllerClass::_loadParametersFromStorage(uint8_t programa, uint8_t fas
 void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase)
 { 
   // Guardar valores directamente en Storage
-  Storage.saveWaterLevel(programa, fase, _valoresTemporales[PARAM_NIVEL]);
-  Storage.saveTemperature(programa, fase, _valoresTemporales[PARAM_TEMPERATURA]);
+  Storage.saveWaterLevel(programa, 0, fase, _valoresTemporales[PARAM_NIVEL]);
+  Storage.saveTemperature(programa, 0, fase, _valoresTemporales[PARAM_TEMPERATURA]);
   Storage.saveTime(programa, fase, _valoresTemporales[PARAM_TIEMPO]);
   Storage.saveRotation(programa, fase, _valoresTemporales[PARAM_ROTACION]);
-  Storage.savePhaseType(programa, fase, _valoresTemporales[PARAM_FASE]);
+  Storage.savePhaseType(programa, 0, fase, _valoresTemporales[PARAM_FASE]);
   Storage.saveCentrifugado(programa, fase, _valoresTemporales[PARAM_CENTRIF]);
-  Storage.saveTipoAgua(programa, fase, _valoresTemporales[PARAM_AGUA]);
+  Storage.saveTipoAgua(programa, 0, fase, _valoresTemporales[PARAM_AGUA]);
 
   // Actualizar matrices estáticas también para mantener consistencia
   _nivelAgua[programa][fase] = _valoresTemporales[PARAM_NIVEL];

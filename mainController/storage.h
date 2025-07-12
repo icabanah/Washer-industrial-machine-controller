@@ -70,9 +70,9 @@ public:
   uint8_t loadP24TipoAgua(uint8_t phase);
   
   // === MÉTODOS DE COMPATIBILIDAD (para transición gradual) ===
-  void saveWaterLevel(uint8_t program, uint8_t phase, uint8_t level);
+  void saveWaterLevel(uint8_t program, uint8_t tanda, uint8_t phase, uint8_t level);
   uint8_t loadWaterLevel(uint8_t program, uint8_t tanda, uint8_t phase);
-  void saveTemperature(uint8_t program, uint8_t phase, uint8_t temperature);
+  void saveTemperature(uint8_t program, uint8_t tanda, uint8_t phase, uint8_t temperature);
   uint8_t loadTemperature(uint8_t program, uint8_t tanda, uint8_t phase);
   void saveTime(uint8_t program, uint8_t phase, uint8_t time);
   uint8_t loadTime(uint8_t program, uint8_t phase);
@@ -80,10 +80,10 @@ public:
   uint8_t loadRotation(uint8_t program, uint8_t phase);
   void saveCentrifugado(uint8_t program, uint8_t tanda, uint8_t centrifugado);
   uint8_t loadCentrifugado(uint8_t program, uint8_t tanda);
-  void saveTipoAgua(uint8_t program, uint8_t phase, uint8_t tipoAgua);
-  uint8_t loadTipoAgua(uint8_t program, uint8_t phase);
-  void savePhaseType(uint8_t program, uint8_t phase, uint8_t phaseType);
-  uint8_t loadPhaseType(uint8_t program, uint8_t phase);
+  void saveTipoAgua(uint8_t program, uint8_t tanda, uint8_t phase, uint8_t tipoAgua);
+  uint8_t loadTipoAgua(uint8_t program, uint8_t tanda, uint8_t phase);
+  void savePhaseType(uint8_t program, uint8_t tanda, uint8_t phase, uint8_t phaseType);
+  uint8_t loadPhaseType(uint8_t program, uint8_t tanda, uint8_t phase);
   
   // Métodos adicionales para integración con módulos
   bool loadAllProgramSettings(uint8_t program, uint8_t (&waterLevels)[NUM_FASES], 

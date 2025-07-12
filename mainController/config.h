@@ -213,17 +213,12 @@
 #define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"    // Temperatura en ejecución
 #define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"  // Nivel en ejecución
 #define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_ejec" // Velocidad de motor
-// #define NEXTION_COMP_BARRA_PROGRESO                                            \
-// "barra_prog" // Barra de progreso del proceso
 #define NEXTION_COMP_BARRA_TEMP_EJECUCION                                     \
   "barra_temp" // Gauge de presión (nivel de agua)
-// #define NEXTION_COMP_GAUGE_TEMP_EJECUCION "gauge_temp" // Gauge de temperatura
 #define NEXTION_COMP_BARRA_NIVEL_EJECUCION                                     \
   "barra_nivel" // Gauge de presión (nivel de agua)
 #define NEXTION_COMP_BARRA_VELOC_EJECUCION                                     \
   "barra_veloc" // Gauge de presión (nivel de agua)
-// #define NEXTION_COMP_GAUGE_VEL_EJECUCION                                       \
-//   "gauge_vel" // Gauge de presión (nivel de agua)
 
 // Botones de control
 #define NEXTION_COMP_BTN_PARAR "btnParar"
