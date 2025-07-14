@@ -63,6 +63,10 @@ public:
   void updateErrorDisplay(bool blinkState);         // Actualizar display de error con parpadeo
   void updateProgramInfo(uint8_t programa);         // Actualizar información del programa en selección
   void updateProgramPanel(uint8_t programa);        // Actualizar SOLO panel derecho (sin cambiar página)
+  void updateCurrentParameterOnly(uint8_t parametro); // Actualizar solo parámetro actual (edición rápida)
+  void updateEditPanelOnly();                       // Actualizar SOLO panel derecho edición (equivalente a updateProgramPanel)
+  void updateParameterFast(uint8_t parametro);     // Actualización ultrarrápida (SOLO parámetro principal + específico)
+  void updateParameterInstant(uint8_t parametro);  // ULTRA-EXTREMA velocidad (SOLO valor principal - 1 comando)
   void updatePreparationStatus(unsigned long prepTime); // Mostrar estado de preparación (llenado/calentamiento)
   void clearPreparationStatus();                    // Limpiar estado de preparación
   

@@ -20,7 +20,7 @@ void HardwareClass::init()
   _emergencyButtonState = LOW;
   _lastEmergencyButtonState = LOW;
   _lastDebounceTime = 0;
-  _debounceDelay = 50; // 50ms para el antirrebote
+  _debounceDelay = 10; // 10ms para el antirrebote - optimizado para velocidad
 
   _nextionLastEvent = "";
   _nextionInitComplete = false;

@@ -46,8 +46,7 @@
 
 // Configuración de la pantalla Nextion
 #define NEXTION_TIMEOUT                                                        \
-  20 // Timeout para comunicación Nextion en ms (optimizado para respuesta
-     // rápida)
+  5 // Timeout ULTRA-RÁPIDO para comunicación Nextion (máxima respuesta)
 #define NEXTION_END_CMD 0xFF, 0xFF, 0xFF // Bytes de finalización de comando
 
 // Configuración de temperatura

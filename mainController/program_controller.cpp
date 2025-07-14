@@ -1022,8 +1022,11 @@ void ProgramControllerClass::processUserEvent(const String &event) {
   static unsigned long lastEventTime = 0;
   unsigned long currentTime = millis();
 
+  // Anti-rebote diferenciado: más agresivo para edición, normal para otros
+  uint16_t antiBouncetime = (touchPage == NEXTION_PAGE_EDIT) ? 50 : 200;
+  
   if (touchPage == lastPage && touchComponent == lastComponent &&
-      (currentTime - lastEventTime) < 200) { // 200ms de anti-rebote
+      (currentTime - lastEventTime) < antiBouncetime) {
     return;                                  // Ignorar evento duplicado
   }
 
@@ -1395,7 +1398,7 @@ void ProgramControllerClass::_updateTandaDisplay() {
   
   // Notificar al UIController que actualice la visualización
   UIController.updateParameterDisplay();
-  UIController.updateRightPanel();
+  UIController.updateEditPanelOnly(); // Optimizado como página de selección
 }
 
 void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {

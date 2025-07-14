@@ -205,8 +205,7 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
 /// @note
 /// Asegúrate de que los componentes de la pantalla Nextion estén correctamente configurados con los IDs especificados.
 void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase){
-  Serial.println("Programa recibido: " + String(programa) + " (P" + String(programa + 22) + ")");
-  Serial.println("Fase recibida: " + String(fase));
+  // Debug prints eliminados para mejor rendimiento
 
   // Inicializar modo de edición
   initEditMode(programa, fase);
@@ -224,10 +223,7 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase){
   // Ejecutar diagnóstico del estado de edición
   // diagnosticarEstadoEdicion();
 
-  // Serial.println("🖥️ Pantalla de edición actualizada:");
-  Serial.println("   Programa: " + String(programa + 22));
-  Serial.println("   Fase: " + String(fase));
-  // Serial.println("🔧 startEditing() completado, estado actual: " + String(_modoEdicionActivo ? 1 : 0));
+  // Debug prints eliminados para mejor rendimiento
 }
 
 void UIControllerClass::showErrorScreen(uint8_t errorCode, const String &errorMessage)
@@ -394,11 +390,20 @@ void UIControllerClass::processEvents()
     _checkEditTimeout();
   }
 
-  // === MONITOREO PERIÓDICO DEL ESTADO DE PUERTA ===
-  // Solo monitorear puerta en página de selección (antes de iniciar programa)
-  // Una vez bloqueada durante ejecución, la puerta no cambia de estado
+  // === MODO ULTRA-RÁPIDO PARA PÁGINA DE EDICIÓN ===
+  if (_currentPage == NEXTION_PAGE_EDIT) {
+    // POLLING AGRESIVO - leer múltiples eventos por ciclo para máxima respuesta
+    for (int i = 0; i < 3; i++) { // Hasta 3 eventos por llamada a processEvents()
+      if (Hardware.nextionCheckForEvents()) {
+        _handleTouchEvent();
+      }
+    }
+    return; // Salir inmediatamente para máxima velocidad en edición
+  }
+
+  // === MONITOREO PERIÓDICO DEL ESTADO DE PUERTA (SOLO OTRAS PÁGINAS) ===
   static unsigned long lastButtonUpdate = 0;
-  if (_currentPage == NEXTION_PAGE_SELECTION && millis() - lastButtonUpdate > 500)
+  if (_currentPage == NEXTION_PAGE_SELECTION && millis() - lastButtonUpdate > 50)
   {
     updateStartButtonText();
     lastButtonUpdate = millis();
@@ -439,11 +444,17 @@ void UIControllerClass::_handleTouchEvent()
   // Solo procesar eventos de presionado (tipo 1)
   if (eventType != 1)
   {
-    Serial.println("   Evento ignorado (no es presionado)");
+    return; // Sin Serial.println para máxima velocidad
+  }
+
+  // OPTIMIZACIÓN ESPECÍFICA PARA PÁGINA DE EDICIÓN
+  if (pageId == NEXTION_PAGE_EDIT) {
+    // Llamada directa sin switch para máxima velocidad
+    handleEditPageEvent(componentId);
     return;
   }
 
-  // Procesar según la página
+  // Procesar otras páginas normalmente
   switch (pageId)
   {
   case NEXTION_PAGE_SELECTION:
@@ -454,13 +465,8 @@ void UIControllerClass::_handleTouchEvent()
     _handleExecutionPageEvent(componentId);
     break;
 
-  case NEXTION_PAGE_EDIT:
-    // Serial.println("🎯 Evento en página de edición detectado - ComponentID: " + String(componentId));
-    handleEditPageEvent(componentId);
-    break;
-
   default:
-    Serial.println("⚠️ Página no reconocida: " + String(pageId));
+    // Sin Serial.println para máxima velocidad
     break;
   }
 }
@@ -835,7 +841,7 @@ void UIControllerClass::updateEditDisplay()
 
   // Actualizar parámetro actual y panel derecho
   updateParameterDisplay();
-  updateRightPanel();
+  updateEditPanelOnly(); // Optimizado como página de selección
   
   // Configurar colores estándar para todos los botones del panel derecho
   Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=65535"); // Color de fondo estándar para centrifuga
@@ -916,6 +922,181 @@ void UIControllerClass::updateRightPanel()
   Hardware.nextionSetText(NEXTION_COMP_VAL_AGUA_EDIT, buffer);
 
   Serial.println("Panel derecho actualizado (7 parámetros)");
+}
+
+/**
+ * @brief Actualiza solo el parámetro que está siendo editado (optimización rápida)
+ * @param parametro Tipo de parámetro a actualizar (PARAM_NIVEL, PARAM_TEMPERATURA, etc.)
+ */
+void UIControllerClass::updateCurrentParameterOnly(uint8_t parametro)
+{
+  if (!_modoEdicionActivo) return;
+  
+  char buffer[20];
+  
+  switch (parametro) {
+    case PARAM_NIVEL:
+      snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_NIVEL]);
+      Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL_EDIT, buffer);
+      break;
+      
+    case PARAM_TEMPERATURA:
+      snprintf(buffer, sizeof(buffer), "%d°C", _valoresTemporales[PARAM_TEMPERATURA]);
+      Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP_EDIT, buffer);
+      break;
+      
+    case PARAM_TIEMPO:
+      snprintf(buffer, sizeof(buffer), "%d min", _valoresTemporales[PARAM_TIEMPO]);
+      Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO_EDIT, buffer);
+      break;
+      
+    case PARAM_ROTACION:
+      snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_ROTACION]);
+      Hardware.nextionSetText(NEXTION_COMP_VAL_ROTAC_EDIT, buffer);
+      break;
+      
+    case PARAM_CENTRIF:
+      formatearParametroConUnidad(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
+      Hardware.nextionSetText(NEXTION_COMP_VAL_CENTRIF_EDIT, buffer);
+      break;
+      
+    case PARAM_AGUA:
+      formatearParametroConUnidad(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
+      Hardware.nextionSetText(NEXTION_COMP_VAL_AGUA_EDIT, buffer);
+      break;
+  }
+}
+
+/**
+ * @brief Actualiza SOLO el panel derecho de edición sin tocar otros componentes (equivalente a updateProgramPanel)
+ * @details Similar al enfoque de la página de selección, actualiza únicamente los componentes del panel derecho
+ * sin cambiar página ni otros elementos de la interfaz
+ */
+void UIControllerClass::updateEditPanelOnly()
+{
+  if (!_modoEdicionActivo) return;
+  
+  char buffer[20];
+  
+  // Actualizar SOLO los componentes del panel derecho (sin tocar navegación ni botones)
+  snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_NIVEL]);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL_EDIT, buffer);
+  
+  snprintf(buffer, sizeof(buffer), "%d°C", _valoresTemporales[PARAM_TEMPERATURA]);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP_EDIT, buffer);
+  
+  snprintf(buffer, sizeof(buffer), "%d min", _valoresTemporales[PARAM_TIEMPO]);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO_EDIT, buffer);
+  
+  snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_ROTACION]);
+  Hardware.nextionSetText(NEXTION_COMP_VAL_ROTAC_EDIT, buffer);
+  
+  Hardware.nextionSetText(NEXTION_COMP_VAL_FASE_EDIT, String(_valoresTemporales[PARAM_FASE]));
+  
+  formatearParametroConUnidad(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_VAL_CENTRIF_EDIT, buffer);
+  
+  formatearParametroConUnidad(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_VAL_AGUA_EDIT, buffer);
+}
+
+/**
+ * @brief Actualización ultrarrápida - SOLO parámetro principal y específico (máxima velocidad)
+ * @param parametro Parámetro específico a actualizar en panel derecho
+ * @details Método optimizado para botones +/- que actualiza únicamente 2 componentes:
+ * el parámetro principal y el componente específico del panel derecho que cambió
+ */
+void UIControllerClass::updateParameterFast(uint8_t parametro)
+{
+  if (!_modoEdicionActivo) return;
+  
+  char buffer[20];
+  
+  // 1. Actualizar parámetro principal (siempre necesario para mostrar qué se está editando)
+  const char *textoParam = obtenerTextoParametro(parametro);
+  Hardware.nextionSetText(NEXTION_COMP_PARAM_EDITAR, textoParam);
+  
+  formatearParametroConUnidad(parametro, _valoresTemporales[parametro], buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
+  
+  // 2. Actualizar SOLO el componente específico en panel derecho (no todo el panel)
+  switch (parametro) {
+    case PARAM_NIVEL:
+      snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_NIVEL]);
+      Hardware.nextionSetText(NEXTION_COMP_VAL_NIVEL_EDIT, buffer);
+      break;
+      
+    case PARAM_TEMPERATURA:
+      snprintf(buffer, sizeof(buffer), "%d°C", _valoresTemporales[PARAM_TEMPERATURA]);
+      Hardware.nextionSetText(NEXTION_COMP_VAL_TEMP_EDIT, buffer);
+      break;
+      
+    case PARAM_TIEMPO:
+      snprintf(buffer, sizeof(buffer), "%d min", _valoresTemporales[PARAM_TIEMPO]);
+      Hardware.nextionSetText(NEXTION_COMP_VAL_TIEMPO_EDIT, buffer);
+      break;
+      
+    case PARAM_ROTACION:
+      snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_ROTACION]);
+      Hardware.nextionSetText(NEXTION_COMP_VAL_ROTAC_EDIT, buffer);
+      break;
+      
+    case PARAM_CENTRIF:
+      formatearParametroConUnidad(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
+      Hardware.nextionSetText(NEXTION_COMP_VAL_CENTRIF_EDIT, buffer);
+      break;
+      
+    case PARAM_AGUA:
+      formatearParametroConUnidad(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
+      Hardware.nextionSetText(NEXTION_COMP_VAL_AGUA_EDIT, buffer);
+      break;
+  }
+}
+
+/**
+ * @brief ULTRA-EXTREMA velocidad - SOLO valor principal (botones +/-)
+ * @param parametro Parámetro a actualizar
+ * @details Actualiza ÚNICAMENTE el valor principal visible - máxima velocidad posible
+ * Panel derecho se actualiza solo cuando sea necesario (cambio de parámetro)
+ */
+void UIControllerClass::updateParameterInstant(uint8_t parametro)
+{
+  if (!_modoEdicionActivo) return;
+  
+  // FORMATEO INLINE - evitar llamadas a funciones auxiliares para máxima velocidad
+  char buffer[20];
+  int valor = _valoresTemporales[parametro];
+  
+  // Formateo específico inline según parámetro (más rápido que switch)
+  switch (parametro) {
+    case PARAM_NIVEL:
+      snprintf(buffer, sizeof(buffer), "%d", valor);
+      break;
+    case PARAM_TEMPERATURA:
+      snprintf(buffer, sizeof(buffer), "%d°C", valor);
+      break;
+    case PARAM_TIEMPO:
+      snprintf(buffer, sizeof(buffer), "%d min", valor);
+      break;
+    case PARAM_ROTACION:
+      snprintf(buffer, sizeof(buffer), "%d RPM", valor);
+      break;
+    case PARAM_FASE:
+      snprintf(buffer, sizeof(buffer), "%d", valor);
+      break;
+    case PARAM_CENTRIF:
+      strcpy(buffer, valor ? "SI" : "NO");
+      break;
+    case PARAM_AGUA:
+      strcpy(buffer, valor ? "Caliente" : "Fría");
+      break;
+    default:
+      snprintf(buffer, sizeof(buffer), "%d", valor);
+      break;
+  }
+  
+  // SOLO 1 comando Nextion - máxima velocidad posible
+  Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
 }
 
 // ===== MANEJO DE EVENTOS DE EDICIÓN =====
@@ -999,15 +1180,36 @@ void UIControllerClass::handleEditPageEvent(int componentId)
  */
 void UIControllerClass::handleParameterIncrement()
 {
-  // Incrementar el valor del parámetro actual usando las funciones de config.cpp
-  int valorAnterior = _valoresTemporales[_parametroActual];
-  _valoresTemporales[_parametroActual] = incrementarParametro(_parametroActual, _valoresTemporales[_parametroActual]);
+  // INCREMENTO INLINE - evitar llamadas a funciones auxiliares para máxima velocidad
+  int &valor = _valoresTemporales[_parametroActual];
+  
+  // Incremento específico según parámetro con límites inline
+  switch (_parametroActual) {
+    case PARAM_NIVEL:
+      if (valor < 4) valor++;
+      break;
+    case PARAM_TEMPERATURA:
+      if (valor < 100) valor++;
+      break;
+    case PARAM_TIEMPO:
+      if (valor < 60) valor++;
+      break;
+    case PARAM_ROTACION:
+      if (valor < 4) valor++;
+      break;
+    case PARAM_FASE:
+      if (valor < 4) valor++;
+      break;
+    case PARAM_CENTRIF:
+      valor = (valor == 0) ? 1 : 0; // Toggle
+      break;
+    case PARAM_AGUA:
+      valor = (valor == 0) ? 1 : 0; // Toggle
+      break;
+  }
 
-  // Actualizar pantalla
-  updateParameterDisplay();
-  updateRightPanel();
-
-  showMessage("Parámetro incrementado", 1000);
+  // ULTRA-EXTREMA velocidad - SOLO valor principal (1 comando Nextion)
+  updateParameterInstant(_parametroActual);
 }
 
 /**
@@ -1015,15 +1217,36 @@ void UIControllerClass::handleParameterIncrement()
  */
 void UIControllerClass::handleParameterDecrement()
 {
-  // Decrementar el valor del parámetro actual usando las funciones de config.cpp
-  int valorAnterior = _valoresTemporales[_parametroActual];
-  _valoresTemporales[_parametroActual] = decrementarParametro(_parametroActual, _valoresTemporales[_parametroActual]);
+  // DECREMENTO INLINE - evitar llamadas a funciones auxiliares para máxima velocidad
+  int &valor = _valoresTemporales[_parametroActual];
+  
+  // Decremento específico según parámetro con límites inline
+  switch (_parametroActual) {
+    case PARAM_NIVEL:
+      if (valor > 0) valor--;
+      break;
+    case PARAM_TEMPERATURA:
+      if (valor > 0) valor--;
+      break;
+    case PARAM_TIEMPO:
+      if (valor > 1) valor--;
+      break;
+    case PARAM_ROTACION:
+      if (valor > 0) valor--;
+      break;
+    case PARAM_FASE:
+      if (valor > 0) valor--;
+      break;
+    case PARAM_CENTRIF:
+      valor = (valor == 0) ? 1 : 0; // Toggle
+      break;
+    case PARAM_AGUA:
+      valor = (valor == 0) ? 1 : 0; // Toggle
+      break;
+  }
 
-  // Actualizar pantalla
-  updateParameterDisplay();
-  updateRightPanel();
-
-  showMessage("Parámetro decrementado", 1000);
+  // ULTRA-EXTREMA velocidad - SOLO valor principal (1 comando Nextion)
+  updateParameterInstant(_parametroActual);
 }
 
 /**
@@ -1032,19 +1255,15 @@ void UIControllerClass::handleParameterDecrement()
 void UIControllerClass::handleNextParameter()
 {
   // Obtener el siguiente parámetro en el ciclo usando las funciones de config.cpp
-  int parametroAnterior = _parametroActual;
   _parametroActual = obtenerSiguienteParametro(_parametroActual);
   
   // Saltar parámetro FASE en P22 y P23 (solo editable en P24)
   if (_parametroActual == PARAM_FASE && (_programaEnEdicion == 0 || _programaEnEdicion == 1)) {
     _parametroActual = obtenerSiguienteParametro(_parametroActual); // Saltar al siguiente
-    Serial.println("   ⏭️ Saltando parámetro FASE (no editable en P" + String(_programaEnEdicion + 22) + ")");
   }
 
-  // Actualizar pantalla para mostrar el nuevo parámetro
-  updateParameterDisplay();
-
-  showMessage("Pasando al siguiente parámetro", 1000);
+  // Al cambiar parámetro, actualizar panel derecho para mostrar estado completo
+  updateParameterFast(_parametroActual);
 }
 
 /**
@@ -1053,19 +1272,15 @@ void UIControllerClass::handleNextParameter()
 void UIControllerClass::handlePreviousParameter()
 {
   // Obtener el parámetro anterior en el ciclo usando las funciones de config.cpp
-  int parametroAnterior = _parametroActual;
   _parametroActual = obtenerAnteriorParametro(_parametroActual);
   
   // Saltar parámetro FASE en P22 y P23 (solo editable en P24)
   if (_parametroActual == PARAM_FASE && (_programaEnEdicion == 0 || _programaEnEdicion == 1)) {
     _parametroActual = obtenerAnteriorParametro(_parametroActual); // Saltar al anterior
-    Serial.println("   ⏮️ Saltando parámetro FASE (no editable en P" + String(_programaEnEdicion + 22) + ")");
   }
 
-  // Actualizar pantalla para mostrar el nuevo parámetro
-  updateParameterDisplay();
-
-  showMessage("Volviendo al parámetro anterior", 1000);
+  // Al cambiar parámetro, actualizar panel derecho para mostrar estado completo
+  updateParameterFast(_parametroActual);
 }
 
 /**
@@ -1326,35 +1541,12 @@ void UIControllerClass::selectParameter(uint8_t param)
 
   _parametroActual = param;
 
-  // Cargar valor actual del parámetro seleccionado
-  switch (param)
-  {
-  case PARAM_NIVEL:
-    showMessage("Seleccionando parámetro NIVEL", 1000);
-    break;
-  case PARAM_TEMPERATURA:
-    showMessage("Seleccionando parámetro TEMPERATURA", 1000);
-    break;
-  case PARAM_TIEMPO:
-    showMessage("Seleccionando parámetro TIEMPO", 1000);
-    break;
-  case PARAM_ROTACION:
-    showMessage("Seleccionando parámetro ROTACIÓN", 1000);
-    break;
-  case PARAM_FASE:
-    showMessage("Seleccionando parámetro FASE", 1000);
-    break;
-  case PARAM_CENTRIF:
-    showMessage("Seleccionando parámetro CENTRIFUGADO", 1000);
-    break;
-  case PARAM_AGUA:
-    showMessage("Seleccionando parámetro AGUA", 1000);
-    break;
-  }
+  // Sin mensajes - feedback visual instantáneo es el parámetro destacado
+  // Los mensajes causan delay innecesario en la respuesta
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
-  updateRightPanel();
+  updateEditPanelOnly(); // Optimizado como página de selección
 }
 
 /**
@@ -1375,7 +1567,7 @@ void UIControllerClass::selectPhase(){
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
-  updateRightPanel();
+  updateEditPanelOnly(); // Optimizado como página de selección
 }
 
 void UIControllerClass::selectTanda(){
@@ -1384,13 +1576,7 @@ void UIControllerClass::selectTanda(){
     
   // Esta funcionalidad está implementada en ProgramController
   // para manejar la selección de tanda y actualizar el panel derecho
-  if (_programaEnEdicion == 2) {
-    // P24: permitir selección de tanda (manejado por ProgramController)
-    showMessage("Tanda seleccionada", 1000);
-  } else {
-    // P22/P23: solo 1 tanda, mostrar información
-    showMessage("P" + String(_programaEnEdicion + 22) + " tiene 1 tanda", 2000);
-  }
+  // Sin mensajes para respuesta más rápida - el cambio visual es suficiente feedback
 }
 
 /**
@@ -1404,7 +1590,7 @@ void UIControllerClass::selectCentrifuge(){
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
-  updateRightPanel();
+  updateEditPanelOnly(); // Optimizado como página de selección
 }
 
 /**
@@ -1419,7 +1605,7 @@ void UIControllerClass::selectWater()
 
   // Actualizar display para mostrar parámetro activo
   updateParameterDisplay();
-  updateRightPanel();
+  updateEditPanelOnly(); // Optimizado como página de selección
 }
 
 // === FUNCIONES AUXILIARES PARA DOBLE GUARDADO ===
