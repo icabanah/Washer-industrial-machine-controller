@@ -97,11 +97,15 @@ void loop() {
   // Verificar botón de emergencia con máxima prioridad
   // checkEmergencyButton();
 
-  // Verificar eventos táctiles de la interfaz de usuario
-  if (Hardware.nextionCheckForEvents()) {
-    // Procesamiento rápido sin debug excesivo para mejor respuesta
-    String event = Hardware.nextionGetLastEvent();
-    ProgramController.processUserEvent(event);
+  // Verificar eventos táctiles de la interfaz de usuario - Procesamiento múltiple para máxima respuesta
+  for (int i = 0; i < 3; i++) { // Procesar hasta 3 eventos por ciclo para respuesta instantánea
+    if (Hardware.nextionCheckForEvents()) {
+      // Procesamiento rápido sin debug excesivo para mejor respuesta
+      String event = Hardware.nextionGetLastEvent();
+      ProgramController.processUserEvent(event);
+    } else {
+      break; // No hay más eventos, salir del bucle
+    }
   }
 
   // Actualizar controlador de programa

@@ -823,21 +823,21 @@ uint8_t ProgramControllerClass::getTotalProgramProgressPercentage() {
 /// El número de la fase a editar (0 a 3).
 void ProgramControllerClass::startEditing(uint8_t program, uint8_t phase) {
   if (program < NUM_PROGRAMAS && phase < NUM_FASES) {
+    // Sincronizar arrays internos con Storage antes de editar
+    _loadProgramData();
+    
     _editingProgram = program;
     _editingPhase = phase;
     _editingTanda = 0; // Inicializar con tanda 0 (P22/P23: solo 1 tanda, P24: primera de 3)
     _editingParameter = PARAM_NIVEL; // Comenzar editando el nivel
     _editingParameterValue =
-        _waterLevels[program][phase]; // Cargar valor actual
+        _waterLevels[program][phase]; // Cargar valor actual (ahora sincronizado)
     _isEditing = true;
 
     setState(ESTADO_EDICION);
 
     // Actualizar UI específica según el programa
     _updateEditScreenForProgram();
-    
-    // Mostrar pantalla de edición
-    UIController.updateEditDisplay();
   }
 }
 
@@ -857,7 +857,7 @@ void ProgramControllerClass::_updateEditScreenForProgram() {
 }
 
 void ProgramControllerClass::_loadEditingParametersForCurrentTanda() {
-  // Cargar parámetros según el programa y tanda
+  // Cargar parámetros directamente desde Storage para evitar valores desactualizados
   uint8_t tandaIndex = _editingTanda;
   
   if (_editingProgram <= 1) {
@@ -865,13 +865,21 @@ void ProgramControllerClass::_loadEditingParametersForCurrentTanda() {
     tandaIndex = _editingPhase;
   }
   
-  // Actualizar componentes de la pantalla con los valores actuales
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_NIVEL_EDIT, _waterLevels[_editingProgram][tandaIndex]);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_TEMP_EDIT, _temperatures[_editingProgram][tandaIndex]);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_TIEMPO_EDIT, _times[_editingProgram][tandaIndex]);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_ROTAC_EDIT, _rotations[_editingProgram][tandaIndex]);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_AGUA_EDIT, _tipoAguaPrograma[_editingProgram][tandaIndex]);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_CENTRIF_EDIT, _centrifugadoPorTanda[_editingProgram][tandaIndex]);
+  // Cargar valores actuales desde Storage (fuente de verdad)
+  uint8_t nivelStorage = Storage.loadWaterLevel(_editingProgram, 0, tandaIndex);
+  uint8_t tempStorage = Storage.loadTemperature(_editingProgram, 0, tandaIndex);
+  uint8_t tiempoStorage = Storage.loadTime(_editingProgram, tandaIndex);
+  uint8_t rotacionStorage = Storage.loadRotation(_editingProgram, tandaIndex);
+  uint8_t aguaStorage = Storage.loadTipoAgua(_editingProgram, 0, tandaIndex);
+  uint8_t centrifugaStorage = Storage.loadCentrifugado(_editingProgram, tandaIndex);
+  
+  // Actualizar componentes de la pantalla con valores desde Storage
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_NIVEL_EDIT, nivelStorage);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_TEMP_EDIT, tempStorage);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_TIEMPO_EDIT, tiempoStorage);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_ROTAC_EDIT, rotacionStorage);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_AGUA_EDIT, aguaStorage);
+  Hardware.nextionSetValue(NEXTION_COMP_VAL_CENTRIF_EDIT, centrifugaStorage);
 }
 
 void ProgramControllerClass::editParameter(uint8_t paramType, uint8_t value) {
@@ -1011,23 +1019,7 @@ void ProgramControllerClass::processUserEvent(const String &event) {
     return;
   }
 
-  // Filtro anti-rebote: evitar procesar el mismo evento repetidamente
-  static uint8_t lastPage = 255;
-  static uint8_t lastComponent = 255;
-  static unsigned long lastEventTime = 0;
-  unsigned long currentTime = millis();
-
-  // Anti-rebote diferenciado: más agresivo para edición, normal para otros
-  uint16_t antiBouncetime = (touchPage == NEXTION_PAGE_EDIT) ? 50 : 200;
-  
-  if (touchPage == lastPage && touchComponent == lastComponent &&
-      (currentTime - lastEventTime) < antiBouncetime) {
-    return;                                  // Ignorar evento duplicado
-  }
-
-  lastPage = touchPage;
-  lastComponent = touchComponent;
-  lastEventTime = currentTime;
+  // Nextion maneja el debouncing internamente, no necesitamos anti-rebote adicional
 
   // Debug solo para componentes importantes (botones de control)
   if (touchComponent == NEXTION_ID_BTN_PARAR ||
@@ -1050,6 +1042,12 @@ void ProgramControllerClass::processUserEvent(const String &event) {
     break;
 
   case NEXTION_PAGE_EXECUTION:
+    // Debug específico para botones de control
+    if (touchComponent == NEXTION_ID_BTN_PARAR || touchComponent == NEXTION_ID_BTN_PAUSAR) {
+      Utils.debug("🎯 Botón de control presionado - Componente: " + String(touchComponent) + 
+                  " | Estado: " + String(_currentState) + 
+                  " | Preparando: " + String(_preparingPhase ? "Sí" : "No"));
+    }
     _handleExecutionPageEvents(touchComponent);
     break;
 
@@ -1404,15 +1402,10 @@ void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
   case NEXTION_ID_BTN_PAUSAR:
     // Pausar/reanudar programa
     if (_currentState == ESTADO_EJECUCION) {
-      // Solo permitir pausa si no estamos en fase de preparación
-      if (_preparingPhase) {
-        Utils.debug("⚠️ Pausa bloqueada durante preparación");
-        Hardware.nextionSetText(NEXTION_COMP_MSG,
-                                "No se puede pausar durante preparación");
-      } else {
-        Utils.debug("⏸️ Pausando programa");
-        pauseProgram();
-      }
+      // Permitir pausa en cualquier momento, incluyendo fase de llenado
+      Utils.debug(String("⏸️ Pausando programa") + 
+                  (_preparingPhase ? " (durante llenado)" : ""));
+      pauseProgram();
     } else if (_currentState == ESTADO_PAUSA) {
       Utils.debug("▶️ Reanudando programa");
       resumeProgram();
