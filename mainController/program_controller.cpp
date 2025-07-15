@@ -516,12 +516,10 @@ void ProgramControllerClass::_controlActuatorsForPhase() {
     Actuators.closeWaterValve();
     Actuators.closeSteamValve();
   } else if (_currentPhase == 3) {
-    // FASE 3: DRENAJE - Control de drenaje
-    if (Sensors.getCurrentWaterLevel() > 1) {
-      Actuators.openDrainValve();
-    } else {
-      Actuators.closeDrainValve();
-    }
+    // FASE 3: DRENAJE - Mantener válvula abierta durante todo el tiempo configurado
+    // Durante la fase de drenaje, la válvula debe permanecer abierta
+    // independientemente del nivel de agua para asegurar drenaje completo
+    Actuators.openDrainValve();
     Actuators.closeWaterValve();
     Actuators.closeSteamValve();
   }
