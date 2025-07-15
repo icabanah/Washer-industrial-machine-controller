@@ -118,6 +118,8 @@ void ProgramControllerClass::setState(uint8_t newState) {
           _waterLevels[_currentProgram][_currentPhase],
           _temperatures[_currentProgram][_currentPhase],
           _rotations[_currentProgram][_currentPhase]);
+      // Resetear tiempo a "00:00" SOLO cuando se inicia programa nuevo (no reanudación)
+      Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00");
       break;
 
     case ESTADO_PAUSA:
@@ -275,18 +277,13 @@ void ProgramControllerClass::resumeProgram() {
       break;
     }
 
-    // Mostrar pantalla de ejecución
-    UIController.showExecutionScreen(
-        _currentProgram, _currentPhase,
-        _waterLevels[_currentProgram][_currentPhase],
-        _temperatures[_currentProgram][_currentPhase],
-        _rotations[_currentProgram][_currentPhase]);
+    // Ya estamos en página de ejecución, solo actualizar elementos necesarios
+    
+    // Actualizar tiempo restaurado directamente (sin cambiar página)
+    UIController.updateTime(_remainingMinutes, _remainingSeconds);
 
     // Cambiar texto del botón de vuelta a "PAUSAR"
     Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "PAUSAR");
-
-    // Actualizar display con tiempo restaurado
-    UIController.updateTime(_remainingMinutes, _remainingSeconds);
     Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa reanudado");
   }
 }

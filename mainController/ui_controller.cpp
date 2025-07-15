@@ -170,7 +170,7 @@ void UIControllerClass::showSelectionScreen(uint8_t programa)
 /// La temperatura actual en grados Celsius (0 a 100).
 /// @param rotacion
 /// La rotación actual del tambor en RPM (0 a 300).
-void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion){
+void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, bool preserveTime, uint8_t preservedMinutes, uint8_t preservedSeconds){
   // Cambiar a la página de ejecución
   Hardware.nextionSetPage(NEXTION_PAGE_EXECUTION);
   _currentPage = NEXTION_PAGE_EXECUTION; // Actualizar página actual
@@ -180,7 +180,9 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase, uint
 
   // Usar updatePhase para mostrar nombre descriptivo de la fase
   updatePhase(fase); // indica fase actual
-  Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00"); // Tiempo inicial
+  
+  // NUNCA resetear tiempo a "00:00" en página de ejecución
+  // El tiempo se maneja externamente según el contexto
 
   // Actualizar indicadores usando los componentes existentes que funcionan correctamente
   updateWaterLevel(Sensors.getCurrentWaterLevel()); // Usar nivel real del sensor
@@ -296,9 +298,6 @@ void UIControllerClass::updateTime(uint8_t minutos, uint8_t segundos)
   char timeBuffer[6];
   _formatTimeDisplay(minutos, segundos, timeBuffer);
   Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, timeBuffer);
-
-  // No actualizar la barra de progreso aquí para evitar parpadeo
-  // La barra se actualiza por separado en _handleExecution
 }
 
 void UIControllerClass::_formatTimeDisplay(uint8_t minutos, uint8_t segundos, char *buffer)

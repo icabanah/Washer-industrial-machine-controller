@@ -14,7 +14,7 @@ public:
   // Métodos para mostrar diferentes pantallas
   void showWelcomeScreen();
   void showSelectionScreen(uint8_t programa = 0);
-  void showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion);
+  void showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, bool preserveTime = false, uint8_t preservedMinutes = 0, uint8_t preservedSeconds = 0);
   void showEditScreen(uint8_t programa, uint8_t tanda = 0);
   void showErrorScreen(uint8_t errorCode = 0, const String& errorMessage = "");
   void showEmergencyScreen();
