@@ -216,8 +216,8 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase){
   Hardware.nextionSetPage(NEXTION_PAGE_EDIT);
   _currentPage = NEXTION_PAGE_EDIT; // Actualizar página actual
 
-  // Actualizar información del programa seleccionado
-  _updateProgramInfo(programa);
+  // ELIMINADO: _updateProgramInfo(programa) para evitar doble actualización
+  // Los mismos componentes se actualizan en updateEditDisplay() -> updateEditPanelOnly()
 
   // Actualizar toda la pantalla con los valores iniciales
   updateEditDisplay();
@@ -829,14 +829,13 @@ void UIControllerClass::updateEditDisplay()
   // Actualizar programa y fase en edición
   generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_PROG_EDICION, buffer);
+  
+  // También actualizar el componente de programa seleccionado (ya que eliminamos _updateProgramInfo)
+  Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(_programaEnEdicion + 22));
 
-  // Mostrar fase diferenciada según programa
-  if (_programaEnEdicion == 2) { // P24 - mostrar fases numeradas
-    snprintf(buffer, sizeof(buffer), "F%d", _faseEnEdicion + 1); // F1, F2, F3, F4
-  } else { // P22 y P23 - mostrar configuración única
-    strcpy(buffer, "CONFIG"); // Configuración única
-  }
-  Hardware.nextionSetText(NEXTION_COMP_FASE_EDICION, buffer);
+  // ELIMINADO: No actualizar aquí el botón de fase/tanda para evitar conflicto
+  // ProgramController._updateEditScreenForProgram() maneja este componente
+  // y escribir "CONFIG" aquí causa parpadeo visual
 
   // Configurar habilitación y colores según programa ANTES de actualizar valores
   if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
