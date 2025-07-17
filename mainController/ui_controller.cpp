@@ -838,27 +838,32 @@ void UIControllerClass::updateEditDisplay()
   }
   Hardware.nextionSetText(NEXTION_COMP_FASE_EDICION, buffer);
 
-  // Actualizar parámetro actual y panel derecho
-  updateParameterDisplay();
-  updateEditPanelOnly(); // Optimizado como página de selección
-  
-  // Configurar colores estándar para todos los botones del panel derecho
-  Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=65535"); // Color de fondo estándar para centrifuga
-  Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".bco=65535"); // Color de fondo estándar para tipo agua
-  
-  // Deshabilitar edición de fase para P22 y P23 (solo P24 permite editar fases)
+  // Configurar habilitación y colores según programa ANTES de actualizar valores
   if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
+    // P22 y P23 - botones deshabilitados y grises
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",0"); // Deshabilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=33840"); // Color gris
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_AGUA) + ",0"); // Deshabilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".pco=33840"); // Color gris
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_CENTRIF) + ",0"); // Deshabilitar touch centrifugado
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".pco=33840"); // Color gris centrifugado
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=33840"); // Fondo gris centrifugado
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".bco=33840"); // Fondo gris agua
   } else {
-    // Programa 24 - habilitar componente de fase
+    // P24 - botones habilitados y colores normales
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",1"); // Habilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=65535"); // Color normal
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_AGUA) + ",1"); // Habilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".pco=65535"); // Color normal
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_CENTRIF) + ",1"); // Habilitar touch centrifugado
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".pco=65535"); // Color normal centrifugado
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=65535"); // Fondo normal centrifugado
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".bco=65535"); // Fondo normal agua
   }
+  
+  // Actualizar parámetro actual y panel derecho DESPUÉS de configurar estilos
+  updateParameterDisplay();
+  updateEditPanelOnly(); // Optimizado como página de selección
 
   Serial.println("Pantalla de edición actualizada (fase " + String(_programaEnEdicion == 2 ? "habilitada" : "deshabilitada") + " para P" + String(_programaEnEdicion + 22) + ")");
 }

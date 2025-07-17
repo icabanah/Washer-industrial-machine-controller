@@ -865,7 +865,11 @@ void ProgramControllerClass::_loadEditingParametersForCurrentTanda() {
     tandaIndex = _editingPhase;
   }
   
-  // Cargar valores actuales desde Storage (fuente de verdad)
+  // ELIMINADO: No actualizar aquí para evitar doble actualización
+  // Los valores se actualizarán una sola vez cuando UIController.showEditScreen() 
+  // llame a updateEditDisplay() -> updateEditPanelOnly()
+  
+  // Solo cargar valores internos para uso de ProgramController
   uint8_t nivelStorage = Storage.loadWaterLevel(_editingProgram, 0, tandaIndex);
   uint8_t tempStorage = Storage.loadTemperature(_editingProgram, 0, tandaIndex);
   uint8_t tiempoStorage = Storage.loadTime(_editingProgram, tandaIndex);
@@ -873,13 +877,11 @@ void ProgramControllerClass::_loadEditingParametersForCurrentTanda() {
   uint8_t aguaStorage = Storage.loadTipoAgua(_editingProgram, 0, tandaIndex);
   uint8_t centrifugaStorage = Storage.loadCentrifugado(_editingProgram, tandaIndex);
   
-  // Actualizar componentes de la pantalla con valores desde Storage
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_NIVEL_EDIT, nivelStorage);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_TEMP_EDIT, tempStorage);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_TIEMPO_EDIT, tiempoStorage);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_ROTAC_EDIT, rotacionStorage);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_AGUA_EDIT, aguaStorage);
-  Hardware.nextionSetValue(NEXTION_COMP_VAL_CENTRIF_EDIT, centrifugaStorage);
+  // Sincronizar variables internas sin actualizar pantalla
+  _waterLevels[_editingProgram][tandaIndex] = nivelStorage;
+  _temperatures[_editingProgram][tandaIndex] = tempStorage;
+  _times[_editingProgram][tandaIndex] = tiempoStorage;
+  _rotations[_editingProgram][tandaIndex] = rotacionStorage;
 }
 
 void ProgramControllerClass::editParameter(uint8_t paramType, uint8_t value) {
