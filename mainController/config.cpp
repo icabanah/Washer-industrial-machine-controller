@@ -11,79 +11,17 @@
 // ===== FUNCIONES DE VALIDACIÓN DE PARÁMETROS =====
 
 /**
- * @brief Valida y limita el valor de nivel de agua dentro de los rangos permitidos
- * @param valor Valor de nivel a validar
- * @return int Valor limitado dentro del rango MIN_NIVEL - MAX_NIVEL
+ * @brief Valida y limita cualquier valor de parámetro dentro de sus rangos permitidos
+ * @param tipoParam Tipo de parámetro (PARAM_NIVEL, PARAM_TEMPERATURA, etc.)
+ * @param valor Valor a validar
+ * @return int Valor limitado dentro del rango del parámetro
  */
-int validarNivel(int valor) {
-    if (valor < MIN_NIVEL) return MIN_NIVEL;
-    if (valor > MAX_NIVEL) return MAX_NIVEL;
-    return valor;
-}
-
-/**
- * @brief Valida y limita el valor de temperatura dentro de los rangos permitidos
- * @param valor Valor de temperatura a validar
- * @return int Valor limitado dentro del rango MIN_TEMPERATURA - MAX_TEMPERATURA
- */
-int validarTemperatura(int valor) {
-    if (valor < MIN_TEMPERATURA) return MIN_TEMPERATURA;
-    if (valor > MAX_TEMPERATURA) return MAX_TEMPERATURA;
-    return valor;
-}
-
-/**
- * @brief Valida y limita el valor de tiempo dentro de los rangos permitidos
- * @param valor Valor de tiempo a validar
- * @return int Valor limitado dentro del rango MIN_TIEMPO - MAX_TIEMPO
- */
-int validarTiempo(int valor) {
-    if (valor < MIN_TIEMPO) return MIN_TIEMPO;
-    if (valor > MAX_TIEMPO) return MAX_TIEMPO;
-    return valor;
-}
-
-/**
- * @brief Valida y limita el valor de rotación dentro de los rangos permitidos
- * @param valor Valor de rotación a validar
- * @return int Valor limitado dentro del rango MIN_ROTACION - MAX_ROTACION
- */
-int validarRotacion(int valor) {
-    if (valor < MIN_ROTACION) return MIN_ROTACION;
-    if (valor > MAX_ROTACION) return MAX_ROTACION;
-    return valor;
-}
-
-/**
- * @brief Valida y limita el valor de fase dentro de los rangos permitidos
- * @param valor Valor de fase a validar
- * @return int Valor limitado dentro del rango MIN_FASE - MAX_FASE
- */
-int validarFase(int valor) {
-    if (valor < MIN_FASE) return MIN_FASE;
-    if (valor > MAX_FASE) return MAX_FASE;
-    return valor;
-}
-
-/**
- * @brief Valida y limita el valor de centrifugado dentro de los rangos permitidos
- * @param valor Valor de centrifugado a validar (0=inactivo, 1=activo)
- * @return int Valor limitado dentro del rango MIN_CENTRIF - MAX_CENTRIF
- */
-int validarCentrifugado(int valor) {
-    if (valor < MIN_CENTRIF) return MIN_CENTRIF;
-    if (valor > MAX_CENTRIF) return MAX_CENTRIF;
-    return valor;
-}
-
-/**
- * @brief Valida y limita el valor de tipo de agua dentro de los rangos permitidos
- * @param valor Valor de tipo de agua a validar (0=fría, 1=caliente)
- * @return int Valor limitado dentro del rango MIN_AGUA - MAX_AGUA
- */
-int validarTipoAgua(int valor) {
-    if (valor < MIN_AGUA) return MIN_AGUA;
-    if (valor > MAX_AGUA) return MAX_AGUA;
+int validarParametro(int tipoParam, int valor) {
+    int minVal = obtenerValorMinimo(tipoParam);
+    int maxVal = obtenerValorMaximo(tipoParam);
+    
+    if (valor < minVal) return minVal;
+    if (valor > maxVal) return maxVal;
     return valor;
 }
 
@@ -96,40 +34,8 @@ int validarTipoAgua(int valor) {
  * @return int Nuevo valor incrementado y validado
  */
 int incrementarParametro(int tipoParam, int valorActual) {
-    int nuevoValor = valorActual;
-    
-    switch (tipoParam) {
-        case PARAM_NIVEL:
-            nuevoValor += INCREMENT_NIVEL;
-            return validarNivel(nuevoValor);
-            
-        case PARAM_TEMPERATURA:
-            nuevoValor += INCREMENT_TEMP;
-            return validarTemperatura(nuevoValor);
-            
-        case PARAM_TIEMPO:
-            nuevoValor += INCREMENT_TIEMPO;
-            return validarTiempo(nuevoValor);
-            
-        case PARAM_ROTACION:
-            nuevoValor += INCREMENT_ROTACION;
-            return validarRotacion(nuevoValor);
-            
-        case PARAM_FASE:
-            nuevoValor += INCREMENT_FASE;
-            return validarFase(nuevoValor);
-            
-        case PARAM_CENTRIF:
-            nuevoValor += INCREMENT_CENTRIF;
-            return validarCentrifugado(nuevoValor);
-            
-        case PARAM_AGUA:
-            nuevoValor += INCREMENT_AGUA;
-            return validarTipoAgua(nuevoValor);
-            
-        default:
-            return valorActual; // No se modifica si el tipo no es válido
-    }
+    int incremento = obtenerIncrementoParametro(tipoParam);
+    return validarParametro(tipoParam, valorActual + incremento);
 }
 
 /**
@@ -137,41 +43,10 @@ int incrementarParametro(int tipoParam, int valorActual) {
  * @param tipoParam Tipo de parámetro (PARAM_NIVEL, PARAM_TEMPERATURA, etc.)
  * @param valorActual Valor actual del parámetro
  * @return int Nuevo valor decrementado y validado
- */int decrementarParametro(int tipoParam, int valorActual) {
-    int nuevoValor = valorActual;
-    
-    switch (tipoParam) {
-        case PARAM_NIVEL:
-            nuevoValor -= INCREMENT_NIVEL;
-            return validarNivel(nuevoValor);
-            
-        case PARAM_TEMPERATURA:
-            nuevoValor -= INCREMENT_TEMP;
-            return validarTemperatura(nuevoValor);
-            
-        case PARAM_TIEMPO:
-            nuevoValor -= INCREMENT_TIEMPO;
-            return validarTiempo(nuevoValor);
-            
-        case PARAM_ROTACION:
-            nuevoValor -= INCREMENT_ROTACION;
-            return validarRotacion(nuevoValor);
-            
-        case PARAM_FASE:
-            nuevoValor -= INCREMENT_FASE;
-            return validarFase(nuevoValor);
-            
-        case PARAM_CENTRIF:
-            nuevoValor -= INCREMENT_CENTRIF;
-            return validarCentrifugado(nuevoValor);
-            
-        case PARAM_AGUA:
-            nuevoValor -= INCREMENT_AGUA;
-            return validarTipoAgua(nuevoValor);
-            
-        default:
-            return valorActual; // No se modifica si el tipo no es válido
-    }
+ */
+int decrementarParametro(int tipoParam, int valorActual) {
+    int incremento = obtenerIncrementoParametro(tipoParam);
+    return validarParametro(tipoParam, valorActual - incremento);
 }
 
 // ===== FUNCIONES DE INFORMACIÓN DE PARÁMETROS =====

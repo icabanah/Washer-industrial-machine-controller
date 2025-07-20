@@ -6,6 +6,14 @@
 #include "config.h"
 #include "hardware.h"
 
+// Enum para tipos de actualización del panel de edición
+enum UpdateMode {
+  UPDATE_FULL,     // Actualizar todo el panel derecho
+  UPDATE_SINGLE,   // Actualizar solo un parámetro específico
+  UPDATE_FAST,     // Actualizar parámetro principal + componente del panel
+  UPDATE_INSTANT   // Solo valor principal (máxima velocidad)
+};
+
 class UIControllerClass {
 public:
   // Inicialización
@@ -22,7 +30,7 @@ public:
   void initEditMode(uint8_t programa, uint8_t fase);
   void updateEditDisplay();
   void updateParameterDisplay();
-  void updateRightPanel();
+  void updateEditPanel(UpdateMode updateMode = UPDATE_FULL, uint8_t parametro = 0);
   
   void handleEditPageEvent(int componentId);
   void handleParameterIncrement();
@@ -65,10 +73,6 @@ public:
   void updateErrorDisplay(bool blinkState);         // Actualizar display de error con parpadeo
   void updateProgramInfo(uint8_t programa);         // Actualizar información del programa en selección
   void updateProgramPanel(uint8_t programa);        // Actualizar SOLO panel derecho (sin cambiar página)
-  void updateCurrentParameterOnly(uint8_t parametro); // Actualizar solo parámetro actual (edición rápida)
-  void updateEditPanelOnly();                       // Actualizar SOLO panel derecho edición (equivalente a updateProgramPanel)
-  void updateParameterFast(uint8_t parametro);     // Actualización ultrarrápida (SOLO parámetro principal + específico)
-  void updateParameterInstant(uint8_t parametro);  // ULTRA-EXTREMA velocidad (SOLO valor principal - 1 comando)
   void updatePreparationStatus(unsigned long prepTime); // Mostrar estado de preparación (llenado/calentamiento)
   void clearPreparationStatus();                    // Limpiar estado de preparación
   
@@ -92,6 +96,12 @@ public:
   int getCurrentParameter() const { return _parametroActual; }
 
 private:
+  // Métodos internos para actualización optimizada
+  void _updateAllPanelParameters();
+  void _updateSinglePanelParameter(uint8_t parametro);
+  void _updateMainParameter(uint8_t parametro);
+  void _updateMainParameterInstant(uint8_t parametro);
+  
   // Variables para controlar estado de UI
   String _lastUserAction;
   bool _userActionPending;

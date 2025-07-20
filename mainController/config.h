@@ -96,7 +96,7 @@
 #define MOTOR_L3_TIEMPO_IZQUIERDA 10 // Segundos activo hacia la izquierda
 #define MOTOR_L3_TIEMPO_PAUSA 1      // Segundos de pausa entre cambios
 
-// Configuración legacy (mantenida por compatibilidad)
+// Configuración de motor bidireccional - tiempos de compatibilidad
 #define MOTOR_TIEMPO_ON                                                        \
   5000 // Tiempo que permanece activo cada dirección (5 segundos)
 #define MOTOR_TIEMPO_PAUSA                                                     \
@@ -117,7 +117,7 @@
 #define NUM_FASES 4 // 0=Llenado, 1=Lavado, 2=Centrifugado(opcional), 3=Drenaje
 #define MAX_NIVEL_ROTACION 3
 
-// P22/P23: 1 tanda × 4 fases, P24: 3 tandas × 4 fases
+// P22/P23: 1 tanda × 4 fases, P24: 4 tandas × 4 fases
 
 // === DEFINICIÓN DE ESTADOS ===
 #define ESTADO_SELECCION 0
@@ -189,17 +189,6 @@
 #define NEXTION_COMP_PROGRAMA_SEL                                              \
   "val_prog" // Texto del programa seleccionado (ej: "P22")
 
-// Componentes de selección (usar los comunes para compatibilidad)
-#define NEXTION_COMP_SEL_NIVEL NEXTION_COMP_SET_NIVEL          // "val_nivel"
-#define NEXTION_COMP_SEL_TEMP NEXTION_COMP_SET_TEMP            // "val_temp"
-#define NEXTION_COMP_SEL_TIEMPO NEXTION_COMP_SET_TIEMPO        // "val_tiempo"
-#define NEXTION_COMP_SEL_ROTACION NEXTION_COMP_SET_ROTACION    // "val_rotac"
-#define NEXTION_COMP_SEL_FASE NEXTION_COMP_SET_FASE            // "val_fase"
-#define NEXTION_COMP_SEL_CENTRIFUGADO NEXTION_COMP_SET_CENTRIF // "val_centrif"
-#define NEXTION_COMP_SEL_TIPO_AGUA NEXTION_COMP_SET_AGUA       // "val_agua"
-#define NEXTION_COMP_MSG_TEXT NEXTION_COMP_MSG                 // "mensaje"
-#define NEXTION_COMP_INFO_FASES                                                \
-  NEXTION_COMP_MSG // "mensaje" para info adicional
 
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
@@ -233,25 +222,12 @@
 #define NEXTION_ID_BTN_PARAR 5  // Botón "Parar"
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
-// Etiquetas de parámetros principales
-#define NEXTION_COMP_PROG_EDICION                                              \
-  NEXTION_COMP_SET_PROG // "progr_sel" - Usar componente común
-#define NEXTION_COMP_FASE_EDICION                                              \
-  NEXTION_COMP_SET_FASE // "val_fase" - Usar componente común
 
 // Componentes de edición
 #define NEXTION_COMP_PARAM_EDITAR "param" // Texto del parámetro en edición
 #define NEXTION_COMP_PARAM_VALOR_EDITAR                                        \
   "param_value" // Valor del parámetro en edición
 
-// Panel derecho - usar componentes comunes para mostrar valores
-#define NEXTION_COMP_VAL_NIVEL_EDIT NEXTION_COMP_SET_NIVEL     // "val_nivel"
-#define NEXTION_COMP_VAL_TEMP_EDIT NEXTION_COMP_SET_TEMP       // "val_temp"
-#define NEXTION_COMP_VAL_TIEMPO_EDIT NEXTION_COMP_SET_TIEMPO   // "val_tiempo"
-#define NEXTION_COMP_VAL_ROTAC_EDIT NEXTION_COMP_SET_ROTACION  // "val_rotac"
-#define NEXTION_COMP_VAL_FASE_EDIT NEXTION_COMP_SET_FASE       // "val_fase"
-#define NEXTION_COMP_VAL_CENTRIF_EDIT NEXTION_COMP_SET_CENTRIF // "val_centrif"
-#define NEXTION_COMP_VAL_AGUA_EDIT NEXTION_COMP_SET_AGUA       // "val_agua"
 
 #define NEXTION_ID_BTN_PARAM_MENOS 7 // ID de Botón "-" para disminuir parámetro
 #define NEXTION_ID_BTN_PARAM_MAS 6   // ID de Botón "+" para aumentar parámetro
@@ -337,13 +313,7 @@
 // ===== DECLARACIONES DE FUNCIONES DE CONFIGURACIÓN =====
 
 // Funciones de validación de parámetros
-int validarNivel(int valor);
-int validarTemperatura(int valor);
-int validarTiempo(int valor);
-int validarRotacion(int valor);
-int validarFase(int valor);
-int validarCentrifugado(int valor);
-int validarTipoAgua(int valor);
+int validarParametro(int tipoParam, int valor);
 
 // Funciones de incremento/decremento
 int incrementarParametro(int tipoParam, int valorActual);

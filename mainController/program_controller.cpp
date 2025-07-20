@@ -875,7 +875,7 @@ void ProgramControllerClass::_loadEditingParametersForCurrentTanda() {
   
   // ELIMINADO: No actualizar aquí para evitar doble actualización
   // Los valores se actualizarán una sola vez cuando UIController.showEditScreen() 
-  // llame a updateEditDisplay() -> updateEditPanelOnly()
+  // llame a updateEditDisplay() -> updateEditPanel(UPDATE_FULL)
   
   // Solo cargar valores internos para uso de ProgramController
   uint8_t nivelStorage = Storage.loadWaterLevel(_editingProgram, 0, tandaIndex);
@@ -1401,7 +1401,7 @@ void ProgramControllerClass::_updateTandaDisplay() {
   
   // Notificar al UIController que actualice la visualización
   UIController.updateParameterDisplay();
-  UIController.updateEditPanelOnly(); // Optimizado como página de selección
+  UIController.updateEditPanel(UPDATE_FULL); // Optimizado como página de selección
   
   // CRÍTICO: Actualizar estado visual de botones de tanda
   UIController.updateTandaButtons(_editingTanda);
