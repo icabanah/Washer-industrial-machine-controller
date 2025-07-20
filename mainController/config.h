@@ -281,7 +281,7 @@
 // === LÍMITES DE PARÁMETROS ===
 #define MIN_NIVEL 1
 #define MAX_NIVEL 4
-#define MIN_TEMPERATURA 20
+#define MIN_TEMPERATURA 5
 #define MAX_TEMPERATURA 100
 #define MIN_TIEMPO 1
 #define MAX_TIEMPO 60

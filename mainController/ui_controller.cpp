@@ -1323,6 +1323,7 @@ void UIControllerClass::handleSaveParameters()
     uint8_t indexToUse = _faseEnEdicion;
     if (_programaEnEdicion == 2) { // P24
       indexToUse = ProgramController.getCurrentEditingTanda();
+      Serial.println("🔍 P24 - Guardando en tanda: " + String(indexToUse + 1) + " (índice: " + String(indexToUse) + ")");
     }
     _saveParametersToStorage(_programaEnEdicion, indexToUse);
 
@@ -1408,7 +1409,10 @@ void UIControllerClass::_saveParametersToStorage(uint8_t programa, uint8_t fase)
   _centrifugadoPorTanda[programa][fase] = _valoresTemporales[PARAM_CENTRIF]; // fase representa tanda
   _tipoAguaPrograma[programa][fase] = _valoresTemporales[PARAM_AGUA];
 
-  Serial.println("✅ Parámetros guardados en Storage - P" + String(programa + 22) + " F" + String(fase + 1));
+  Serial.println("✅ Parámetros guardados en Storage - P" + String(programa + 22) + " Tanda/Fase: " + String(fase + 1) + 
+                 " [Nivel:" + String(_valoresTemporales[PARAM_NIVEL]) + 
+                 ", Temp:" + String(_valoresTemporales[PARAM_TEMPERATURA]) + 
+                 ", Tiempo:" + String(_valoresTemporales[PARAM_TIEMPO]) + "]");
 }
 
 /**

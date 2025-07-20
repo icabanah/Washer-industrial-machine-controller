@@ -70,6 +70,9 @@ public:
   void updatePreparationStatus(unsigned long prepTime); // Mostrar estado de preparación (llenado/calentamiento)
   void clearPreparationStatus();                    // Limpiar estado de preparación
   
+  // Carga de parámetros (público para ProgramController)
+  void _loadParametersFromStorage(uint8_t programa, uint8_t fase);
+  
   // Proceso de eventos de interfaz
   void processEvents();
   bool hasUserAction();
@@ -130,7 +133,6 @@ private:
   
   // === MÉTODOS INTERNOS PARA EDICIÓN DE PARÁMETROS ===
   // Carga y guardado de parámetros
-  void _loadParametersFromStorage(uint8_t programa, uint8_t fase);
   void _saveParametersToStorage(uint8_t programa, uint8_t fase);
   
   // Validación y formateo

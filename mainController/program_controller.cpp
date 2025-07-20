@@ -1335,6 +1335,12 @@ void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
       return;
     }
   }
+  
+  // Para P24: Delegar botones +/- al UIController para otros parámetros
+  if (_editingProgram == 2 && (componentId == NEXTION_ID_BTN_PARAM_MAS || componentId == NEXTION_ID_BTN_PARAM_MENOS)) {
+    UIController.handleEditPageEvent(componentId);
+    return;
+  }
 
   // Manejar eventos específicos del programa controller
   if (componentId == NEXTION_ID_PARAM_FASE_EDIT) {
@@ -1390,6 +1396,9 @@ void ProgramControllerClass::_updateTandaDisplay() {
   
   // Cargar y mostrar los parámetros de la nueva tanda
   _loadEditingParametersForCurrentTanda();
+  
+  // CRÍTICO: Cargar valores en UIController para que se puedan editar
+  UIController._loadParametersFromStorage(_editingProgram, _editingTanda);
   
   // Notificar al UIController que actualice la visualización
   UIController.updateParameterDisplay();
