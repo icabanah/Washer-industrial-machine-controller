@@ -36,8 +36,10 @@ public:
   void selectParameter(uint8_t param);
   void selectPhase();
   void selectTanda();
+  void selectTandaDirecta(uint8_t tanda); // Nueva función para seleccionar tanda directamente
   void selectCentrifuge(); 
   void selectWater();
+  void updateTandaButtons(uint8_t tandaActiva); // Actualizar estado visual de botones de tanda
   
   // Funciones auxiliares para doble guardado
   bool _validateCurrentParameter();

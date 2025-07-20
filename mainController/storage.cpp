@@ -571,7 +571,7 @@ void StorageClass::saveCentrifugado(uint8_t program, uint8_t tanda, uint8_t cent
     case 1: // P23 - solo 1 tanda
       saveP23Centrifugado(centrifugado);
       break;
-    case 2: // P24 - 3 tandas (0, 1, 2)
+    case 2: // P24 - 4 tandas (0, 1, 2, 3)
       saveP24Centrifugado(tanda, centrifugado);
       break;
   }
@@ -583,7 +583,7 @@ uint8_t StorageClass::loadCentrifugado(uint8_t program, uint8_t tanda) {
       return loadP22Centrifugado();
     case 1: // P23 - solo 1 tanda
       return loadP23Centrifugado();
-    case 2: // P24 - 3 tandas (0, 1, 2)
+    case 2: // P24 - 4 tandas (0, 1, 2, 3)
       return loadP24Centrifugado(tanda);
     default:
       return 1;

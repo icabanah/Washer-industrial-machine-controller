@@ -861,6 +861,9 @@ void UIControllerClass::updateEditDisplay()
   // Actualizar parámetro actual y panel derecho DESPUÉS de configurar estilos
   updateParameterDisplay();
   updateEditPanelOnly(); // Optimizado como página de selección
+  
+  // Configurar botones de tanda según el programa y tanda actual
+  updateTandaButtons(ProgramController.getCurrentEditingTanda());
 
   Serial.println("Pantalla de edición actualizada (fase " + String(_programaEnEdicion == 2 ? "habilitada" : "deshabilitada") + " para P" + String(_programaEnEdicion + 22) + ")");
 }
@@ -1158,9 +1161,25 @@ void UIControllerClass::handleEditPageEvent(int componentId)
     break;
 
   case NEXTION_ID_PARAM_FASE_EDIT:
-    // Este caso debería ser manejado por ProgramController
-    // para selección de tanda en lugar de fase
-    selectTanda();
+    // DESACTIVADO: Ahora se usan los botones TANDA1-4 para mejor UX
+    // selectTanda();
+    break;
+
+  // Nuevos botones de tanda para mejor experiencia de usuario
+  case NEXTION_ID_BTN_TANDA1:
+    selectTandaDirecta(0);
+    break;
+
+  case NEXTION_ID_BTN_TANDA2:
+    selectTandaDirecta(1);
+    break;
+
+  case NEXTION_ID_BTN_TANDA3:
+    selectTandaDirecta(2);
+    break;
+
+  case NEXTION_ID_BTN_TANDA4:
+    selectTandaDirecta(3);
     break;
 
   case NEXTION_ID_PARAM_CENTRIF_EDIT:
@@ -1584,6 +1603,31 @@ void UIControllerClass::selectTanda(){
   // Sin mensajes para respuesta más rápida - el cambio visual es suficiente feedback
 }
 
+void UIControllerClass::selectTandaDirecta(uint8_t tanda){
+  if (!_modoEdicionActivo)
+    return;
+    
+  // Solo para P24 - P22 y P23 usan una sola tanda
+  if (_programaEnEdicion != 2) {
+    showMessage("P" + String(_programaEnEdicion + 22) + " usa solo 1 tanda", 1500);
+    return;
+  }
+
+  // Validar rango de tanda (0-3 para P24, que tiene 4 tandas)
+  if (tanda > 3) {
+    showMessage("P24 tiene solo 4 tandas", 1500);
+    return;
+  }
+  
+  // Notificar al ProgramController que cambie la tanda
+  ProgramController.setEditingTanda(tanda);
+  
+  // Actualizar visualización de botones de tanda
+  updateTandaButtons(tanda);
+  
+  Serial.println("🔘 Tanda " + String(tanda + 1) + " seleccionada directamente");
+}
+
 /**
  * @brief Selecciona parámetros de centrifugado
  */
@@ -1657,4 +1701,62 @@ void UIControllerClass::updateStartButtonText()
     Hardware.nextionSetText(NEXTION_COMP_BTN_START, "INICIAR");
     Hardware.nextionSetText(NEXTION_COMP_MSG, ""); // Limpiar mensaje
   }
+}
+
+// ===== FUNCIONES PARA MANEJO DE BOTONES DE TANDA =====
+
+/**
+ * @brief Actualiza el estado visual de los botones de tanda
+ * @param tandaActiva Tanda actualmente seleccionada (0-2)
+ */
+void UIControllerClass::updateTandaButtons(uint8_t tandaActiva)
+{
+  if (!_modoEdicionActivo || _currentPage != NEXTION_PAGE_EDIT)
+    return;
+
+  // Configurar colores para botones de tanda
+  // Color activo: Verde brillante (2016) | Color inactivo: Gris (33840)
+  uint16_t colorActivo = 2016;   // Verde brillante
+  uint16_t colorInactivo = 33840; // Gris
+
+  if (_programaEnEdicion == 2) { // P24 - 4 tandas activas
+    // TANDA1 (índice 0)
+    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA1) + ".pco=" + 
+                               String(tandaActiva == 0 ? colorActivo : colorInactivo));
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA1) + ",1"); // Habilitado
+    
+    // TANDA2 (índice 1)  
+    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA2) + ".pco=" + 
+                               String(tandaActiva == 1 ? colorActivo : colorInactivo));
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA2) + ",1"); // Habilitado
+    
+    // TANDA3 (índice 2)
+    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA3) + ".pco=" + 
+                               String(tandaActiva == 2 ? colorActivo : colorInactivo));
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA3) + ",1"); // Habilitado
+    
+    // TANDA4 (índice 3) - Ahora habilitado para P24 (4 tandas)
+    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA4) + ".pco=" + 
+                               String(tandaActiva == 3 ? colorActivo : colorInactivo));
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA4) + ",1"); // Habilitado
+  } 
+  else { // P22 y P23 - Solo TANDA1 activa
+    // TANDA1 - Siempre activa para P22/P23
+    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA1) + ".pco=" + String(colorActivo));
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA1) + ",1"); // Habilitado
+    
+    // TANDA2, TANDA3, TANDA4 - Deshabilitadas para P22/P23
+    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA2) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA2) + ",0"); // Deshabilitado
+    
+    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA3) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA3) + ",0"); // Deshabilitado
+    
+    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA4) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA4) + ",0"); // Deshabilitado
+  }
+  
+  Serial.println("🎨 Botones de tanda actualizados - Tanda activa: " + String(tandaActiva + 1) + 
+                 " (Programa: P" + String(_programaEnEdicion + 22) + 
+                 " - " + String(_programaEnEdicion == 2 ? "4" : "1") + " tandas)");
 }

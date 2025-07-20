@@ -213,6 +213,7 @@
 #define NEXTION_COMP_FASE_EJECUCION "fase_ejec"  // Fase actual en ejecución
 #define NEXTION_COMP_TIEMPO_EJECUCION                                          \
   "tiempo_ejec" // Tiempo transcurrido en ejecución
+#define NEXTION_COMP_TANDA_EJECUCION "tanda_ejec"   // Tanda en ejecución
 #define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"     // Temperatura en ejecución
 #define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"   // Nivel en ejecución
 #define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_ejec" // Velocidad de motor
@@ -264,13 +265,19 @@
 #define NEXTION_ID_BTN_TANDA4 29         // ID de Botón "tanda4"
 
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
-#define NEXTION_ID_PARAM_NIVEL_EDIT 18 // Valor actual del nivel en panel derecho
-#define NEXTION_ID_PARAM_TEMP_EDIT  19 // Valor actual de temperatura en panel derecho
-#define NEXTION_ID_PARAM_TIEMPO_EDIT 20 // Valor actual del tiempo en panel derecho
-#define NEXTION_ID_PARAM_ROTAC_EDIT 21 // Valor actual de rotación en panel derecho
+#define NEXTION_ID_PARAM_NIVEL_EDIT                                            \
+  18 // Valor actual del nivel en panel derecho
+#define NEXTION_ID_PARAM_TEMP_EDIT                                             \
+  19 // Valor actual de temperatura en panel derecho
+#define NEXTION_ID_PARAM_TIEMPO_EDIT                                           \
+  20 // Valor actual del tiempo en panel derecho
+#define NEXTION_ID_PARAM_ROTAC_EDIT                                            \
+  21 // Valor actual de rotación en panel derecho
 #define NEXTION_ID_PARAM_FASE_EDIT 22 // Valor actual de fase en panel derecho
-#define NEXTION_ID_PARAM_CENTRIF_EDIT 23 // Valor actual de centrifugado en panel derecho
-#define NEXTION_ID_PARAM_AGUA_EDIT 24 // Valor actual de tipo de agua en panel derecho
+#define NEXTION_ID_PARAM_CENTRIF_EDIT                                          \
+  23 // Valor actual de centrifugado en panel derecho
+#define NEXTION_ID_PARAM_AGUA_EDIT                                             \
+  24 // Valor actual de tipo de agua en panel derecho
 
 // === PARÁMETROS EDITABLES ===
 #define PARAM_NIVEL 0

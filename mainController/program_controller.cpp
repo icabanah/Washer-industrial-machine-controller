@@ -300,6 +300,14 @@ uint8_t ProgramControllerClass::getCurrentPhase() { return _currentPhase; }
 
 uint8_t ProgramControllerClass::getCurrentEditingTanda() { return _editingTanda; }
 
+void ProgramControllerClass::setEditingTanda(uint8_t tanda) {
+  if (_editingProgram == 2 && tanda <= 3) { // Solo para P24 y tanda válida (0-3)
+    _editingTanda = tanda;
+    _updateTandaDisplay();
+    Utils.debug("🔄 Tanda establecida directamente: " + String(tanda + 1));
+  }
+}
+
 void ProgramControllerClass::nextPhase() {
   if (_currentPhase < NUM_FASES - 1) {
     _currentPhase++;
@@ -1342,28 +1350,16 @@ void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
     return;
   }
 
-  // Manejar eventos específicos del programa controller
-  if (componentId == NEXTION_ID_PARAM_FASE_EDIT) {
-    // El usuario presionó el campo de tanda/fase
-    if (_editingProgram == 2) { 
-      // P24: activar edición de tanda y permitir usar botones +/-
-      _editingParameter = PARAM_FASE;
-      _handleTandaSelection();
-      Utils.debug("P24: Tanda seleccionada para edición - usar +/- para cambiar");
-    } else {
-      // P22/P23: solo 1 tanda, mostrar mensaje informativo  
-      Utils.debug("P22/P23: Solo 1 tanda disponible");
-    }
-    return; // No delegar este evento al UIController en ningún caso
-  }
+  // DESACTIVADO: NEXTION_ID_PARAM_FASE_EDIT ya no se usa - ahora se usan botones TANDA1-4
+  // Los eventos del panel derecho se delegan completamente al UIController
 
   // Delegar todos los demás eventos al UIController
   UIController.handleEditPageEvent(componentId);
 }
 
 void ProgramControllerClass::_handleTandaSelection() {
-  // Ciclar entre las 3 tandas del P24
-  _editingTanda = (_editingTanda + 1) % 3; // 0, 1, 2
+  // Ciclar entre las 4 tandas del P24
+  _editingTanda = (_editingTanda + 1) % 4; // 0, 1, 2, 3
   
   Utils.debug("📝 P24 - Cambiando a tanda " + String(_editingTanda + 1));
   
@@ -1379,7 +1375,7 @@ void ProgramControllerClass::_handleTandaSelection() {
 
 void ProgramControllerClass::_incrementTanda() {
   if (_editingProgram == 2) { // Solo para P24
-    _editingTanda = (_editingTanda + 1) % 3; // 0→1→2→0
+    _editingTanda = (_editingTanda + 1) % 4; // 0→1→2→3→0
     Utils.debug("📝 P24 - Incrementando a tanda " + String(_editingTanda + 1));
     _updateTandaDisplay();
   }
@@ -1387,7 +1383,7 @@ void ProgramControllerClass::_incrementTanda() {
 
 void ProgramControllerClass::_decrementTanda() {
   if (_editingProgram == 2) { // Solo para P24
-    _editingTanda = (_editingTanda + 2) % 3; // 0→2→1→0 (equivale a -1 pero sin negativos)
+    _editingTanda = (_editingTanda + 3) % 4; // 0→3→2→1→0 (equivale a -1 pero sin negativos)
     Utils.debug("📝 P24 - Decrementando a tanda " + String(_editingTanda + 1));
     _updateTandaDisplay();
   }

@@ -34,6 +34,7 @@ public:
   
   // Control de tanda (para edición)
   uint8_t getCurrentEditingTanda();
+  void setEditingTanda(uint8_t tanda); // Establecer tanda en edición directamente
   
   // Gestión de temporizadores
   void updateTimers();
