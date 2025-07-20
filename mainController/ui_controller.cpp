@@ -846,8 +846,7 @@ void UIControllerClass::updateEditDisplay()
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".pco=33840"); // Color gris
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_CENTRIF) + ",0"); // Deshabilitar touch centrifugado
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".pco=33840"); // Color gris centrifugado
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=33840"); // Fondo gris centrifugado
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".bco=33840"); // Fondo gris agua
+    // ELIMINADO: .bco para mantener fondo por defecto del HMI (azul oscuro)
   } else {
     // P24 - botones habilitados y colores normales
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",1"); // Habilitar touch
@@ -856,8 +855,7 @@ void UIControllerClass::updateEditDisplay()
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".pco=65535"); // Color normal
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_CENTRIF) + ",1"); // Habilitar touch centrifugado
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".pco=65535"); // Color normal centrifugado
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".bco=65535"); // Fondo normal centrifugado
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".bco=65535"); // Fondo normal agua
+    // ELIMINADO: .bco para mantener fondo por defecto del HMI (azul oscuro)
   }
   
   // Actualizar parámetro actual y panel derecho DESPUÉS de configurar estilos
