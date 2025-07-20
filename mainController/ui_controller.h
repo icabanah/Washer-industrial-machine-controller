@@ -85,6 +85,9 @@ public:
   void showMessage(const String& message, uint16_t duration = 2000);
   void playSound(uint8_t soundType);
   void updateStartButtonText(); // Actualizar texto del botón según estado de puerta
+  
+  // Acceso a estado de edición para ProgramController
+  int getCurrentParameter() const { return _parametroActual; }
 
 private:
   // Variables para controlar estado de UI

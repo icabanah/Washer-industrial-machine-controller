@@ -1325,8 +1325,8 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
 void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
   // Utils.debug("🔧 Manejando evento de edición - Componente: " + String(componentId));
 
-  // Para P24: Manejar botones +/- cuando estemos editando tandas
-  if (_editingProgram == 2 && _editingParameter == PARAM_FASE) {
+  // Para P24: Solo manejar botones +/- cuando estemos editando tandas Y no se haya seleccionado otro parámetro
+  if (_editingProgram == 2 && _editingParameter == PARAM_FASE && UIController.getCurrentParameter() == PARAM_FASE) {
     if (componentId == NEXTION_ID_BTN_PARAM_MAS) {
       _incrementTanda();
       return;
@@ -1336,7 +1336,7 @@ void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
     }
   }
   
-  // Para P24: Delegar botones +/- al UIController para otros parámetros
+  // Para P24: Delegar botones +/- al UIController para todos los parámetros (incluye PARAM_FASE cuando no está en modo tanda)
   if (_editingProgram == 2 && (componentId == NEXTION_ID_BTN_PARAM_MAS || componentId == NEXTION_ID_BTN_PARAM_MENOS)) {
     UIController.handleEditPageEvent(componentId);
     return;
@@ -1372,6 +1372,9 @@ void ProgramControllerClass::_handleTandaSelection() {
   
   // Cargar y mostrar los parámetros de la nueva tanda
   _loadEditingParametersForCurrentTanda();
+  
+  // CRÍTICO: Resetear el parámetro en edición para permitir editar otros parámetros de la tanda seleccionada
+  _editingParameter = -1; // No hay parámetro específico en edición - permitir selección libre
 }
 
 void ProgramControllerClass::_incrementTanda() {
@@ -1403,6 +1406,9 @@ void ProgramControllerClass::_updateTandaDisplay() {
   // Notificar al UIController que actualice la visualización
   UIController.updateParameterDisplay();
   UIController.updateEditPanelOnly(); // Optimizado como página de selección
+  
+  // CRÍTICO: Resetear el parámetro en edición para permitir editar otros parámetros de la tanda seleccionada
+  _editingParameter = -1; // No hay parámetro específico en edición - permitir selección libre
 }
 
 void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {

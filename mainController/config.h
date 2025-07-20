@@ -97,16 +97,20 @@
 #define MOTOR_L3_TIEMPO_PAUSA 1      // Segundos de pausa entre cambios
 
 // Configuración legacy (mantenida por compatibilidad)
-#define MOTOR_TIEMPO_ON 5000 // Tiempo que permanece activo cada dirección (5 segundos)
-#define MOTOR_TIEMPO_PAUSA 2000 // Tiempo de pausa entre cambios de dirección (2 segundos)
+#define MOTOR_TIEMPO_ON                                                        \
+  5000 // Tiempo que permanece activo cada dirección (5 segundos)
+#define MOTOR_TIEMPO_PAUSA                                                     \
+  2000 // Tiempo de pausa entre cambios de dirección (2 segundos)
 
 // Configuración de temporizadores especiales
 #define TIEMPO_DRENAJE 45 // 45 segundos de drenaje al final
-#define TIEMPO_PUERTA_BLOQUEO 60 // 60 segundos (1 minuto) antes de desbloquear puerta
+#define TIEMPO_PUERTA_BLOQUEO                                                  \
+  60 // 60 segundos (1 minuto) antes de desbloquear puerta
 #define TIEMPO_CENTRIFUGADO 45 // 45 segundos de centrifugado
 
 // Configuración de tareas asíncronas
-#define MAX_ASYNC_TASKS 10 // Número máximo de tareas asíncronas que se pueden gestionar
+#define MAX_ASYNC_TASKS                                                        \
+  10 // Número máximo de tareas asíncronas que se pueden gestionar
 
 // Configuración de programas
 #define NUM_PROGRAMAS 3
@@ -128,11 +132,11 @@
 #define ESTADO_CENTRIFUGADO 9
 
 // === ESTADOS DE FASES (Máquina de estados para fases) ===
-#define FASE_LLENANDO 0      // Llenando agua y calentando
-#define FASE_LAVADO 1        // Lavado con rotación de motor
-#define FASE_CENTRIFUGA 2    // Centrifugado
-#define FASE_DRENAJE 3       // Drenaje de agua
-#define FASE_ENFRIAMIENTO 4  // Enfriamiento final
+#define FASE_LLENANDO 0     // Llenando agua y calentando
+#define FASE_LAVADO 1       // Lavado con rotación de motor
+#define FASE_CENTRIFUGA 2   // Centrifugado
+#define FASE_DRENAJE 3      // Drenaje de agua
+#define FASE_ENFRIAMIENTO 4 // Enfriamiento final
 
 // === CÓDIGOS DE ERROR ===
 #define ERROR_NINGUNO 0
@@ -209,10 +213,10 @@
 #define NEXTION_COMP_FASE_EJECUCION "fase_ejec"  // Fase actual en ejecución
 #define NEXTION_COMP_TIEMPO_EJECUCION                                          \
   "tiempo_ejec" // Tiempo transcurrido en ejecución
-#define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"    // Temperatura en ejecución
-#define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"  // Nivel en ejecución
+#define NEXTION_COMP_TEMP_EJECUCION "temp_ejec"     // Temperatura en ejecución
+#define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"   // Nivel en ejecución
 #define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_ejec" // Velocidad de motor
-#define NEXTION_COMP_BARRA_TEMP_EJECUCION                                     \
+#define NEXTION_COMP_BARRA_TEMP_EJECUCION                                      \
   "barra_temp" // Gauge de presión (nivel de agua)
 #define NEXTION_COMP_BARRA_NIVEL_EJECUCION                                     \
   "barra_nivel" // Gauge de presión (nivel de agua)
@@ -225,7 +229,7 @@
 
 // Información de estado
 #define NEXTION_ID_BTN_PAUSAR 6 // Botón "Pausar"
-#define NEXTION_ID_BTN_PARAR 5   // Botón "Parar"
+#define NEXTION_ID_BTN_PARAR 5  // Botón "Parar"
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 // Etiquetas de parámetros principales
@@ -254,20 +258,19 @@
 #define NEXTION_ID_BTN_PARAM_SIGUIENTE 5 // ID de Botón siguiente parámetro
 #define NEXTION_ID_BTN_GUARDAR 3         // ID de Botón "Guardar"
 #define NEXTION_ID_BTN_CANCELAR 4        // ID de Botón "Cancelar"
+#define NEXTION_ID_BTN_TANDA1 26         // ID de Botón "tanda1"
+#define NEXTION_ID_BTN_TANDA2 27         // ID de Botón "tanda2"
+#define NEXTION_ID_BTN_TANDA3 28         // ID de Botón "tanda3"
+#define NEXTION_ID_BTN_TANDA4 29         // ID de Botón "tanda4"
 
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
-#define NEXTION_ID_PARAM_NIVEL_EDIT                                            \
-  18 // Valor actual del nivel en panel derecho
-#define NEXTION_ID_PARAM_TEMP_EDIT                                             \
-  19 // Valor actual de temperatura en panel derecho
-#define NEXTION_ID_PARAM_TIEMPO_EDIT                                           \
-  20 // Valor actual del tiempo en panel derecho
-#define NEXTION_ID_PARAM_ROTAC_EDIT                                            \
-  21 // Valor actual de rotación en panel derecho
+#define NEXTION_ID_PARAM_NIVEL_EDIT 18 // Valor actual del nivel en panel derecho
+#define NEXTION_ID_PARAM_TEMP_EDIT  19 // Valor actual de temperatura en panel derecho
+#define NEXTION_ID_PARAM_TIEMPO_EDIT 20 // Valor actual del tiempo en panel derecho
+#define NEXTION_ID_PARAM_ROTAC_EDIT 21 // Valor actual de rotación en panel derecho
 #define NEXTION_ID_PARAM_FASE_EDIT 22 // Valor actual de fase en panel derecho
-#define NEXTION_ID_PARAM_CENTRIF_EDIT                                          \
-  23                                  // Valor actual de fase en panel derecho
-#define NEXTION_ID_PARAM_AGUA_EDIT 24 // Valor actual de fase en panel derecho
+#define NEXTION_ID_PARAM_CENTRIF_EDIT 23 // Valor actual de centrifugado en panel derecho
+#define NEXTION_ID_PARAM_AGUA_EDIT 24 // Valor actual de tipo de agua en panel derecho
 
 // === PARÁMETROS EDITABLES ===
 #define PARAM_NIVEL 0
