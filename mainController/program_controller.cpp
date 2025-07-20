@@ -113,11 +113,14 @@ void ProgramControllerClass::setState(uint8_t newState) {
     case ESTADO_EJECUCION:
       _initializeProgram();
       _configureActuatorsForPhase();
+      // Para P24 usar la tanda en edición, para P22/P23 usar 0
+      uint8_t tandaEjecucion = (_currentProgram == 2) ? _editingTanda : 0;
       UIController.showExecutionScreen(
           _currentProgram, _currentPhase,
           _waterLevels[_currentProgram][_currentPhase],
           _temperatures[_currentProgram][_currentPhase],
-          _rotations[_currentProgram][_currentPhase]);
+          _rotations[_currentProgram][_currentPhase],
+          tandaEjecucion);
       // Resetear tiempo a "00:00" SOLO cuando se inicia programa nuevo (no reanudación)
       Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00");
       break;

@@ -186,7 +186,8 @@ void UIControllerClass::showSelectionScreen(uint8_t programa) {
 void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase,
                                             uint8_t nivelAgua,
                                             uint8_t temperatura,
-                                            uint8_t rotacion, bool preserveTime,
+                                            uint8_t rotacion, uint8_t tanda,
+                                            bool preserveTime,
                                             uint8_t preservedMinutes,
                                             uint8_t preservedSeconds) {
   // Cambiar a la página de ejecución
@@ -200,6 +201,13 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase,
 
   // Usar updatePhase para mostrar nombre descriptivo de la fase
   updatePhase(fase); // indica fase actual
+  
+  // Actualizar tanda en ejecución (solo para P24, P22/P23 siempre muestran 1)
+  if (programa == 2) { // P24
+    Hardware.nextionSetText(NEXTION_COMP_TANDA_EJECUCION, String(tanda + 1)); // Mostrar 1-4
+  } else { // P22/P23
+    Hardware.nextionSetText(NEXTION_COMP_TANDA_EJECUCION, "1"); // Siempre tanda 1
+  }
 
   // NUNCA resetear tiempo a "00:00" en página de ejecución
   // El tiempo se maneja externamente según el contexto
@@ -723,7 +731,8 @@ void UIControllerClass::safeTransitionToExecution(uint8_t programa,
                                                   uint8_t fase,
                                                   uint8_t nivelAgua,
                                                   uint8_t temperatura,
-                                                  uint8_t rotacion) {
+                                                  uint8_t rotacion,
+                                                  uint8_t tanda) {
   // Iniciar limpieza de eventos
   _clearPendingEvents();
 
@@ -737,7 +746,7 @@ void UIControllerClass::safeTransitionToExecution(uint8_t programa,
   }
 
   // Ahora mostrar la pantalla objetivo con eventos limpios
-  showExecutionScreen(programa, fase, nivelAgua, temperatura, rotacion);
+  showExecutionScreen(programa, fase, nivelAgua, temperatura, rotacion, tanda);
   _updateProgramInfo(programa); // Actualizar información del programa
 
   Serial.println("Transición segura a pantalla de ejecución completada");
@@ -814,17 +823,9 @@ void UIControllerClass::updateEditDisplay() {
   generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_SET_PROG, buffer);
 
-  // También actualizar el componente de programa seleccionado (ya que
-  // eliminamos _updateProgramInfo)
   Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL,
                           "P" + String(_programaEnEdicion + 22));
 
-  // ELIMINADO: No actualizar aquí el botón de fase/tanda para evitar conflicto
-  // ProgramController._updateEditScreenForProgram() maneja este componente
-  // y escribir "CONFIG" aquí causa parpadeo visual
-
-  // Configurar habilitación y colores según programa ANTES de actualizar
-  // valores
   if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
     // P22 y P23 - tanda y agua deshabilitados, centrifugado habilitado
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) +
@@ -839,13 +840,12 @@ void UIControllerClass::updateEditDisplay() {
                                 ",1"); // Habilitar touch centrifugado
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) +
                                 ".pco=65535"); // Color normal centrifugado
-    // ELIMINADO: .bco para mantener fondo por defecto del HMI (azul oscuro)
   } else {
     // P24 - botones habilitados y colores normales
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) +
-                                ",1"); // Habilitar touch
+                                ",0"); // Deshabilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) +
-                                ".pco=65535"); // Color normal
+                                ".pco=33840"); // Color gris
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_AGUA) +
                                 ",1"); // Habilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) +
@@ -863,11 +863,6 @@ void UIControllerClass::updateEditDisplay() {
 
   // Configurar botones de tanda según el programa y tanda actual
   updateTandaButtons(ProgramController.getCurrentEditingTanda());
-
-  Serial.println(
-      "Pantalla de edición actualizada (fase " +
-      String(_programaEnEdicion == 2 ? "habilitada" : "deshabilitada") +
-      " para P" + String(_programaEnEdicion + 22) + ")");
 }
 
 /// @brief
@@ -1571,7 +1566,7 @@ void UIControllerClass::selectTandaDirecta(uint8_t tanda) {
 
   // Validar rango de tanda (0-3 para P24, que tiene 4 tandas)
   if (tanda > 3) {
-    showMessage("P24 tiene solo 4 tandas", 1500);
+    showMessage("P24 tiene 4 tandas", 1500);
     return;
   }
 
@@ -1665,15 +1660,11 @@ void UIControllerClass::updateTandaButtons(uint8_t tandaActiva) {
     return;
 
   // Configurar colores para botones de tanda
-  // Color activo: Verde brillante (63488) | Color inactivo: Gris (2279)
-  uint16_t colorActivo = 25919;  // Verde brillante más visible
-  uint16_t colorInactivo = 2279; // Gris
+  uint16_t colorActivo = 25919;  // 
+  uint16_t colorInactivo = 2279; // 
 
   if (_programaEnEdicion == 2) { // P24 - 4 tandas activas
     // TANDA1 (índice 0)
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA1) + ".pco=" +
-    //                            String(tandaActiva == 0 ? colorActivo :
-    //                            colorInactivo));
     Hardware.nextionSendCommand(
         String(NEXTION_COMP_BTN_TANDA1) +
         ".bco=" + String(tandaActiva == 0 ? colorActivo : colorInactivo));
@@ -1681,9 +1672,6 @@ void UIControllerClass::updateTandaButtons(uint8_t tandaActiva) {
                                 ",1"); // Habilitado
 
     // TANDA2 (índice 1)
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA2) + ".pco=" +
-    //                            String(tandaActiva == 1 ? colorActivo :
-    //                            colorInactivo));
     Hardware.nextionSendCommand(
         String(NEXTION_COMP_BTN_TANDA2) +
         ".bco=" + String(tandaActiva == 1 ? colorActivo : colorInactivo));
@@ -1691,9 +1679,6 @@ void UIControllerClass::updateTandaButtons(uint8_t tandaActiva) {
                                 ",1"); // Habilitado
 
     // TANDA3 (índice 2)
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA3) + ".pco=" +
-    //                            String(tandaActiva == 2 ? colorActivo :
-    //                            colorInactivo));
     Hardware.nextionSendCommand(
         String(NEXTION_COMP_BTN_TANDA3) +
         ".bco=" + String(tandaActiva == 2 ? colorActivo : colorInactivo));
@@ -1701,9 +1686,6 @@ void UIControllerClass::updateTandaButtons(uint8_t tandaActiva) {
                                 ",1"); // Habilitado
 
     // TANDA4 (índice 3)
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA4) + ".pco=" +
-    //                            String(tandaActiva == 3 ? colorActivo :
-    //                            colorInactivo));
     Hardware.nextionSendCommand(
         String(NEXTION_COMP_BTN_TANDA4) +
         ".bco=" + String(tandaActiva == 3 ? colorActivo : colorInactivo));
@@ -1711,40 +1693,76 @@ void UIControllerClass::updateTandaButtons(uint8_t tandaActiva) {
                                 ",1"); // Habilitado
   } else {                             // P22 y P23 - Solo TANDA1 activa
     // TANDA1 - Siempre activa para P22/P23
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA1) + ".pco=" +
-    // String(colorActivo));
     Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA1) +
                                 ".bco=" + String(colorActivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA1) +
                                 ",1"); // Habilitado
 
     // TANDA2, TANDA3, TANDA4 - Deshabilitadas para P22/P23
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA2) + ".pco=" +
-    // String(colorInactivo));
     Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA2) +
                                 ".bco=" + String(colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA2) +
                                 ",0"); // Deshabilitado
 
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA3) + ".pco=" +
-    // String(colorInactivo));
     Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA3) +
                                 ".bco=" + String(colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA3) +
                                 ",0"); // Deshabilitado
 
-    // Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA4) + ".pco=" +
-    // String(colorInactivo));
     Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA4) +
                                 ".bco=" + String(colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA4) +
                                 ",0"); // Deshabilitado
   }
+}
 
-  Serial.println("🎨 Botones de tanda actualizados - Tanda activa: " +
-                 String(tandaActiva + 1) + " (Programa: P" +
-                 String(_programaEnEdicion + 22) + " - " +
-                 String(_programaEnEdicion == 2 ? "4" : "1") + " tandas)");
-  Serial.println("📍 Colores enviados - Activo: " + String(colorActivo) +
-                 ", Inactivo: " + String(colorInactivo));
+/**
+ * @brief Actualiza la fase mostrada en la página de ejecución
+ * @param fase Fase actual del programa
+ */
+void UIControllerClass::updatePhase(uint8_t fase) {
+  if (_currentPage != NEXTION_PAGE_EXECUTION)
+    return;
+
+  // Descripción de fase más clara para usuarios
+  String faseTexto;
+  switch (fase) {
+  case FASE_LLENANDO:
+    faseTexto = "Llenado";
+    break;
+  case FASE_LAVADO:
+    faseTexto = "Lavado";
+    break;
+  case FASE_CENTRIFUGA:
+    faseTexto = "Centrifugado";
+    break;
+  case FASE_DRENAJE:
+    faseTexto = "Drenaje";
+    break;
+  case FASE_ENFRIAMIENTO:
+    faseTexto = "Enfriamiento";
+    break;
+  default:
+    faseTexto = "Fase " + String(fase);
+    break;
+  }
+
+  // Actualizar el componente de fase
+  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, faseTexto);
+}
+
+/**
+ * @brief Actualiza la tanda mostrada en la página de ejecución
+ * @param programa Programa actual (0=P22, 1=P23, 2=P24)
+ * @param tanda Tanda actual (0-3 para P24, siempre 0 para P22/P23)
+ */
+void UIControllerClass::updateTanda(uint8_t programa, uint8_t tanda) {
+  if (_currentPage != NEXTION_PAGE_EXECUTION)
+    return;
+    
+  if (programa == 2) { // P24 - mostrar tanda actual
+    Hardware.nextionSetText(NEXTION_COMP_TANDA_EJECUCION, String(tanda + 1)); // Mostrar 1-4
+  } else { // P22/P23 - siempre tanda 1
+    Hardware.nextionSetText(NEXTION_COMP_TANDA_EJECUCION, "1");
+  }
 }

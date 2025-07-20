@@ -22,7 +22,7 @@ public:
   // Métodos para mostrar diferentes pantallas
   void showWelcomeScreen();
   void showSelectionScreen(uint8_t programa = 0);
-  void showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, bool preserveTime = false, uint8_t preservedMinutes = 0, uint8_t preservedSeconds = 0);
+  void showExecutionScreen(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, uint8_t tanda = 0, bool preserveTime = false, uint8_t preservedMinutes = 0, uint8_t preservedSeconds = 0);
   void showEditScreen(uint8_t programa, uint8_t tanda = 0);
   void showErrorScreen(uint8_t errorCode = 0, const String& errorMessage = "");
   void showEmergencyScreen();
@@ -55,7 +55,7 @@ public:
   
   // Métodos de transición con limpieza garantizada de eventos
   void safeTransitionToSelection(uint8_t programa = 0);
-  void safeTransitionToExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion);
+  void safeTransitionToExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, uint8_t tanda = 0);
   void safeTransitionToEdit(uint8_t programa, uint8_t fase);
   void safeTransitionToError(uint8_t errorCode = 0, const String& errorMessage = "");
   
@@ -68,6 +68,7 @@ public:
   void updateWaterLevel(uint8_t nivel);
   void updateRotation(uint8_t rotacion);
   void updatePhase(uint8_t fase);
+  void updateTanda(uint8_t programa, uint8_t tanda); // Actualizar tanda en ejecución
   void updatePauseIndicator(bool visible);         // Mostrar/ocultar indicador de pausa
   void updateEmergencyAlert(bool state);            // Actualizar alerta de emergencia
   void updateErrorDisplay(bool blinkState);         // Actualizar display de error con parpadeo
