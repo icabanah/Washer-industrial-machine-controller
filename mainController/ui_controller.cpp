@@ -361,6 +361,9 @@ void UIControllerClass::updateRotation(uint8_t rotacion) {
 }
 
 void UIControllerClass::updatePhase(uint8_t fase) {
+  if (_currentPage != NEXTION_PAGE_EXECUTION)
+    return;
+    
   // Mostrar nombre descriptivo de la fase según el diseño del cliente
   String faseTexto;
   switch (fase) {
@@ -1714,41 +1717,6 @@ void UIControllerClass::updateTandaButtons(uint8_t tandaActiva) {
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA4) +
                                 ",0"); // Deshabilitado
   }
-}
-
-/**
- * @brief Actualiza la fase mostrada en la página de ejecución
- * @param fase Fase actual del programa
- */
-void UIControllerClass::updatePhase(uint8_t fase) {
-  if (_currentPage != NEXTION_PAGE_EXECUTION)
-    return;
-
-  // Descripción de fase más clara para usuarios
-  String faseTexto;
-  switch (fase) {
-  case FASE_LLENANDO:
-    faseTexto = "Llenado";
-    break;
-  case FASE_LAVADO:
-    faseTexto = "Lavado";
-    break;
-  case FASE_CENTRIFUGA:
-    faseTexto = "Centrifugado";
-    break;
-  case FASE_DRENAJE:
-    faseTexto = "Drenaje";
-    break;
-  case FASE_ENFRIAMIENTO:
-    faseTexto = "Enfriamiento";
-    break;
-  default:
-    faseTexto = "Fase " + String(fase);
-    break;
-  }
-
-  // Actualizar el componente de fase
-  Hardware.nextionSetText(NEXTION_COMP_FASE_EJECUCION, faseTexto);
 }
 
 /**

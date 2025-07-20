@@ -110,7 +110,7 @@ void ProgramControllerClass::setState(uint8_t newState) {
       UIController.showEditScreen(_editingProgram, _editingPhase);
       break;
 
-    case ESTADO_EJECUCION:
+    case ESTADO_EJECUCION: {
       _initializeProgram();
       _configureActuatorsForPhase();
       // Para P24 usar la tanda en edición, para P22/P23 usar 0
@@ -124,6 +124,7 @@ void ProgramControllerClass::setState(uint8_t newState) {
       // Resetear tiempo a "00:00" SOLO cuando se inicia programa nuevo (no reanudación)
       Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00");
       break;
+    }
 
     case ESTADO_PAUSA:
       Actuators.stopMotor();
