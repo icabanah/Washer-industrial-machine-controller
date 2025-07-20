@@ -1403,6 +1403,9 @@ void ProgramControllerClass::_updateTandaDisplay() {
   UIController.updateParameterDisplay();
   UIController.updateEditPanelOnly(); // Optimizado como página de selección
   
+  // CRÍTICO: Actualizar estado visual de botones de tanda
+  UIController.updateTandaButtons(_editingTanda);
+  
   // CRÍTICO: Resetear el parámetro en edición para permitir editar otros parámetros de la tanda seleccionada
   _editingParameter = -1; // No hay parámetro específico en edición - permitir selección libre
 }

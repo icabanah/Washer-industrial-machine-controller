@@ -1626,6 +1626,7 @@ void UIControllerClass::selectTandaDirecta(uint8_t tanda){
   updateTandaButtons(tanda);
   
   Serial.println("🔘 Tanda " + String(tanda + 1) + " seleccionada directamente");
+  Serial.println("🔍 Actualizando botones: Tanda activa = " + String(tanda));
 }
 
 /**
@@ -1715,48 +1716,61 @@ void UIControllerClass::updateTandaButtons(uint8_t tandaActiva)
     return;
 
   // Configurar colores para botones de tanda
-  // Color activo: Verde brillante (2016) | Color inactivo: Gris (33840)
-  uint16_t colorActivo = 2016;   // Verde brillante
+  // Color activo: Verde brillante (63488) | Color inactivo: Gris (33840)
+  uint16_t colorActivo = 63488;   // Verde brillante más visible
   uint16_t colorInactivo = 33840; // Gris
 
   if (_programaEnEdicion == 2) { // P24 - 4 tandas activas
     // TANDA1 (índice 0)
-    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA1) + ".pco=" + 
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA1) + ".pco=" + 
+                               String(tandaActiva == 0 ? colorActivo : colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA1) + ".bco=" + 
                                String(tandaActiva == 0 ? colorActivo : colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA1) + ",1"); // Habilitado
     
     // TANDA2 (índice 1)  
-    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA2) + ".pco=" + 
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA2) + ".pco=" + 
+                               String(tandaActiva == 1 ? colorActivo : colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA2) + ".bco=" + 
                                String(tandaActiva == 1 ? colorActivo : colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA2) + ",1"); // Habilitado
     
     // TANDA3 (índice 2)
-    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA3) + ".pco=" + 
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA3) + ".pco=" + 
+                               String(tandaActiva == 2 ? colorActivo : colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA3) + ".bco=" + 
                                String(tandaActiva == 2 ? colorActivo : colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA3) + ",1"); // Habilitado
     
     // TANDA4 (índice 3) - Ahora habilitado para P24 (4 tandas)
-    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA4) + ".pco=" + 
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA4) + ".pco=" + 
+                               String(tandaActiva == 3 ? colorActivo : colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA4) + ".bco=" + 
                                String(tandaActiva == 3 ? colorActivo : colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA4) + ",1"); // Habilitado
   } 
   else { // P22 y P23 - Solo TANDA1 activa
     // TANDA1 - Siempre activa para P22/P23
-    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA1) + ".pco=" + String(colorActivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA1) + ".pco=" + String(colorActivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA1) + ".bco=" + String(colorActivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA1) + ",1"); // Habilitado
     
     // TANDA2, TANDA3, TANDA4 - Deshabilitadas para P22/P23
-    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA2) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA2) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA2) + ".bco=" + String(colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA2) + ",0"); // Deshabilitado
     
-    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA3) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA3) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA3) + ".bco=" + String(colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA3) + ",0"); // Deshabilitado
     
-    Hardware.nextionSendCommand("bt" + String(NEXTION_ID_BTN_TANDA4) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA4) + ".pco=" + String(colorInactivo));
+    Hardware.nextionSendCommand(String(NEXTION_COMP_BTN_TANDA4) + ".bco=" + String(colorInactivo));
     Hardware.nextionSendCommand("tsw " + String(NEXTION_ID_BTN_TANDA4) + ",0"); // Deshabilitado
   }
   
   Serial.println("🎨 Botones de tanda actualizados - Tanda activa: " + String(tandaActiva + 1) + 
                  " (Programa: P" + String(_programaEnEdicion + 22) + 
                  " - " + String(_programaEnEdicion == 2 ? "4" : "1") + " tandas)");
+  Serial.println("📍 Colores enviados - Activo: " + String(colorActivo) + ", Inactivo: " + String(colorInactivo));
 }

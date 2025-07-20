@@ -264,6 +264,12 @@
 #define NEXTION_ID_BTN_TANDA3 28         // ID de Botón "tanda3"
 #define NEXTION_ID_BTN_TANDA4 29         // ID de Botón "tanda4"
 
+// Nombres de componentes para botones de tanda
+#define NEXTION_COMP_BTN_TANDA1 "tanda1"  // Componente botón tanda 1
+#define NEXTION_COMP_BTN_TANDA2 "tanda2"  // Componente botón tanda 2
+#define NEXTION_COMP_BTN_TANDA3 "tanda3"  // Componente botón tanda 3
+#define NEXTION_COMP_BTN_TANDA4 "tanda4"  // Componente botón tanda 4
+
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
 #define NEXTION_ID_PARAM_NIVEL_EDIT                                            \
   18 // Valor actual del nivel en panel derecho
