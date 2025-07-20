@@ -575,7 +575,7 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa)
   Hardware.nextionSetText(NEXTION_COMP_SEL_TIEMPO, String(tiempo) + " min");
   Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, String(rotacion) + " RPM");
   Hardware.nextionSetText(NEXTION_COMP_SEL_FASE, String(faseTipo));
-  Hardware.nextionSetText(NEXTION_COMP_SEL_CENTRIFUGADO, centrifugado ? "Activo" : "Inactivo");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_CENTRIFUGADO, centrifugado ? "SI" : "NO");
   Hardware.nextionSetText(NEXTION_COMP_SEL_TIPO_AGUA, tipoAgua ? "Caliente" : "Fría");
 
   // Si es el programa P24 (índice 2), mostrar información adicional de múltiples fases
@@ -620,7 +620,7 @@ void UIControllerClass::updateProgramPanel(uint8_t programa)
   Hardware.nextionSetText(NEXTION_COMP_SEL_TIEMPO, String(tiempo) + " min");
   Hardware.nextionSetText(NEXTION_COMP_SEL_ROTACION, String(rotacion) + " RPM");
   Hardware.nextionSetText(NEXTION_COMP_SEL_FASE, String(faseTipo));
-  Hardware.nextionSetText(NEXTION_COMP_SEL_CENTRIFUGADO, centrifugado ? "Activo" : "Inactivo");
+  Hardware.nextionSetText(NEXTION_COMP_SEL_CENTRIFUGADO, centrifugado ? "SI" : "NO");
   Hardware.nextionSetText(NEXTION_COMP_SEL_TIPO_AGUA, tipoAgua ? "Caliente" : "Fría");
 }
 
@@ -839,13 +839,13 @@ void UIControllerClass::updateEditDisplay()
 
   // Configurar habilitación y colores según programa ANTES de actualizar valores
   if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
-    // P22 y P23 - botones deshabilitados y grises
+    // P22 y P23 - tanda y agua deshabilitados, centrifugado habilitado
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) + ",0"); // Deshabilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) + ".pco=33840"); // Color gris
     Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_AGUA) + ",0"); // Deshabilitar touch
     Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) + ".pco=33840"); // Color gris
-    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_CENTRIF) + ",0"); // Deshabilitar touch centrifugado
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".pco=33840"); // Color gris centrifugado
+    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_CENTRIF) + ",1"); // Habilitar touch centrifugado
+    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) + ".pco=65535"); // Color normal centrifugado
     // ELIMINADO: .bco para mantener fondo por defecto del HMI (azul oscuro)
   } else {
     // P24 - botones habilitados y colores normales

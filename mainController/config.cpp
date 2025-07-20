@@ -405,7 +405,7 @@ void formatearParametroConUnidad(int tipoParam, int valor, char* buffer, int tam
             }
             break;
         case PARAM_CENTRIF:
-            snprintf(buffer, tamanioBuffer, valor ? "Activo" : "Inactivo");
+            snprintf(buffer, tamanioBuffer, valor ? "SI" : "NO");
             break;
         case PARAM_AGUA:
             snprintf(buffer, tamanioBuffer, valor ? "Caliente" : "Fria");
