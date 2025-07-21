@@ -150,8 +150,8 @@ void HardwareClass::nextionSendCommand(const String &command)
   //   lastDebugTime = millis();
   // }
 
-  // Pausa aumentada para evitar saturación del buffer Nextion
-  delay(50);
+  // Pausa reducida para evitar bloqueo del sistema
+  delayMicroseconds(5000); // 5ms no bloqueante equivalente
 }
 
 void HardwareClass::_sendNextionEndCmd()
@@ -359,8 +359,8 @@ void HardwareClass::testNextionConnectivity()
   Serial.println("Enviando comando: get sleep");
   nextionSendCommand("get sleep");
 
-  // Esperar respuesta breve
-  delay(100);
+  // Esperar respuesta breve no bloqueante
+  delayMicroseconds(10000); // 10ms no bloqueante
 
   if (NEXTION_SERIAL.available())
   {
@@ -385,7 +385,7 @@ void HardwareClass::testNextionConnectivity()
   // Intentar comando de página
   Serial.println("Enviando: page 0");
   nextionSendCommand("page 0");
-  delay(50);
+  delayMicroseconds(5000); // 5ms no bloqueante
 
   // Intentar comando de texto simple
   Serial.println("Enviando comando de texto...");

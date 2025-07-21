@@ -103,6 +103,18 @@ private:
   void _updateMainParameter(uint8_t parametro);
   void _updateMainParameterInstant(uint8_t parametro);
   
+  // Métodos para limpieza no bloqueante de eventos
+  void _processEventClearing();
+  void _finishEventClearing();
+  void _finishEventClearingAndShowSelection(uint8_t programa);
+  void _finishEventClearingAndShowExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, uint8_t tanda);
+  void _finishEventClearingAndShowEdit(uint8_t programa, uint8_t fase);
+  
+  // Funciones wrapper estáticas para callbacks
+  static void _callbackShowSelection();
+  static void _callbackShowExecution();
+  static void _callbackShowEdit();
+  
   // Variables para controlar estado de UI
   String _lastUserAction;
   bool _userActionPending;
@@ -115,6 +127,15 @@ private:
   bool _clearingEvents;
   unsigned long _clearingStartTime;
   static const uint16_t EVENT_CLEAR_TIMEOUT = 100; // ms para limpiar eventos
+  int _eventClearTaskId;  // ID para temporizador de limpieza no bloqueante
+  
+  // Variables temporales para callbacks
+  static uint8_t _tempPrograma;
+  static uint8_t _tempFase;
+  static uint8_t _tempNivelAgua;
+  static uint8_t _tempTemperatura;
+  static uint8_t _tempRotacion;
+  static uint8_t _tempTanda;
   
   // === VARIABLES PARA EDICIÓN DE PARÁMETROS ===
   // Estado de edición actual

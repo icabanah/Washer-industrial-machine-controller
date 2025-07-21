@@ -64,7 +64,6 @@ void ActuatorsClass::init() {
   openDrainValve(); // Por seguridad, la válvula de drenaje se abre al iniciar
   unlockDoor();
   
-  Utils.debug("ActuatorsClass::init| Actuadores inicializados");
 }
 
 void ActuatorsClass::startMotorForward() {
@@ -317,12 +316,10 @@ void ActuatorsClass::emergencyStop() {
   openDrainValve();
   lockDoor(); // en caso de emergencia, bloquear la puerta
   
-  Utils.debug("PARADA DE EMERGENCIA ACTIVADA");
 }
 
 void ActuatorsClass::emergencyReset() {
   // Restablecer el sistema después de una emergencia
-  Utils.debug("Sistema restablecido después de emergencia");
 }
 
 
@@ -364,8 +361,6 @@ void ActuatorsClass::startPartialDrain(uint8_t percentage, uint16_t duration) {
   // Abrir válvula de drenaje
   openDrainValve();
   
-  Utils.debug("💧 Iniciando drenaje parcial - " + String(percentage) + 
-              "% en " + String(duration) + "ms");
   
   // Programar cierre automático de válvula
   _partialDrainTaskId = Utils.createTimeout(duration, partialDrainCompleteCallback);
@@ -385,7 +380,6 @@ void ActuatorsClass::stopPartialDrain() {
       _partialDrainTaskId = 0;
     }
     
-    Utils.debug("🛑 Drenaje parcial detenido");
   }
 }
 
@@ -418,7 +412,6 @@ uint8_t ActuatorsClass::getPartialDrainProgress() {
 void ActuatorsClass::completePartialDrain() {
   closeDrainValve();
   _partialDrainActive = false;
-  Utils.debug("✅ Drenaje parcial completado");
 }
 
 void ActuatorsClass::updateTimers() {

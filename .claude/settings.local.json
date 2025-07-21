@@ -9,7 +9,8 @@
       "Bash(cat:*)",
       "Bash(/c/arduino-cli/arduino-cli.exe compile --fqbn esp32:esp32:esp32-wroom-da ./mainController/)",
       "Bash(\"C:\\arduino-cli\\arduino-cli.exe\" compile --fqbn esp32:esp32:esp32-wroom-da ./mainController/)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

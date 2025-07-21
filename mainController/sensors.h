@@ -105,6 +105,10 @@ private:
   // void _readTemperature();      // Ya no se usa con el nuevo enfoque
   void _calibratePressureSensor();
   uint8_t _convertPressureToLevel(float pressure);
+  void _completeTemperatureDiagnostic(); // Finalización asíncrona del diagnóstico
+  
+  // Función wrapper estática para callback
+  static void _callbackCompleteDiagnostic();
 };
 
 // Instancia global

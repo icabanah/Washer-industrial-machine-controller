@@ -10,6 +10,14 @@
 // Definición de la instancia global
 UIControllerClass UIController;
 
+// Declaración de variables estáticas
+uint8_t UIControllerClass::_tempPrograma = 0;
+uint8_t UIControllerClass::_tempFase = 0;
+uint8_t UIControllerClass::_tempNivelAgua = 0;
+uint8_t UIControllerClass::_tempTemperatura = 0;
+uint8_t UIControllerClass::_tempRotacion = 0;
+uint8_t UIControllerClass::_tempTanda = 0;
+
 // === CONFIGURACIÓN SEGÚN DOCUMENTO DEL CLIENTE ===
 // Programa 22 (P22): Agua Caliente - 3 fases + centrifugado
 // Programa 23 (P23): Agua Fría - 3 fases + centrifugado
@@ -82,6 +90,7 @@ void UIControllerClass::init() {
   // Inicializar variables para limpieza de eventos
   _clearingEvents = false;
   _clearingStartTime = 0;
+  _eventClearTaskId = -1;
 
   // === INICIALIZAR VARIABLES DE EDICIÓN ===
   _programaEnEdicion = 0;
@@ -140,15 +149,12 @@ void UIControllerClass::showWelcomeScreen() {
 /// Si se pasa 0, se mostrará la pantalla de selección sin resaltar ningún
 /// programa.
 void UIControllerClass::showSelectionScreen(uint8_t programa) {
-  Utils.debug("Programa seleccionado: " + String(programa + 22));
 
   // Cambiar de página SOLO si no estamos ya en la página de selección
   if (_currentPage != NEXTION_PAGE_SELECTION) {
     Hardware.nextionSetPage(NEXTION_PAGE_SELECTION);
     _currentPage = NEXTION_PAGE_SELECTION;
-    Utils.debug("Cambiando a página de selección");
   } else {
-    Utils.debug("Ya en página de selección - solo actualizando componentes");
   }
 
   // Actualizar información del programa seleccionado (solo componentes
@@ -729,17 +735,23 @@ void UIControllerClass::safeTransitionToSelection(uint8_t programa) {
   // Iniciar limpieza de eventos
   _clearPendingEvents();
 
-  // Procesar eventos durante el período de limpieza
-  unsigned long startTime = millis();
-  while (millis() - startTime < EVENT_CLEAR_TIMEOUT) {
-    if (Hardware.nextionCheckForEvents()) {
-      Hardware.nextionGetLastEvent(); // Descartar evento
-    }
-    delay(1); // Breve pausa para permitir que lleguen eventos
+  // Iniciar limpieza no bloqueante de eventos
+  if (_eventClearTaskId == -1) {
+    _clearingEvents = true;
+    _clearingStartTime = millis();
+    _eventClearTaskId = Utils.createInterval(10, []() {
+      UIController._processEventClearing();
+    });
+    
+    // Guardar parámetros en variables temporales
+    _tempPrograma = programa;
+    
+    // Crear timeout para finalizar la limpieza
+    Utils.createTimeout(EVENT_CLEAR_TIMEOUT, _callbackShowSelection);
+  } else {
+    // Si ya hay limpieza en curso, mostrar pantalla directamente
+    showSelectionScreen(programa);
   }
-
-  // Ahora mostrar la pantalla objetivo con eventos limpios
-  showSelectionScreen(programa);
 
   // Forzar actualización de información del programa para reflejar cambios
   _updateProgramInfo(programa);
@@ -754,17 +766,28 @@ void UIControllerClass::safeTransitionToExecution(uint8_t programa,
   // Iniciar limpieza de eventos
   _clearPendingEvents();
 
-  // Procesar eventos durante el período de limpieza
-  unsigned long startTime = millis();
-  while (millis() - startTime < EVENT_CLEAR_TIMEOUT) {
-    if (Hardware.nextionCheckForEvents()) {
-      Hardware.nextionGetLastEvent(); // Descartar evento
-    }
-    delay(1); // Breve pausa para permitir que lleguen eventos
+  // Iniciar limpieza no bloqueante de eventos
+  if (_eventClearTaskId == -1) {
+    _clearingEvents = true;
+    _clearingStartTime = millis();
+    _eventClearTaskId = Utils.createInterval(10, []() {
+      UIController._processEventClearing();
+    });
+    
+    // Guardar parámetros en variables temporales
+    _tempPrograma = programa;
+    _tempFase = fase;
+    _tempNivelAgua = nivelAgua;
+    _tempTemperatura = temperatura;
+    _tempRotacion = rotacion;
+    _tempTanda = tanda;
+    
+    // Crear timeout para finalizar la limpieza
+    Utils.createTimeout(EVENT_CLEAR_TIMEOUT, _callbackShowExecution);
+  } else {
+    // Si ya hay limpieza en curso, mostrar pantalla directamente
+    showExecutionScreen(programa, fase, nivelAgua, temperatura, rotacion, tanda);
   }
-
-  // Ahora mostrar la pantalla objetivo con eventos limpios
-  showExecutionScreen(programa, fase, nivelAgua, temperatura, rotacion, tanda);
   _updateProgramInfo(programa); // Actualizar información del programa
 
   Serial.println("Transición segura a pantalla de ejecución completada");
@@ -774,17 +797,24 @@ void UIControllerClass::safeTransitionToEdit(uint8_t programa, uint8_t fase) {
   // Iniciar limpieza de eventos
   _clearPendingEvents();
 
-  // Procesar eventos durante el período de limpieza
-  unsigned long startTime = millis();
-  while (millis() - startTime < EVENT_CLEAR_TIMEOUT) {
-    if (Hardware.nextionCheckForEvents()) {
-      Hardware.nextionGetLastEvent(); // Descartar evento
-    }
-    delay(1); // Breve pausa para permitir que lleguen eventos
+  // Iniciar limpieza no bloqueante de eventos
+  if (_eventClearTaskId == -1) {
+    _clearingEvents = true;
+    _clearingStartTime = millis();
+    _eventClearTaskId = Utils.createInterval(10, []() {
+      UIController._processEventClearing();
+    });
+    
+    // Guardar parámetros en variables temporales
+    _tempPrograma = programa;
+    _tempFase = fase;
+    
+    // Crear timeout para finalizar la limpieza
+    Utils.createTimeout(EVENT_CLEAR_TIMEOUT, _callbackShowEdit);
+  } else {
+    // Si ya hay limpieza en curso, mostrar pantalla directamente
+    showEditScreen(programa, fase);
   }
-
-  // Ahora mostrar la pantalla objetivo con eventos limpios
-  showEditScreen(programa, fase);
 
   Serial.println("Transición segura a pantalla de edición completada");
 }
@@ -794,17 +824,22 @@ void UIControllerClass::safeTransitionToError(uint8_t errorCode,
   // Para errores, la limpieza debe ser inmediata y prioritaria
   _clearPendingEvents();
 
-  // Breve limpieza de eventos críticos
-  unsigned long startTime = millis();
-  while (millis() - startTime < 50) { // Timeout más corto para errores
-    if (Hardware.nextionCheckForEvents()) {
-      Hardware.nextionGetLastEvent(); // Descartar evento
-    }
-    delay(1);
-  }
-
-  // Mostrar pantalla de error inmediatamente
+  // Para errores críticos, mostrar pantalla inmediatamente sin esperar
   showErrorScreen(errorCode, errorMessage);
+  
+  // Iniciar limpieza no bloqueante en paralelo
+  if (_eventClearTaskId == -1) {
+    _clearingEvents = true;
+    _clearingStartTime = millis();
+    _eventClearTaskId = Utils.createInterval(5, []() {
+      UIController._processEventClearing();
+    });
+    
+    // Timeout corto para errores (50ms)
+    Utils.createTimeout(50, []() {
+      UIController._finishEventClearing();
+    });
+  }
 
   Serial.println("Transición segura a pantalla de error completada");
 }
@@ -1523,7 +1558,8 @@ void UIControllerClass::updateProgramInfo(uint8_t programa) {
 
   // Actualizar texto descriptivo del programa usando componente mensaje común
   char buffer[100];
-  generarTextoPrograma(programa, buffer, sizeof(buffer));
+  // Convertir de rango 1-3 (usado por ProgramController) a rango 0-2 (usado por generarTextoPrograma)
+  generarTextoPrograma(programa - 1, buffer, sizeof(buffer));
 
   Hardware.nextionSetText(NEXTION_COMP_MSG, String(buffer));
 }
@@ -1808,4 +1844,55 @@ void UIControllerClass::updateTanda(uint8_t programa, uint8_t tanda) {
   } else { // P22/P23 - siempre tanda 1
     Hardware.nextionSetText(NEXTION_COMP_TANDA_EJECUCION, "1");
   }
+}
+
+// Métodos auxiliares para limpieza no bloqueante de eventos
+void UIControllerClass::_processEventClearing() {
+  if (!_clearingEvents) return;
+  
+  // Limpiar eventos pendientes
+  if (Hardware.nextionCheckForEvents()) {
+    Hardware.nextionGetLastEvent(); // Descartar evento
+  }
+  
+  // Verificar si se agotó el timeout
+  if (millis() - _clearingStartTime >= EVENT_CLEAR_TIMEOUT) {
+    _finishEventClearing();
+  }
+}
+
+void UIControllerClass::_finishEventClearing() {
+  if (_eventClearTaskId != -1) {
+    Utils.stopTask(_eventClearTaskId);
+    _eventClearTaskId = -1;
+  }
+  _clearingEvents = false;
+}
+
+void UIControllerClass::_finishEventClearingAndShowSelection(uint8_t programa) {
+  _finishEventClearing();
+  showSelectionScreen(programa);
+}
+
+void UIControllerClass::_finishEventClearingAndShowExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, uint8_t tanda) {
+  _finishEventClearing();
+  showExecutionScreen(programa, fase, nivelAgua, temperatura, rotacion, tanda);
+}
+
+void UIControllerClass::_finishEventClearingAndShowEdit(uint8_t programa, uint8_t fase) {
+  _finishEventClearing();
+  showEditScreen(programa, fase);
+}
+
+// Funciones wrapper estáticas para callbacks
+void UIControllerClass::_callbackShowSelection() {
+  UIController._finishEventClearingAndShowSelection(_tempPrograma);
+}
+
+void UIControllerClass::_callbackShowExecution() {
+  UIController._finishEventClearingAndShowExecution(_tempPrograma, _tempFase, _tempNivelAgua, _tempTemperatura, _tempRotacion, _tempTanda);
+}
+
+void UIControllerClass::_callbackShowEdit() {
+  UIController._finishEventClearingAndShowEdit(_tempPrograma, _tempFase);
 }

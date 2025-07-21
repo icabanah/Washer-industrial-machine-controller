@@ -9,6 +9,14 @@ void ProgramControllerClass::_updateProgramButtons() {
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM1, (_currentProgram == 0) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (_currentProgram == 1) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (_currentProgram == 2) ? 1 : 0);
+  
+  // Actualizar también el componente que muestra el programa seleccionado
+  Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(_currentProgram + 22));
+  
+  // Actualizar NEXTION_COMP_SET_PROG usando la función generarTextoPrograma
+  char buffer[20];
+  generarTextoPrograma(_currentProgram, buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_SET_PROG, buffer);
 }
 
 void ProgramControllerClass::init() {
@@ -49,11 +57,16 @@ void ProgramControllerClass::init() {
   _editingParameter = 0;
   _editingParameterValue = 0;
   _isEditing = false;
+  
+  // Inicializar temporizadores no bloqueantes
+  _pauseBlinkTaskId = -1;
+  _errorBlinkTaskId = -1;
+  _emergencyBlinkTaskId = -1;
+  _blinkState = false;
 
   // Cargar datos de programa desde almacenamiento
   _loadProgramData();
 
-  Utils.debug("Program Controller inicializado");
 }
 
 /// @brief
@@ -65,8 +78,6 @@ void ProgramControllerClass::_loadCurrentProgramState() {
   _currentProgram = Storage.loadProgram();
   _currentPhase = Storage.loadPhase();
 
-  Utils.debug("Estado del programa cargado: P" + String(_currentProgram + 22) +
-              " F" + String(_currentPhase));
 }
 
 /// @brief
@@ -92,6 +103,9 @@ void ProgramControllerClass::setState(uint8_t newState) {
   if (newState != _currentState) {
     _previousState = _currentState;
     _currentState = newState;
+    
+    // Detener todos los temporizadores de parpadeo al cambiar estado
+    _stopAllBlinkTasks();
 
     // Acciones específicas al cambiar de estado
     switch (newState) {
@@ -174,7 +188,6 @@ void ProgramControllerClass::selectProgram(uint8_t program) {
   if (program < NUM_PROGRAMAS) {
     _currentProgram = program;
     Storage.saveProgram(program);
-    Utils.debugValue("Programa seleccionado", program);
   }
 }
 
@@ -245,6 +258,12 @@ void ProgramControllerClass::pauseProgram() {
 
 void ProgramControllerClass::resumeProgram() {
   if (_currentState == ESTADO_PAUSA) {
+    // Detener parpadeo de pausa
+    if (_pauseBlinkTaskId != -1) {
+      Utils.stopTask(_pauseBlinkTaskId);
+      _pauseBlinkTaskId = -1;
+    }
+    
     // Resetear flag de pausa para permitir reinicio de actuadores
     _pauseActuatorsStopped = false;
 
@@ -301,7 +320,6 @@ void ProgramControllerClass::stopProgram() {
   if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA) {
     Actuators.emergencyStop(); // Detener todos los actuadores de forma segura
     setState(ESTADO_SELECCION);
-    Utils.debug("Programa detenido: " + String(_currentProgram));
   }
 }
 
@@ -313,7 +331,6 @@ void ProgramControllerClass::setEditingTanda(uint8_t tanda) {
   if (_editingProgram == 2 && tanda <= 3) { // Solo para P24 y tanda válida (0-3)
     _editingTanda = tanda;
     _updateTandaDisplay();
-    Utils.debug("🔄 Tanda establecida directamente: " + String(tanda + 1));
   }
 }
 
@@ -337,7 +354,6 @@ void ProgramControllerClass::nextPhase() {
 
     Storage.savePhase(_currentPhase);
     _updatePhaseParameters();
-    Utils.debugValue("Avanzado a la fase: ", _currentPhase);
   } else {
     _completeProgram();
   }
@@ -370,7 +386,6 @@ void ProgramControllerClass::_updatePhaseParameters() {
     UIController.updateTime(_remainingMinutes, _remainingSeconds);
     // Nota: Barra de progreso eliminada del HMI
 
-    Utils.debug("📌 Nueva fase iniciada: " + String(_currentPhase));
   }
 }
 
@@ -456,7 +471,6 @@ void ProgramControllerClass::_checkSensorConditions() {
 
     // FASE 0 (Llenado) → Automáticamente a FASE_LAVADO
     if (_currentPhaseState == FASE_LLENANDO) {
-      Utils.debug("Llenado completo → Avanzando a Lavado");
       _currentPhaseState = FASE_LAVADO;
       _initializePhaseState();
     } else {
@@ -546,7 +560,6 @@ void ProgramControllerClass::_controlActuatorsForPhase() {
 }
 
 void ProgramControllerClass::_completeProgram() {
-  Utils.debug("Programa completado - Regresando a selección");
   // El enfriamiento ya se maneja en FASE_ENFRIAMIENTO de la máquina de estados
   setState(ESTADO_SELECCION);
 }
@@ -695,8 +708,6 @@ bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa,
   }
 
   bool enabled = _centrifugadoPorTanda[programa][tandaActual] == 1;
-  Utils.debug("Centrifugado P" + String(programa + 22) + " T" +
-              String(tandaActual + 1) + ": " + String(enabled ? "ON" : "OFF"));
 
   return enabled;
 }
@@ -716,11 +727,9 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
 
     // 3) PIN_ELECTROV_VAPOR ON - ingresa agua caliente (solo Programa 22)
     if (_currentProgram == 0) { // P22 = agua caliente
-      Utils.debug("🔥 P22: Activando vapor para agua caliente");
       if (Sensors.getCurrentWaterLevel() < targetLevel)
         Actuators.openSteamValve();
     } else if (_currentProgram == 1) { // P23 = agua fría
-      Utils.debug("❄️ P23: Activando agua fría (sin vapor)");
       if (Sensors.getCurrentWaterLevel() < targetLevel)
         Actuators.openWaterValve(); // P23 no usa vapor, solo agua fría
     }
@@ -755,8 +764,6 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
       uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
       if (rotLevel > 0 && !Actuators.isAutoRotationActive()) {
         Actuators.startAutoRotation(rotLevel);
-        Utils.debug("🔄 Iniciando rotación con permutación nivel: " +
-                    String(rotLevel));
       }
     } break;
 
@@ -1178,21 +1185,13 @@ void ProgramControllerClass::_handlePauseState() {
     // Mantener puerta bloqueada por seguridad
     _pauseActuatorsStopped = true;
     Utils.debug("⏸️ Sistema en pausa - actuadores detenidos");
-  }
-
-  // Hacer parpadear el temporizador durante la pausa
-  static unsigned long lastBlink = 0;
-  static bool blinkState = false;
-  if (millis() - lastBlink > 250) { // Parpadeo cada 250ms
-    blinkState = !blinkState;
-    if (blinkState) {
-      // Mostrar tiempo normal
-      UIController.updateTime(_remainingMinutes, _remainingSeconds);
-    } else {
-      // Mostrar vacío para efecto de parpadeo
-      Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "");
+    
+    // Iniciar parpadeo no bloqueante
+    if (_pauseBlinkTaskId == -1) {
+      _pauseBlinkTaskId = Utils.createInterval(250, []() {
+        ProgramController._togglePauseBlink();
+      });
     }
-    lastBlink = millis();
   }
 }
 
@@ -1214,17 +1213,15 @@ void ProgramControllerClass::_handleErrorState() {
       Utils.debug("🔓 Puerta desbloqueada después de error");
     });
 
+    // Iniciar parpadeo no bloqueante
+    if (_errorBlinkTaskId == -1) {
+      _errorBlinkTaskId = Utils.createInterval(300, []() {
+        ProgramController._toggleErrorBlink();
+      });
+    }
+
     safetyMeasuresApplied = true;
     Utils.debug("🛑 Medidas de seguridad aplicadas en estado de error");
-  }
-
-  // Mostrar error en pantalla con parpadeo
-  static unsigned long lastErrorBlink = 0;
-  static bool errorBlinkState = false;
-  if (millis() - lastErrorBlink > 300) { // Parpadeo rápido
-    errorBlinkState = !errorBlinkState;
-    UIController.updateErrorDisplay(errorBlinkState);
-    lastErrorBlink = millis();
   }
 
   // El sistema permanece en error hasta intervención manual
@@ -1249,18 +1246,15 @@ void ProgramControllerClass::_handleEmergencyState() {
     // Detener todos los temporizadores
     _timerRunning = false;
 
+    // Iniciar alerta no bloqueante
+    if (_emergencyBlinkTaskId == -1) {
+      _emergencyBlinkTaskId = Utils.createInterval(250, []() {
+        ProgramController._toggleEmergencyBlink();
+      });
+    }
+
     emergencyMeasuresApplied = true;
     Utils.debug("🚨 EMERGENCIA - Sistema detenido completamente");
-  }
-
-  // Mostrar alerta de emergencia con sonido/visual
-  static unsigned long lastEmergencyAlert = 0;
-  static bool alertState = false;
-  if (millis() - lastEmergencyAlert > 250) { // Alerta muy rápida
-    alertState = !alertState;
-    UIController.updateEmergencyAlert(alertState);
-
-    lastEmergencyAlert = millis();
   }
 
   // El sistema permanece en emergencia hasta reset manual
@@ -1779,4 +1773,41 @@ void ProgramControllerClass::_initializePhaseState() {
 
   Utils.debug("Fase iniciada: " + String(_currentPhaseState) + " (Fase " +
               String(_currentPhase) + ")");
+}
+
+// Métodos para parpadeos no bloqueantes
+void ProgramControllerClass::_togglePauseBlink() {
+  _blinkState = !_blinkState;
+  if (_blinkState) {
+    // Mostrar tiempo normal
+    UIController.updateTime(_remainingMinutes, _remainingSeconds);
+  } else {
+    // Mostrar vacío para efecto de parpadeo
+    Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "");
+  }
+}
+
+void ProgramControllerClass::_toggleErrorBlink() {
+  _blinkState = !_blinkState;
+  UIController.updateErrorDisplay(_blinkState);
+}
+
+void ProgramControllerClass::_toggleEmergencyBlink() {
+  _blinkState = !_blinkState;
+  UIController.updateEmergencyAlert(_blinkState);
+}
+
+void ProgramControllerClass::_stopAllBlinkTasks() {
+  if (_pauseBlinkTaskId != -1) {
+    Utils.stopTask(_pauseBlinkTaskId);
+    _pauseBlinkTaskId = -1;
+  }
+  if (_errorBlinkTaskId != -1) {
+    Utils.stopTask(_errorBlinkTaskId);
+    _errorBlinkTaskId = -1;
+  }
+  if (_emergencyBlinkTaskId != -1) {
+    Utils.stopTask(_emergencyBlinkTaskId);
+    _emergencyBlinkTaskId = -1;
+  }
 }

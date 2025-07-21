@@ -57,10 +57,12 @@ void setup() {
   // de drenaje para pruebas iniciales Actuators.openSteamValve(); // Abrir
   // válvula de vapor para pruebas iniciales
 
-  // Prueba de conectividad con Nextion después de inicialización
-  delay(1000); // Esperar que la pantalla termine de inicializarse
-  // Serial.println("Probando conectividad con pantalla Nextion...");
-  // Hardware.testNextionConnectivity();
+  // Programar prueba de conectividad después de 1 segundo no bloqueante
+  Utils.createTimeout(1000, []() {
+    // Serial.println("Probando conectividad con pantalla Nextion...");
+    // Hardware.testNextionConnectivity();
+    Serial.println("Nextion inicializada (timeout no bloqueante)");
+  });
 
   // Registrar callbacks para el temporizador principal
   // Esto centraliza la gestión del tiempo y evita múltiples temporizadores

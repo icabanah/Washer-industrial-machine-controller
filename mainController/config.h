@@ -157,7 +157,7 @@
 #define NEXTION_PAGE_EMERGENCY 5
 
 // Valores de los parámetros de programa seteado
-#define NEXTION_COMP_SET_PROG "progr_sel"    // Programa en ejecución
+#define NEXTION_COMP_SET_PROG "progr_sel"    // Programa en seleccion
 #define NEXTION_COMP_SET_NIVEL "val_nivel"   // Valor del nivel de agua
 #define NEXTION_COMP_SET_TEMP "val_temp"     // Valor de temperatura
 #define NEXTION_COMP_SET_TIEMPO "val_tiempo" // Valor del tiempo

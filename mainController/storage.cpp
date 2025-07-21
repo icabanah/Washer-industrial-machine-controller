@@ -181,7 +181,6 @@ void StorageClass::resetToDefaults() {
   // Inicializar valores por defecto SOLO si no existen (preservar datos existentes)
   initializeDefaultValues();
   
-  Utils.debug("🔄 Sistema reseteado - configuraciones básicas restauradas");
 }
 
 bool StorageClass::loadAllProgramSettings(uint8_t program, uint8_t (&waterLevels)[NUM_FASES],
@@ -232,7 +231,6 @@ bool StorageClass::saveAllProgramSettings(uint8_t program, const uint8_t (&water
 void StorageClass::initializeDefaultValues() {
   // Verificar SOLO si ya se han inicializado los valores por defecto
   if (!readByte("defaults_v2", 0)) {
-    Utils.debug("🔧 Primera inicialización - configurando valores predeterminados...");
     
     // === PROGRAMA P22 - AGUA CALIENTE (Valores únicos) ===
     saveP22WaterLevel(2);        // Nivel 2 
@@ -283,15 +281,11 @@ void StorageClass::initializeDefaultValues() {
     saveP24Centrifugado(3, 1);   // Centrifugado activo
     saveP24TipoAgua(3, 0);       // Agua fría para enjuague final
     
-    Utils.debug("✅ P24 configurado con 4 fases personalizables");
     
     // Marcar como inicializado (versión 2 = optimizada)
     writeByte("defaults_v2", 1);
     
-    Utils.debug("🗂️ OPTIMIZACIÓN: P22 y P23 usan valores únicos, P24 usa matriz");
-    Utils.debug("✅ Valores predeterminados OPTIMIZADOS inicializados correctamente");
   } else {
-    Utils.debug("📂 Valores de configuración existentes cargados - preservando datos del usuario");
   }
 }
 //   Serial.println("=====================================");

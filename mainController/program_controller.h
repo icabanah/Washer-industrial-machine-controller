@@ -88,6 +88,12 @@ private:
   uint8_t _tandaCounter;
   uint8_t _maxTandas;
   
+  // Variables para temporizadores no bloqueantes
+  int _pauseBlinkTaskId;
+  int _errorBlinkTaskId;
+  int _emergencyBlinkTaskId;
+  bool _blinkState;
+  
   // Variables para edición
   uint8_t _editingProgram;
   uint8_t _editingPhase;
@@ -126,7 +132,13 @@ private:
   void _handleErrorState();
   void _handleEmergencyState();
   void _handlePhaseStateMachine(); // Máquina de estados de fases
-  void _initializePhaseState(); // Inicializar parámetros para nueva fase
+  void _initializePhaseState();
+  
+  // Métodos para parpadeos no bloqueantes
+  void _togglePauseBlink();
+  void _toggleErrorBlink();
+  void _toggleEmergencyBlink();
+  void _stopAllBlinkTasks(); // Inicializar parámetros para nueva fase
   
   // Métodos para manejar eventos táctiles por página
   void _handleSelectionPageEvents(uint8_t componentId);

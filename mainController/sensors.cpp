@@ -57,66 +57,18 @@ void SensorsClass::_setupTemperatureSensor() {
   
   // Verificar si el sensor está conectado
   uint8_t deviceCount = _tempSensors.getDeviceCount();
-  Utils.debug("=== DIAGNÓSTICO SENSOR TEMPERATURA ===");
-  Utils.debug("Pin configurado: " + String(PIN_TEMP_SENSOR));
-  Utils.debug("Sensores detectados: " + String(deviceCount));
+  Utils.debug("Sensor temperatura - Pin: " + String(PIN_TEMP_SENSOR) + ", Detectados: " + String(deviceCount));
   
   if (deviceCount == 0) {
     Utils.debug("ERROR: No se detectaron sensores DS18B20");
-    Utils.debug("Verificar:");
-    Utils.debug("- Conexión física del sensor al pin " + String(PIN_TEMP_SENSOR));
-    Utils.debug("- Resistor pull-up de 4.7kΩ entre datos y VCC");
-    Utils.debug("- Alimentación del sensor (3.3V o 5V)");
   } else {
-    Utils.debug("✓ Sensores encontrados correctamente");
     
-    // Mostrar información de todos los sensores detectados
-    for (uint8_t i = 0; i < deviceCount; i++) {
-      DeviceAddress tempAddr;
-      if (_tempSensors.getAddress(tempAddr, i)) {
-        String address = "Sensor " + String(i) + ": {0x";
-        for (uint8_t j = 0; j < 8; j++) {
-          if (tempAddr[j] < 16) address += "0";
-          address += String(tempAddr[j], HEX);
-          if (j < 7) address += ", 0x";
-        }
-        address += "}";
-        Utils.debug(address);
-      }
+    
+    if (!_tempSensors.isConnected(_tempSensorAddress) && deviceCount > 0) {
+      _tempSensors.getAddress(_tempSensorAddress, 0);
     }
-    
-    // Verificar si la dirección configurada funciona
-    if (_tempSensors.isConnected(_tempSensorAddress)) {
-      Utils.debug("✓ Dirección configurada es válida");
-    } else {
-      Utils.debug("⚠ La dirección configurada no responde");
-      
-      if (deviceCount > 0) {
-        Utils.debug("Usando el primer sensor detectado...");
-        
-        // Obtener la dirección del primer sensor encontrado
-        if (_tempSensors.getAddress(_tempSensorAddress, 0)) {
-          String newAddress = "Nueva dirección: {0x";
-          for (uint8_t i = 0; i < 8; i++) {
-            if (_tempSensorAddress[i] < 16) newAddress += "0";
-            newAddress += String(_tempSensorAddress[i], HEX);
-            if (i < 7) newAddress += ", 0x";
-          }
-          newAddress += "}";
-          Utils.debug(newAddress);
-          Utils.debug("NOTA: Actualizar TEMP_SENSOR_ADDR en config.h con esta dirección");
-        }
-      }
-    }
-    
-    // Establecer resolución específica para el sensor
     _tempSensors.setResolution(_tempSensorAddress, TEMP_RESOLUTION);
-    Utils.debug("Resolución configurada: " + String(TEMP_RESOLUTION) + " bits");
   }
-  
-  Utils.debug("=== FIN DIAGNÓSTICO ===");
-  
-  // No iniciar ninguna lectura aquí, se hará en el ciclo de monitoreo
 }
 
 /// @brief 
@@ -132,9 +84,7 @@ void SensorsClass::_setupPressureSensor() {
   if (_pressureSensor.wait_ready_timeout(1000, 100)) {
     // Sensor está respondiendo, realizar calibración inicial
     _calibratePressureSensor();
-    Utils.debug("SensorsClass::_setupPressureSensor| Sensor de presión inicializado correctamente");
   } else {
-    Utils.debug("SensorsClass::_setupPressureSensor| ADVERTENCIA: Sensor de presión no responde");
   }
 }
 
@@ -146,10 +96,8 @@ void SensorsClass::_calibratePressureSensor() {
   if (_pressureSensor.wait_ready_timeout(1000, 100)) {
     _pressureSensor.tare(10); // 10 lecturas para establecer offset
     _pressureSensorCalibrated = true;
-    Utils.debug("SensorsClass::_calibratePressureSensor| Sensor de presión calibrado");
   } else {
     _pressureSensorCalibrated = false;
-    Utils.debug("SensorsClass::_calibratePressureSensor| Error al calibrar sensor de presión");
   }
 }
 
@@ -182,9 +130,7 @@ void SensorsClass::startMonitoring() {
     
     if (_monitoringTaskId > 0) {
       _monitoring = true;
-      Utils.debug("Monitoreo de sensores iniciado");
     } else {
-      Utils.debug("Error al iniciar monitoreo de sensores");
     }
   }
 }
@@ -199,7 +145,6 @@ void SensorsClass::stopMonitoring() {
     _tempConversionInProgress = false;
     _tempReadCount = 0;
     
-    Utils.debug("Monitoreo de sensores detenido");
   }
 }
 
@@ -222,10 +167,6 @@ void SensorsClass::updateTemperature() {
       if (temp != DEVICE_DISCONNECTED_C && temp >= -127.0 && temp <= 85.0) {
         _currentTemperature = temp;
         
-        // Si es la primera lectura exitosa después de errores, reportarlo
-        if (_tempSensorErrorCount > 0) {
-          Utils.debug("✅ Sensor de temperatura recuperado");
-        }
         _tempSensorErrorCount = 0;
         
         // Mostrar temperatura cada 10 lecturas (cada 5 segundos aproximadamente)
@@ -235,14 +176,7 @@ void SensorsClass::updateTemperature() {
         }
       } else {
         _tempSensorErrorCount++;
-        Utils.debug("❌ Error de lectura temperatura: " + String(temp) + " (error #" + String(_tempSensorErrorCount) + ")");
-        
-        if (_tempSensorErrorCount == 5) {
-          Utils.debug("⚠️ Múltiples fallos de lectura (sensor temp.)");
-        }
-        
         if (_tempSensorErrorCount > 10) {
-          Utils.debug("🔄 Reintentando inicialización del sensor de temperatura...");
           _setupTemperatureSensor();
           _tempSensorErrorCount = 0;
         }
@@ -270,12 +204,8 @@ void SensorsClass::updatePressure() {
     // Incrementar contador de errores si el sensor no responde
     _pressureSensorErrorCount++;
     
-    if (_pressureSensorErrorCount > 10) {
-      Utils.debug("ERROR: Múltiples lecturas fallidas del sensor de presión");
-      // Si han pasado muchos errores, intentar reiniciar el sensor
-      if (_pressureSensorErrorCount > 20) {
-        _setupPressureSensor();
-      }
+    if (_pressureSensorErrorCount > 20) {
+      _setupPressureSensor();
     }
   }
 }
@@ -391,9 +321,18 @@ void SensorsClass::diagnosticTemperatureSensor() {
     Utils.debug("⚠️ El sensor configurado no responde");
   }
   
-  // 3. Realizar lectura de prueba
+  // 3. Realizar lectura de prueba no bloqueante
   _tempSensors.requestTemperatures();
-  delay(1000); // Esperar conversión completa
+  _tempConversionInProgress = true;
+  _tempConversionStartTime = millis();
+  
+  // Crear timeout para verificar conversión después de 1 segundo
+  Utils.createTimeout(1000, _callbackCompleteDiagnostic);
+  
+}
+
+void SensorsClass::_completeTemperatureDiagnostic() {
+  if (!_tempConversionInProgress) return;
   
   float temp = _tempSensors.getTempC(_tempSensorAddress);
   
@@ -406,9 +345,16 @@ void SensorsClass::diagnosticTemperatureSensor() {
     _tempSensorErrorCount++;
   }
   
+  _tempConversionInProgress = false;
+  
   // 4. Mostrar estadísticas de errores
   Utils.debug("Errores acumulados: " + String(_tempSensorErrorCount));
   Utils.debug("Temperatura actual almacenada: " + String(_currentTemperature) + "°C");
   
   Utils.debug("=== FIN DIAGNÓSTICO ===");
+}
+
+// Función wrapper estática para callback
+void SensorsClass::_callbackCompleteDiagnostic() {
+  Sensors._completeTemperatureDiagnostic();
 }
