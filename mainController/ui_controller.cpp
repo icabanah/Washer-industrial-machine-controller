@@ -221,6 +221,16 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase,
   updateRotation(
       Actuators.getCurrentRotationLevel()); // Usar rotación real del actuator
 
+  // Mostrar valores seteados en los nuevos componentes
+  uint8_t tiempoSeteado = Storage.loadTime(programa, fase);
+  uint8_t centrifugadoSeteado = Storage.loadCentrifugado(programa, (programa == 2) ? tanda : 0);
+  uint8_t tipoAguaSeteado = Storage.loadTipoAgua(programa, 0, fase);
+  
+  // Actualizar componentes con valores configurados
+  Hardware.nextionSetText(NEXTION_COMP_TIEMPO_TOTAL_EJECUCION, String(tiempoSeteado) + "m");
+  Hardware.nextionSetText(NEXTION_COMP_CENTRIF_EJECUCION, centrifugadoSeteado ? "SI" : "NO");
+  Hardware.nextionSetText(NEXTION_COMP_AGUA_EJECUCION, tipoAguaSeteado ? "Caliente" : "Fria");
+
   Serial.println("Mostrando pantalla de ejecución de programa");
 }
 

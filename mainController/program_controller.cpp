@@ -208,6 +208,11 @@ void ProgramControllerClass::startProgram() {
 
     setState(ESTADO_EJECUCION);
 
+    // Para P24: Asegurar que siempre comience con tanda 1 (índice 0)
+    if (_currentProgram == 2) { // P24
+      _editingTanda = 0; // Reiniciar a tanda 1
+    }
+
     // Asegurar que el botón pausar muestre "PAUSAR" al iniciar
     Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "PAUSAR");
     Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa P" +
