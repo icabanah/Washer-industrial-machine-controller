@@ -353,7 +353,9 @@ void ProgramControllerClass::_updatePhaseParameters() {
     _configureActuatorsForPhase();
 
     // Reiniciar temporizador para la nueva fase
-    _totalMinutes = Storage.loadTime(_currentProgram, _currentPhase);
+    // Para P24 usar tanda actual, para P22/P23 usar fase
+    uint8_t timeIndex = (_currentProgram == 2) ? _tandaCounter : _currentPhase;
+    _totalMinutes = Storage.loadTime(_currentProgram, timeIndex);
     _totalSeconds = _totalMinutes * 60;
     _remainingMinutes = _totalMinutes;
     _remainingSeconds = 0;
@@ -560,7 +562,9 @@ void ProgramControllerClass::_initializeProgram() {
   Storage.savePhase(_currentPhase);
 
   // 3. Inicializar variables del programa
-  _totalMinutes = Storage.loadTime(_currentProgram, _currentPhase);
+  // Para P24 usar tanda actual, para P22/P23 usar fase
+  uint8_t timeIndex = (_currentProgram == 2) ? _tandaCounter : _currentPhase;
+  _totalMinutes = Storage.loadTime(_currentProgram, timeIndex);
   _totalSeconds = _totalMinutes * 60;
   _remainingMinutes = _totalMinutes;
   _remainingSeconds = 0;
@@ -1711,7 +1715,9 @@ void ProgramControllerClass::_initializePhaseState() {
 
   case FASE_LAVADO: {
     _currentPhase = 1;
-    _totalMinutes = Storage.loadTime(_currentProgram, _currentPhase);
+    // Para P24 usar tanda actual, para P22/P23 usar fase
+    uint8_t timeIndex = (_currentProgram == 2) ? _tandaCounter : _currentPhase;
+    _totalMinutes = Storage.loadTime(_currentProgram, timeIndex);
     _remainingMinutes = _totalMinutes;
     _remainingSeconds = 0;
     _totalSeconds = _totalMinutes * 60; // Calcular total en segundos

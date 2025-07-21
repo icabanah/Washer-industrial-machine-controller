@@ -227,7 +227,9 @@ void UIControllerClass::showExecutionScreen(uint8_t programa, uint8_t fase,
   uint8_t tipoAguaSeteado = Storage.loadTipoAgua(programa, 0, fase);
   
   // Actualizar componentes con valores configurados
-  Hardware.nextionSetText(NEXTION_COMP_TIEMPO_TOTAL_EJECUCION, String(tiempoSeteado) + "m");
+  char tiempoBuffer[6];
+  snprintf(tiempoBuffer, sizeof(tiempoBuffer), "%02d:00", tiempoSeteado);
+  Hardware.nextionSetText(NEXTION_COMP_TIEMPO_TOTAL_EJECUCION, String(tiempoBuffer));
   Hardware.nextionSetText(NEXTION_COMP_CENTRIF_EJECUCION, centrifugadoSeteado ? "SI" : "NO");
   Hardware.nextionSetText(NEXTION_COMP_AGUA_EJECUCION, tipoAguaSeteado ? "Caliente" : "Fria");
 
