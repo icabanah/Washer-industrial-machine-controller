@@ -632,6 +632,9 @@ void UIControllerClass::updateProgramPanel(uint8_t programa) {
   uint8_t centrifugado = Storage.loadCentrifugado(programa, 0);
   uint8_t tipoAgua = Storage.loadTipoAgua(programa, 0, 0);
 
+  // Actualizar indicador de programa seleccionado
+  Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(programa + 22));
+  
   // Actualizar SOLO el panel derecho (sin tocar botones ni cambiar páginas)
   Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, String(nivel));
   Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, String(temp) + "°C");

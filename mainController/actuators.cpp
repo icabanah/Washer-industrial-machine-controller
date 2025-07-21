@@ -175,13 +175,13 @@ bool ActuatorsClass::isSteamValveOpen() {
 }
 
 void ActuatorsClass::openDrainValve() {
-  Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, HIGH);
+  Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, LOW);  // Activar con LOW
   _drainValveOpen = true;
   // Utils.debug("Válvula de drenaje abierta");
 }
 
 void ActuatorsClass::closeDrainValve() {
-  Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, LOW);
+  Hardware.digitalWrite(PIN_VALVULA_DESFOGUE, HIGH); // Desactivar con HIGH
   _drainValveOpen = false;
   // Utils.debug("Válvula de drenaje cerrada");
 }

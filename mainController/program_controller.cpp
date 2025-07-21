@@ -1183,7 +1183,7 @@ void ProgramControllerClass::_handlePauseState() {
   // Hacer parpadear el temporizador durante la pausa
   static unsigned long lastBlink = 0;
   static bool blinkState = false;
-  if (millis() - lastBlink > 300) { // Parpadeo cada 500ms
+  if (millis() - lastBlink > 250) { // Parpadeo cada 250ms
     blinkState = !blinkState;
     if (blinkState) {
       // Mostrar tiempo normal
