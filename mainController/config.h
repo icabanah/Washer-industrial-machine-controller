@@ -206,11 +206,15 @@
 #define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"   // Nivel en ejecución
 #define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_ejec" // Velocidad de motor
 #define NEXTION_COMP_BARRA_TEMP_EJECUCION                                      \
-  "barra_temp" // Gauge de presión (nivel de agua)
+"barra_temp" // Gauge de presión (nivel de agua)
 #define NEXTION_COMP_BARRA_NIVEL_EJECUCION                                     \
-  "barra_nivel" // Gauge de presión (nivel de agua)
+"barra_nivel" // Gauge de presión (nivel de agua)
 #define NEXTION_COMP_BARRA_VELOC_EJECUCION                                     \
-  "barra_veloc" // Gauge de presión (nivel de agua)
+"barra_veloc" // Gauge de presión (nivel de agua)
+
+#define NEXTION_COMP_CENTRIF_EJECUCION "centrif_ejec" // Velocidad de motor
+#define NEXTION_COMP_AGUA_EJECUCION "agua_ejec" // Velocidad de motor
+#define NEXTION_COMP_TIEMPO_TOTAL_EJECUCION "tiempo_total" // Velocidad de motor
 
 // Botones de control
 #define NEXTION_COMP_BTN_PARAR "btnParar"

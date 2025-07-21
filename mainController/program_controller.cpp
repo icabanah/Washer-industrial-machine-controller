@@ -569,8 +569,9 @@ void ProgramControllerClass::_initializeProgram() {
   _phaseStartTime = millis();
 
   // 6. Inicializar contador de tandas
-  _tandaCounter = 0;
-  _maxTandas = (_currentProgram == 2) ? 3 : 1; // P24=3 tandas, P22/P23=1 tanda
+  _tandaCounter = 0; // Tanda inicial (mostrada como "1" en pantalla)
+  _maxTandas = (_currentProgram == 2) ? 4 : 1; // P24=4 tandas, P22/P23=1 tanda
+  // Nota: La tanda se actualiza en showExecutionScreen() al inicio
 
   // 7. Actualizar UI para mostrar la fase inicial correcta (llenado)
   UIController.updatePhase(
@@ -1597,6 +1598,8 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
           // P24: Nueva tanda
           _tandaCounter++;
           Utils.debug("P24 - Centrifugado completo, iniciando tanda " + String(_tandaCounter + 1));
+          // Actualizar display de tanda en página de ejecución
+          UIController.updateTanda(_currentProgram, _tandaCounter);
           _currentPhaseState = FASE_LLENANDO;
           _initializePhaseState();
         } else {
@@ -1643,6 +1646,8 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
             // P24: Nueva tanda
             _tandaCounter++;
             Utils.debug("P24 - Iniciando tanda " + String(_tandaCounter + 1));
+            // Actualizar display de tanda en página de ejecución
+            UIController.updateTanda(_currentProgram, _tandaCounter);
             _currentPhaseState = FASE_LLENANDO;
             _initializePhaseState();
           } else {
@@ -1679,6 +1684,10 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
   }
 }
 
+/// @brief 
+/// Inicializa el estado de la fase actual.
+/// Configura los parámetros y actuadores necesarios para la fase actual.
+/// Debe ser llamado al iniciar una nueva fase o al reiniciar el programa.
 void ProgramControllerClass::_initializePhaseState() {
   // Inicializar parámetros para la nueva fase
   switch (_currentPhaseState) {
@@ -1686,6 +1695,13 @@ void ProgramControllerClass::_initializePhaseState() {
     _currentPhase = 0;
     _preparingPhase = true;
     _timerRunning = false;
+    
+    // CRÍTICO: Detener actuadores de la fase anterior (centrifugado/drenaje)
+    Actuators.stopCentrifuge();   // Apagar centrifugado de fase anterior
+    Actuators.closeDrainValve();  // Cerrar desfogue de fase anterior
+    Actuators.stopMotor();        // Asegurar motor parado
+    
+    Utils.debug("🔧 FASE_LLENANDO - Actuadores de fase anterior detenidos");
     break;
 
   case FASE_LAVADO: {
@@ -1697,11 +1713,19 @@ void ProgramControllerClass::_initializePhaseState() {
     _timerRunning = true;
     _preparingPhase = false;
 
+    // Configurar actuadores para lavado
+    Actuators.stopCentrifuge();   // Asegurar centrifugado apagado
+    Actuators.closeDrainValve();  // Cerrar desfogue durante lavado
+    Actuators.closeWaterValve();  // Cerrar agua (ya llenado)
+    Actuators.closeSteamValve();  // Cerrar vapor (ya llenado)
+    
     // Iniciar rotación en lavado
     uint8_t rotLevel = Storage.loadRotation(_currentProgram, _currentPhase);
     if (rotLevel > 0) {
       Actuators.startAutoRotation(rotLevel);
     }
+    
+    Utils.debug("🔧 FASE_LAVADO - Actuadores configurados correctamente");
   } break;
 
   case FASE_CENTRIFUGA: {

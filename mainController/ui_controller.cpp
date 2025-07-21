@@ -1265,6 +1265,27 @@ void UIControllerClass::handlePreviousParameter() {
  * @brief Manejar evento del botón "Guardar" (guardar todos los cambios)
  */
 void UIControllerClass::handleSaveParameters() {
+  // Para P24: Guardado directo de la tanda actual (simplificado)
+  if (_programaEnEdicion == 2) { // P24
+    // Validar parámetros de la tanda actual
+    if (!_validateAllParameters()) {
+      showMessage("Error: Valores no válidos", 2000);
+      return;
+    }
+    
+    // Guardar directamente la tanda actual
+    uint8_t tandaActual = ProgramController.getCurrentEditingTanda();
+    _saveParametersToStorage(_programaEnEdicion, tandaActual);
+    
+    // Mostrar confirmación
+    showMessage("Tanda " + String(tandaActual + 1) + " guardada", 2000);
+    
+    // Resetear estado de guardado para permitir guardados subsecuentes
+    _parameterSaved = false;
+    return;
+  }
+  
+  // Para P22/P23: Proceso de doble confirmación original
   if (!_parameterSaved) {
     // PRIMERA PRESIÓN: Guardar parámetro actual
 
@@ -1573,6 +1594,16 @@ void UIControllerClass::selectTandaDirecta(uint8_t tanda) {
     return;
   }
 
+  // AUTO-GUARDADO: Guardar cambios de la tanda anterior antes de cambiar
+  uint8_t tandaAnterior = ProgramController.getCurrentEditingTanda();
+  if (tandaAnterior != tanda) {
+    Serial.println("💾 Auto-guardando cambios de Tanda " + String(tandaAnterior + 1) + " antes de cambiar a Tanda " + String(tanda + 1));
+    _saveParametersToStorage(_programaEnEdicion, tandaAnterior);
+    
+    // Mostrar confirmación visual del auto-guardado
+    showMessage("Tanda " + String(tandaAnterior + 1) + " guardada automáticamente", 1500);
+  }
+  
   // Notificar al ProgramController que cambie la tanda
   ProgramController.setEditingTanda(tanda);
 

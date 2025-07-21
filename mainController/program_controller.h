@@ -102,7 +102,7 @@ private:
   uint8_t _times[NUM_PROGRAMAS][NUM_FASES];
   uint8_t _rotations[NUM_PROGRAMAS][NUM_FASES];
   uint8_t _tipoAguaPrograma[NUM_PROGRAMAS][NUM_FASES];
-  uint8_t _centrifugadoPorTanda[NUM_PROGRAMAS][NUM_FASES]; // [programa][tanda] - P22/P23: 1 tanda, P24: 3 tandas
+  uint8_t _centrifugadoPorTanda[NUM_PROGRAMAS][NUM_FASES]; // [programa][tanda] - P22/P23: 1 tanda, P24: 4 tandas
   
   void _loadProgramData(); // 
   void _loadCurrentProgramState();
