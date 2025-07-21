@@ -1789,6 +1789,19 @@ void UIControllerClass::updateTanda(uint8_t programa, uint8_t tanda) {
     
   if (programa == 2) { // P24 - mostrar tanda actual
     Hardware.nextionSetText(NEXTION_COMP_TANDA_EJECUCION, String(tanda + 1)); // Mostrar 1-4
+    
+    // Actualizar configuración de la nueva tanda
+    uint8_t tiempoSeteado = Storage.loadTime(programa, tanda);
+    uint8_t centrifugadoSeteado = Storage.loadCentrifugado(programa, tanda);
+    uint8_t tipoAguaSeteado = Storage.loadTipoAgua(programa, 0, tanda);
+    
+    // Actualizar componentes con valores de la nueva tanda
+    char tiempoBuffer[6];
+    snprintf(tiempoBuffer, sizeof(tiempoBuffer), "%02d:00", tiempoSeteado);
+    Hardware.nextionSetText(NEXTION_COMP_TIEMPO_TOTAL_EJECUCION, String(tiempoBuffer));
+    Hardware.nextionSetText(NEXTION_COMP_CENTRIF_EJECUCION, centrifugadoSeteado ? "SI" : "NO");
+    Hardware.nextionSetText(NEXTION_COMP_AGUA_EJECUCION, tipoAguaSeteado ? "Caliente" : "Fria");
+    
   } else { // P22/P23 - siempre tanda 1
     Hardware.nextionSetText(NEXTION_COMP_TANDA_EJECUCION, "1");
   }

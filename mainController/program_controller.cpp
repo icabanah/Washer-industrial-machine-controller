@@ -1180,12 +1180,18 @@ void ProgramControllerClass::_handlePauseState() {
     Utils.debug("⏸️ Sistema en pausa - actuadores detenidos");
   }
 
-  // Mostrar estado de pausa en UI
+  // Hacer parpadear el temporizador durante la pausa
   static unsigned long lastBlink = 0;
   static bool blinkState = false;
-  if (millis() - lastBlink > 500) { // Parpadeo cada 500ms
+  if (millis() - lastBlink > 300) { // Parpadeo cada 500ms
     blinkState = !blinkState;
-    // UIController.updatePauseIndicator(blinkState);
+    if (blinkState) {
+      // Mostrar tiempo normal
+      UIController.updateTime(_remainingMinutes, _remainingSeconds);
+    } else {
+      // Mostrar vacío para efecto de parpadeo
+      Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "");
+    }
     lastBlink = millis();
   }
 }
