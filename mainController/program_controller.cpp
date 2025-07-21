@@ -113,8 +113,8 @@ void ProgramControllerClass::setState(uint8_t newState) {
     case ESTADO_EJECUCION: {
       _initializeProgram();
       _configureActuatorsForPhase();
-      // Para P24 usar la tanda en edición, para P22/P23 usar 0
-      uint8_t tandaEjecucion = (_currentProgram == 2) ? _editingTanda : 0;
+      // Para P24 usar _tandaCounter (siempre inicia en 0), para P22/P23 usar 0
+      uint8_t tandaEjecucion = (_currentProgram == 2) ? _tandaCounter : 0;
       UIController.showExecutionScreen(
           _currentProgram, _currentPhase,
           _waterLevels[_currentProgram][_currentPhase],

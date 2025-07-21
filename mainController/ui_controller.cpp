@@ -1277,24 +1277,40 @@ void UIControllerClass::handlePreviousParameter() {
  * @brief Manejar evento del botón "Guardar" (guardar todos los cambios)
  */
 void UIControllerClass::handleSaveParameters() {
-  // Para P24: Guardado directo de la tanda actual (simplificado)
+  // Para P24: Flujo de doble confirmación adaptado
   if (_programaEnEdicion == 2) { // P24
-    // Validar parámetros de la tanda actual
-    if (!_validateAllParameters()) {
-      showMessage("Error: Valores no válidos", 2000);
+    if (!_parameterSaved) {
+      // PRIMERA PRESIÓN: Guardar tanda actual
+      
+      // Validar parámetros de la tanda actual
+      if (!_validateAllParameters()) {
+        showMessage("Error: Valores no válidos", 2000);
+        return;
+      }
+      
+      // Guardar directamente la tanda actual
+      uint8_t tandaActual = ProgramController.getCurrentEditingTanda();
+      _saveParametersToStorage(_programaEnEdicion, tandaActual);
+      _parameterSaved = true;
+      
+      // Mostrar confirmación con opción de salir
+      showMessage("Tanda " + String(tandaActual + 1) + " guardada - Presione de nuevo para salir", 3000);
+      return;
+    } else {
+      // SEGUNDA PRESIÓN: Salir del modo edición
+      showMessage("Programa P24 guardado exitosamente", 2000);
+      
+      // Resetear estado y salir del modo edición
+      _parameterSaved = false;
+      _modoEdicionActivo = false;
+      
+      // Notificar al ProgramController que vuelva al estado de selección
+      ProgramController.endEditing();
+      
+      // Volver a la página de selección
+      safeTransitionToSelection(_programaEnEdicion);
       return;
     }
-    
-    // Guardar directamente la tanda actual
-    uint8_t tandaActual = ProgramController.getCurrentEditingTanda();
-    _saveParametersToStorage(_programaEnEdicion, tandaActual);
-    
-    // Mostrar confirmación
-    showMessage("Tanda " + String(tandaActual + 1) + " guardada", 2000);
-    
-    // Resetear estado de guardado para permitir guardados subsecuentes
-    _parameterSaved = false;
-    return;
   }
   
   // Para P22/P23: Proceso de doble confirmación original
