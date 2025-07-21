@@ -381,14 +381,14 @@ void ProgramControllerClass::updateTimers() {
       _checkSensorConditions();
     }
 
-    // NOTA: El decremento del temporizador se hace en _handleExecutionState()
-    // para sincronización exacta con la UI cada segundo
-
-    // Solo actualizar actuadores si no se está manejando desde
-    // _handleExecutionState
-    if (!_timerRunning) {
-      Actuators.updateTimers();
+    // Decrementar temporizador principal si está corriendo
+    if (_timerRunning) {
+      _decrementTimer();
+      UIController.updateTime(_remainingMinutes, _remainingSeconds);
     }
+
+    // Siempre actualizar actuadores
+    Actuators.updateTimers();
   }
 }
 
@@ -1555,7 +1555,6 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
   // MÁQUINA DE ESTADOS DE FASES
   // Controla el flujo: LLENANDO → LAVADO → DRENAJE → CENTRIFUGA (opcional) → ENFRIAMIENTO
 
-  static unsigned long lastSecondUpdate = 0;
   static unsigned long lastSensorUpdate = 0;
   unsigned long currentTime = millis();
 
@@ -1581,47 +1580,33 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
     // Controlar actuadores para lavado
     _controlActuatorsForPhase();
 
-    // Actualizar temporizador cada segundo
-    if (currentTime - lastSecondUpdate >= 1000) {
-      lastSecondUpdate = currentTime;
-      _decrementTimer();
-      UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      // Nota: Barra de progreso eliminada del HMI
-
-      // Verificar si el lavado terminó
-      if (_remainingMinutes == 0 && _remainingSeconds == 0) {
-        // Lavado completo → Siempre ir a drenaje primero
-        Utils.debug("Lavado completo → Drenaje");
-        _currentPhaseState = FASE_DRENAJE;
-        _initializePhaseState();
-      }
+    // El temporizador se actualiza desde updateTimers() llamado por el timer principal
+    // Verificar si el lavado terminó
+    if (_remainingMinutes == 0 && _remainingSeconds == 0) {
+      // Lavado completo → Siempre ir a drenaje primero
+      Utils.debug("Lavado completo → Drenaje");
+      _currentPhaseState = FASE_DRENAJE;
+      _initializePhaseState();
     }
     break;
 
   case FASE_CENTRIFUGA:
-    // Actualizar temporizador cada segundo
-    if (currentTime - lastSecondUpdate >= 1000) {
-      lastSecondUpdate = currentTime;
-      _decrementTimer();
-      UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      // Nota: Barra de progreso eliminada del HMI
-
-      // Verificar si el centrifugado terminó
-      if (_remainingMinutes == 0 && _remainingSeconds == 0) {
-        // Centrifugado completo: verificar si hay más tandas (P24) o finalizar
-        if (_currentProgram == 2 && _tandaCounter < _maxTandas - 1) {
-          // P24: Nueva tanda
-          _tandaCounter++;
-          Utils.debug("P24 - Centrifugado completo, iniciando tanda " + String(_tandaCounter + 1));
-          // Actualizar display de tanda en página de ejecución
-          UIController.updateTanda(_currentProgram, _tandaCounter);
-          _currentPhaseState = FASE_LLENANDO;
-          _initializePhaseState();
-        } else {
-          Utils.debug("Centrifugado completo → Enfriamiento");
-          _currentPhaseState = FASE_ENFRIAMIENTO;
-          _initializePhaseState();
-        }
+    // El temporizador se actualiza desde updateTimers() llamado por el timer principal
+    // Verificar si el centrifugado terminó
+    if (_remainingMinutes == 0 && _remainingSeconds == 0) {
+      // Centrifugado completo: verificar si hay más tandas (P24) o finalizar
+      if (_currentProgram == 2 && _tandaCounter < _maxTandas - 1) {
+        // P24: Nueva tanda
+        _tandaCounter++;
+        Utils.debug("P24 - Centrifugado completo, iniciando tanda " + String(_tandaCounter + 1));
+        // Actualizar display de tanda en página de ejecución
+        UIController.updateTanda(_currentProgram, _tandaCounter);
+        _currentPhaseState = FASE_LLENANDO;
+        _initializePhaseState();
+      } else {
+        Utils.debug("Centrifugado completo → Enfriamiento");
+        _currentPhaseState = FASE_ENFRIAMIENTO;
+        _initializePhaseState();
       }
     }
     break;
@@ -1630,64 +1615,50 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
     // Controlar actuadores para drenaje
     _controlActuatorsForPhase();
 
-    // Actualizar temporizador cada segundo
-    if (currentTime - lastSecondUpdate >= 1000) {
-      lastSecondUpdate = currentTime;
-      _decrementTimer();
-      UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      // Nota: Barra de progreso eliminada del HMI
+    // El temporizador se actualiza desde updateTimers() llamado por el timer principal
+    // Verificar si el drenaje terminó
+    if (_remainingMinutes == 0 && _remainingSeconds == 0) {
+      // Verificar si hay centrifugado habilitado
+      bool centrifugadoEnabled = false;
+      if (_currentProgram <= 1) {
+        // P22/P23: verificar centrifugado
+        centrifugadoEnabled =
+            (_centrifugadoPorTanda[_currentProgram][3] == 1);
+      } else {
+        // P24: usar tanda actual
+        centrifugadoEnabled =
+            (_centrifugadoPorTanda[_currentProgram][_tandaCounter] == 1);
+      }
 
-      // Verificar si el drenaje terminó
-      if (_remainingMinutes == 0 && _remainingSeconds == 0) {
-        // Verificar si hay centrifugado habilitado
-        bool centrifugadoEnabled = false;
-        if (_currentProgram <= 1) {
-          // P22/P23: verificar centrifugado
-          centrifugadoEnabled =
-              (_centrifugadoPorTanda[_currentProgram][3] == 1);
-        } else {
-          // P24: usar tanda actual
-          centrifugadoEnabled =
-              (_centrifugadoPorTanda[_currentProgram][_tandaCounter] == 1);
-        }
-
-        if (centrifugadoEnabled) {
-          Utils.debug("Drenaje completo → Centrifugado");
-          _currentPhaseState = FASE_CENTRIFUGA;
+      if (centrifugadoEnabled) {
+        Utils.debug("Drenaje completo → Centrifugado");
+        _currentPhaseState = FASE_CENTRIFUGA;
+        _initializePhaseState();
+      } else {
+        // Sin centrifugado: verificar si hay más tandas (P24) o finalizar
+        if (_currentProgram == 2 && _tandaCounter < _maxTandas - 1) {
+          // P24: Nueva tanda
+          _tandaCounter++;
+          Utils.debug("P24 - Iniciando tanda " + String(_tandaCounter + 1));
+          // Actualizar display de tanda en página de ejecución
+          UIController.updateTanda(_currentProgram, _tandaCounter);
+          _currentPhaseState = FASE_LLENANDO;
           _initializePhaseState();
         } else {
-          // Sin centrifugado: verificar si hay más tandas (P24) o finalizar
-          if (_currentProgram == 2 && _tandaCounter < _maxTandas - 1) {
-            // P24: Nueva tanda
-            _tandaCounter++;
-            Utils.debug("P24 - Iniciando tanda " + String(_tandaCounter + 1));
-            // Actualizar display de tanda en página de ejecución
-            UIController.updateTanda(_currentProgram, _tandaCounter);
-            _currentPhaseState = FASE_LLENANDO;
-            _initializePhaseState();
-          } else {
-            Utils.debug("Drenaje completo → Enfriamiento (sin centrifugado)");
-            _currentPhaseState = FASE_ENFRIAMIENTO;
-            _initializePhaseState();
-          }
+          Utils.debug("Drenaje completo → Enfriamiento (sin centrifugado)");
+          _currentPhaseState = FASE_ENFRIAMIENTO;
+          _initializePhaseState();
         }
       }
     }
     break;
 
   case FASE_ENFRIAMIENTO:
-    // Actualizar temporizador cada segundo
-    if (currentTime - lastSecondUpdate >= 1000) {
-      lastSecondUpdate = currentTime;
-      _decrementTimer();
-      UIController.updateTime(_remainingMinutes, _remainingSeconds);
-      // Nota: Barra de progreso eliminada del HMI
-
-      // Verificar si el enfriamiento terminó
-      if (_remainingMinutes == 0 && _remainingSeconds == 0) {
-        Utils.debug("Enfriamiento completo → Programa finalizado");
-        _finalizeProgramWithDrainOpen();
-      }
+    // El temporizador se actualiza desde updateTimers() llamado por el timer principal
+    // Verificar si el enfriamiento terminó
+    if (_remainingMinutes == 0 && _remainingSeconds == 0) {
+      Utils.debug("Enfriamiento completo → Programa finalizado");
+      _finalizeProgramWithDrainOpen();
     }
     break;
 
