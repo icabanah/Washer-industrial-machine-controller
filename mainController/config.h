@@ -188,13 +188,12 @@
 #define NEXTION_COMP_PROGRAMA_SEL                                              \
   "val_prog" // Texto del programa seleccionado (ej: "P22")
 
-
 // Ids numéricos
 #define NEXTION_ID_BTN_PROGRAM1 1 // Botón "P22" para programa 1
 #define NEXTION_ID_BTN_PROGRAM2 2 // Botón "P23" para programa 2
 #define NEXTION_ID_BTN_PROGRAM3 3 // Botón "P24" para programa 3
-#define NEXTION_ID_BTN_START 5    // Botón "Comenzar"
-#define NEXTION_ID_BTN_EDIT 6     // Botón "Editar"
+#define NEXTION_ID_BTN_EDIT 21    // Botón "Editar"
+#define NEXTION_ID_BTN_START 22   // Botón "Comenzar"
 
 // === COMPONENTES PÁGINA 2 - EJECUCIÓN ===
 #define NEXTION_COMP_PROG_EJECUCION "progr_ejec" // Programa en ejecución
@@ -206,14 +205,14 @@
 #define NEXTION_COMP_NIVEL_EJECUCION "nivel_ejec"   // Nivel en ejecución
 #define NEXTION_COMP_VELOCIDAD_EJECUCION "vel_ejec" // Velocidad de motor
 #define NEXTION_COMP_BARRA_TEMP_EJECUCION                                      \
-"barra_temp" // Gauge de presión (nivel de agua)
+  "barra_temp" // Gauge de presión (nivel de agua)
 #define NEXTION_COMP_BARRA_NIVEL_EJECUCION                                     \
-"barra_nivel" // Gauge de presión (nivel de agua)
+  "barra_nivel" // Gauge de presión (nivel de agua)
 #define NEXTION_COMP_BARRA_VELOC_EJECUCION                                     \
-"barra_veloc" // Gauge de presión (nivel de agua)
+  "barra_veloc" // Gauge de presión (nivel de agua)
 
-#define NEXTION_COMP_CENTRIF_EJECUCION "centrif_ejec" // Velocidad de motor
-#define NEXTION_COMP_AGUA_EJECUCION "agua_ejec" // Velocidad de motor
+#define NEXTION_COMP_CENTRIF_EJECUCION "centrif_ejec"      // Velocidad de motor
+#define NEXTION_COMP_AGUA_EJECUCION "agua_ejec"            // Velocidad de motor
 #define NEXTION_COMP_TIEMPO_TOTAL_EJECUCION "tiempo_total" // Velocidad de motor
 
 // Botones de control
@@ -221,8 +220,8 @@
 #define NEXTION_COMP_BTN_PAUSAR "btnPausar"
 
 // Información de estado
-#define NEXTION_ID_BTN_PAUSAR 6 // Botón "Pausar"
-#define NEXTION_ID_BTN_PARAR 5  // Botón "Parar"
+#define NEXTION_ID_BTN_PAUSAR 21 // Botón "Pausar"
+#define NEXTION_ID_BTN_PARAR 22  // Botón "Parar"
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 
@@ -230,7 +229,6 @@
 #define NEXTION_COMP_PARAM_EDITAR "param" // Texto del parámetro en edición
 #define NEXTION_COMP_PARAM_VALOR_EDITAR                                        \
   "param_value" // Valor del parámetro en edición
-
 
 #define NEXTION_ID_BTN_PARAM_MENOS 7 // ID de Botón "-" para disminuir parámetro
 #define NEXTION_ID_BTN_PARAM_MAS 6   // ID de Botón "+" para aumentar parámetro
@@ -244,10 +242,10 @@
 #define NEXTION_ID_BTN_TANDA4 29         // ID de Botón "tanda4"
 
 // Nombres de componentes para botones de tanda
-#define NEXTION_COMP_BTN_TANDA1 "tanda1"  // Componente botón tanda 1
-#define NEXTION_COMP_BTN_TANDA2 "tanda2"  // Componente botón tanda 2
-#define NEXTION_COMP_BTN_TANDA3 "tanda3"  // Componente botón tanda 3
-#define NEXTION_COMP_BTN_TANDA4 "tanda4"  // Componente botón tanda 4
+#define NEXTION_COMP_BTN_TANDA1 "tanda1" // Componente botón tanda 1
+#define NEXTION_COMP_BTN_TANDA2 "tanda2" // Componente botón tanda 2
+#define NEXTION_COMP_BTN_TANDA3 "tanda3" // Componente botón tanda 3
+#define NEXTION_COMP_BTN_TANDA4 "tanda4" // Componente botón tanda 4
 
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
 #define NEXTION_ID_PARAM_NIVEL_EDIT                                            \
