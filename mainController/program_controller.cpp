@@ -502,7 +502,7 @@ void ProgramControllerClass::_controlActuatorsForPhase() {
 
   case 2: // P24 - Configurable por fase
     // Verificar el tipo de agua configurado para esta fase
-    tipoAgua = Storage.loadTipoAgua(_currentProgram, 0, _currentPhase);
+    tipoAgua = Storage.loadTipoAgua(_currentProgram, _tandaCounter, _currentPhase);
     requiresTempControl = (tipoAgua == 1); // Solo si usa agua caliente
     break;
   }
