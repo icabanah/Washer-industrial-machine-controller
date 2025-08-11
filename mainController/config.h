@@ -279,6 +279,7 @@
 #define MAX_NIVEL 4
 #define MIN_TEMPERATURA 5
 #define MAX_TEMPERATURA 100
+#define TEMPERATURA_EMERGENCIA 95  // Temperatura crítica que activa emergencia
 #define MIN_TIEMPO 1
 #define MAX_TIEMPO 60
 #define MIN_ROTACION 1

@@ -313,13 +313,19 @@ void UIControllerClass::showErrorScreen(uint8_t errorCode,
 }
 
 void UIControllerClass::showEmergencyScreen() {
-  // Cambiar a la página de emergencia
-  Hardware.nextionSetPage(NEXTION_PAGE_EMERGENCY);
+  Utils.debug("🚨 FORZANDO CAMBIO A PANTALLA DE EMERGENCIA");
+  
+  // Cambiar a la página de emergencia con múltiples intentos para mayor robustez
+  for (int i = 0; i < 3; i++) {
+    Utils.debug("🔄 Intento " + String(i + 1) + " - Enviando comando page 5");
+    Hardware.nextionSetPage(NEXTION_PAGE_EMERGENCY);
+    delay(100); // Pequeña pausa entre intentos
+  }
   _currentPage = NEXTION_PAGE_EMERGENCY; // Actualizar página actual
 
   // Mostrar mensaje de emergencia
   Hardware.nextionSetText("txtEmergencia", "PARADA DE EMERGENCIA");
-  Hardware.nextionSetText("txtMensajeEmerg", "Sistema detenido por seguridad");
+  Hardware.nextionSetText("txtMensajeEmerg", "Presione Reset o suelte el boton fisico");
 
   // Activar indicador visual de emergencia
   // Hardware.nextionSendCommand("alarm.en=1");
@@ -327,6 +333,7 @@ void UIControllerClass::showEmergencyScreen() {
   // Reproducir sonido de alarma
   // playSound(2);  // Código 2 para sonido de alarma
 
+  Utils.debug("✅ EMERGENCIA: Pantalla configurada - Estado interno sincronizado");
   Serial.println("EMERGENCIA: Sistema detenido");
 }
 
@@ -2052,4 +2059,12 @@ void UIControllerClass::_generateProgramText(uint8_t programa, char* buffer, int
       snprintf(buffer, size, "P%d - Desconocido", programa + 22);
       break;
   }
+}
+
+/**
+ * @brief Obtiene la página actual de Nextion para verificar sincronización
+ * @return Número de página actual
+ */
+uint8_t UIControllerClass::getCurrentPage() {
+  return _currentPage;
 }

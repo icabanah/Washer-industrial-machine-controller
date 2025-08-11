@@ -129,6 +129,23 @@ void checkEmergencyButton() {
   if (Hardware.isEmergencyButtonPressed()) {
     ProgramController.handleEmergency();
   }
+  // Si el botón NO está presionado pero el sistema está en emergencia por botón físico, intentar reset automático
+  else if (ProgramController.getState() == ESTADO_EMERGENCIA) {
+    // Solo reset automático si la emergencia fue causada por el botón físico
+    // Las emergencias por software requieren intervención manual
+    Utils.debug("🔄 Botón emergencia desactivado - Verificando origen para reset automático");
+    ProgramController.resetEmergency();
+  }
+  
+  // Verificar sincronización: si el estado es EMERGENCIA pero la pantalla no está en Emergency
+  static unsigned long lastSyncCheck = 0;
+  if (millis() - lastSyncCheck > 2000) { // Verificar cada 2 segundos
+    if (ProgramController.getState() == ESTADO_EMERGENCIA && UIController.getCurrentPage() != NEXTION_PAGE_EMERGENCY) {
+      Utils.debug("⚠️ DESINCRONIZACIÓN DETECTADA - Forzando pantalla Emergency");
+      UIController.showEmergencyScreen();
+    }
+    lastSyncCheck = millis();
+  }
 }
 
 // Callback para el cambio de pantalla después de la bienvenida

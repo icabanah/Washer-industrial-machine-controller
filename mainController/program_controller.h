@@ -46,8 +46,9 @@ public:
   void processUserEvent(const String& event);
   
   // Manejo de emergencias
-  void handleEmergency();
+  void handleEmergency(bool triggeredByButton = true);
   void resetEmergency();
+  void forceResetEmergency(); // Reset forzado desde interfaz (para emergencias por software)
   
   // Actualización periódica (debe llamarse en cada ciclo)
   void update();
@@ -96,6 +97,9 @@ private:
   int _emergencyDoorUnlockTaskId;
   bool _blinkState;
   
+  // Variables para control de emergencia
+  bool _emergencyTriggeredByButton; // true=botón físico, false=software
+  
   // Variables para edición
   uint8_t _editingProgram;
   uint8_t _editingPhase;
@@ -124,6 +128,7 @@ private:
   uint8_t getProgressPercentage();
   uint8_t getTotalProgramProgressPercentage();
   void _checkSensorConditions();
+  void _checkCriticalSafety(); // Verificaciones de seguridad crítica (emergencia automática)
   void _controlActuatorsForPhase(); // Control separado de actuadores
   void _decrementTimer();
   void _handleStateMachine();
@@ -147,6 +152,9 @@ private:
   void _handleEditPageEvents(uint8_t componentId);
   void _handleExecutionPageEvents(uint8_t componentId);
   void _handleEmergencyPageEvents(uint8_t componentId);
+  
+  // Funciones de validación optimizadas
+  bool _validateStartConditions(const String& context = "");
   
   // Métodos de gestión de edición (uso interno)
   void startEditing(uint8_t program, uint8_t phase);

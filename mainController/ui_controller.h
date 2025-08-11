@@ -92,6 +92,9 @@ public:
   void showMessage(const String& message, uint16_t duration = 2000);
   void updateStartButtonText(); // Actualizar texto del botón según estado de puerta
   
+  // Método para obtener la página actual (para sincronización)
+  uint8_t getCurrentPage(); // Obtener página actual de Nextion
+  
   // Acceso a estado de edición para ProgramController
   int getCurrentParameter() const { return _parametroActual; }
 
