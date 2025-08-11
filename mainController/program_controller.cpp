@@ -6,12 +6,19 @@ ProgramControllerClass ProgramController;
 
 /// @brief Actualizar solo botones de programa (función auxiliar rápida)
 void ProgramControllerClass::_updateProgramButtons() {
+  // Actualizar estado de botones con pequeños delays para mejor comunicación Nextion
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM1, (_currentProgram == 0) ? 1 : 0);
+  delay(10); // Pequeño delay entre comandos
+  
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (_currentProgram == 1) ? 1 : 0);
+  delay(10);
+  
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (_currentProgram == 2) ? 1 : 0);
+  delay(10);
   
   // Actualizar también el componente que muestra el programa seleccionado
   Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(_currentProgram + 22));
+  delay(10);
   
   // Actualizar NEXTION_COMP_SET_PROG usando la función generarTextoPrograma
   char buffer[20];
@@ -197,6 +204,10 @@ void ProgramControllerClass::selectProgram(uint8_t program) {
   if (program < NUM_PROGRAMAS) {
     _currentProgram = program;
     Storage.saveProgram(program);
+    
+    // Actualizar interfaz inmediatamente
+    _updateProgramButtons();
+    Utils.debug("Programa seleccionado: P" + String(program + 22) + " - Botones actualizados");
   }
 }
 
@@ -216,8 +227,10 @@ void ProgramControllerClass::selectProgram(uint8_t program) {
 /// valor por defecto es 0.
 uint8_t ProgramControllerClass::getCurrentProgram() { return _currentProgram; }
 
+// MÉTODO OBSOLETO - Reemplazado por flujo simplificado validateConditions() → executeStart()
+// Mantener temporalmente para compatibilidad con otros componentes
 void ProgramControllerClass::startProgram() {
-  // Las validaciones ya se hicieron en _validateStartConditions()
+  Utils.debug("⚠️ MÉTODO OBSOLETO startProgram() - Usar executeStart() en su lugar");
   Utils.debug("🚀 Iniciando P" + String(_currentProgram + 22) + " - Estado: " + String(_currentState));
   
   // Para P24: Asegurar que siempre comience con tanda 1 (índice 0)
@@ -619,7 +632,7 @@ void ProgramControllerClass::_initializeProgram() {
   // === INICIALIZACIÓN SEGÚN DOCUMENTO DEL CLIENTE ===
 
   // 1. Bloquear puerta (ya verificada en startProgram)
-  // Actuators.lockDoor();
+  Actuators.lockDoor();
 
   // 2. Inicializar fase al comienzo (LLENADO)
   _currentPhase = 0; // Siempre comenzar desde fase 0 (llenado)
@@ -1093,15 +1106,13 @@ void ProgramControllerClass::processUserEvent(const String &event) {
   uint8_t touchPage = Hardware.getTouchEventPage();
   uint8_t touchComponent = Hardware.getTouchEventComponent();
 
-  // Verificación rápida para botón START - usar validación optimizada
+  // FLUJO SIMPLIFICADO: Botón START → validateConditions() → executeStart()
   if (touchComponent == NEXTION_ID_BTN_START && touchPage == NEXTION_PAGE_SELECTION) {
-    if (_validateStartConditions("Botón START")) {
-      Utils.debug("🎯 BOTÓN START VÁLIDO - Procesando inicio");
-      _handleSelectionPageEvents(touchComponent);
-      return;
+    Utils.debug("🎯 BOTÓN START PRESIONADO");
+    if (validateConditions()) {
+      executeStart();
     }
-    // Si validación falla, los logs de error ya se mostraron en _validateStartConditions
-    return;
+    return; // Flujo simplificado completo
   }
   
   // Para otros eventos, usar lógica original simplificada
@@ -1182,6 +1193,73 @@ bool ProgramControllerClass::_validateStartConditions(const String& context) {
   
   Utils.debug("✅ TODAS LAS VALIDACIONES PASARON - Sistema listo para inicio");
   return true;
+}
+
+// ===== FLUJO SIMPLIFICADO (NUEVA IMPLEMENTACIÓN) =====
+
+bool ProgramControllerClass::validateConditions() {
+  // Validación 1: Estado del sistema
+  if (_currentState != ESTADO_SELECCION) {
+    Utils.debug("❌ Estado incorrecto: " + String(_currentState) + " (debe ser SELECCION)");
+    return false;
+  }
+  
+  // Validación 2: Puerta cerrada
+  if (!Sensors.isDoorClosed()) {
+    Utils.debug("❌ Puerta abierta - No se puede iniciar");
+    return false;
+  }
+  
+  // Validación 3: No hay errores críticos
+  if (Sensors.getCurrentTemperature() >= TEMPERATURA_EMERGENCIA) {
+    Utils.debug("❌ Temperatura crítica detectada");
+    return false;
+  }
+  
+  Utils.debug("✅ Todas las condiciones válidas - Listo para iniciar");
+  return true;
+}
+
+void ProgramControllerClass::executeStart() {
+  Utils.debug("🚀 EJECUTANDO INICIO DIRECTO - P" + String(_currentProgram + 22));
+  
+  // 1. Inicializar variables de programa
+  _currentPhase = 0; // Comenzar desde llenado
+  _preparingPhase = true;
+  _phaseStartTime = millis();
+  _currentPhaseState = FASE_LLENANDO;
+  
+  // 2. Inicializar temporizadores
+  uint8_t timeIndex = (_currentProgram == 2) ? _tandaCounter : 0;
+  _totalMinutes = Storage.loadTime(_currentProgram, timeIndex);
+  _totalSeconds = _totalMinutes * 60;
+  _remainingMinutes = _totalMinutes;
+  _remainingSeconds = 0;
+  _timerRunning = false;
+  
+  // 3. Inicializar contador de tandas
+  _tandaCounter = 0; // Tanda inicial
+  _maxTandas = (_currentProgram == 2) ? 4 : 1;
+  
+  // 4. Bloquear puerta y configurar actuadores
+  Actuators.lockDoor();
+  _configureActuatorsForPhase();
+  
+  // 5. Cambiar estado y mostrar pantalla
+  setState(ESTADO_EJECUCION);
+  
+  uint8_t tandaEjecucion = (_currentProgram == 2) ? _tandaCounter : 0;
+  UIController.showExecutionScreen(
+      _currentProgram, _currentPhase,
+      Storage.loadWaterLevel(_currentProgram, 0, _currentPhase),
+      Storage.loadTemperature(_currentProgram, 0, _currentPhase),
+      Storage.loadRotation(_currentProgram, 0, _currentPhase),
+      tandaEjecucion);
+  
+  // Reset tiempo en pantalla
+  Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00");
+  
+  Utils.debug("✅ PROGRAMA INICIADO EXITOSAMENTE");
 }
 
 void ProgramControllerClass::_handleStateMachine() {
@@ -1479,48 +1557,27 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
   // Solo debug esencial - las validaciones ya se hicieron
   switch (componentId) {
   case NEXTION_ID_BTN_PROGRAM1:
-    // Seleccionar programa 1 directamente (P22) - índice interno 0
-    _currentProgram = 0; // Índice interno 0 = P22
-    Storage.saveProgram(_currentProgram);
-    Utils.debug("📋 Programa 1 seleccionado directamente (P22)");
-    // Actualización rápida: solo panel derecho + botones
+    // Seleccionar programa 1 (P22) - índice interno 0
+    selectProgram(0); // Usar método consistente que ya actualiza interfaz
     UIController.updateProgramPanel(_currentProgram);
-    _updateProgramButtons();
     break;
 
   case NEXTION_ID_BTN_PROGRAM2:
-    // Seleccionar programa 2 directamente (P23) - índice interno 1
-    _currentProgram = 1; // Índice interno 1 = P23
-    Storage.saveProgram(_currentProgram);
-    Utils.debug("📋 Programa 2 seleccionado directamente (P23)");
-    // Actualización rápida: solo panel derecho + botones
+    // Seleccionar programa 2 (P23) - índice interno 1
+    selectProgram(1); // Usar método consistente que ya actualiza interfaz
     UIController.updateProgramPanel(_currentProgram);
-    _updateProgramButtons();
     break;
 
   case NEXTION_ID_BTN_PROGRAM3:
-    // Seleccionar programa 3 directamente (P24) - índice interno 2
-    _currentProgram = 2; // Índice interno 2 = P24
-    Storage.saveProgram(_currentProgram);
-    Utils.debug("📋 Programa 3 seleccionado directamente (P24)");
-    // Actualización rápida: solo panel derecho + botones
+    // Seleccionar programa 3 (P24) - índice interno 2
+    selectProgram(2); // Usar método consistente que ya actualiza interfaz
     UIController.updateProgramPanel(_currentProgram);
-    _updateProgramButtons();
     break;
 
   case NEXTION_ID_BTN_START:
-    // Verificar estado de puerta para determinar acción
-    if (!Sensors.isDoorClosed()) {
-      // Puerta abierta - bloquear puerta
-      Utils.debug("🔒 Puerta abierta - Bloqueando");
-      Actuators.lockDoor();
-      Hardware.nextionSetText(NEXTION_COMP_MSG, "PUERTA BLOQUEADA");
-      Hardware.nextionSetText(NEXTION_COMP_BTN_START, "INICIAR");
-    } else {
-      // Puerta cerrada - iniciar programa
-      Utils.debug("✅ Iniciando P" + String(_currentProgram + 22));
-      startProgram();
-    }
+    // NOTA: El botón START ahora usa flujo simplificado en processUserEvent()
+    // Esta sección ya no se ejecuta porque el evento se maneja directamente arriba
+    Utils.debug("⚠️ Botón START manejado por flujo simplificado - esta línea no debería ejecutarse");
     break;
 
   case NEXTION_ID_BTN_EDIT:
@@ -1656,8 +1713,8 @@ void ProgramControllerClass::_handleEmergencyPageEvents(uint8_t componentId) {
   Utils.debug("🚨 Evento en página de emergencia - Componente: " + String(componentId));
 
   switch (componentId) {
-  case NEXTION_ID_BTN_RESET_EMERGENCIA:
-    Utils.debug("🔄 Botón Reset Emergencia presionado (manual)");
+  case NEXTION_ID_BTN_REINICIAR:
+    Utils.debug("🔄 Botón REINICIAR presionado - Derivando a ventana de selección");
     forceResetEmergency(); // Usar reset forzado que maneja ambos tipos
     break;
 

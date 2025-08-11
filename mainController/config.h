@@ -224,7 +224,7 @@
 #define NEXTION_ID_BTN_PARAR 22  // Botón "Parar"
 
 // === COMPONENTES PÁGINA 5 - EMERGENCIA ===
-#define NEXTION_ID_BTN_RESET_EMERGENCIA 10 // Botón "Reset Emergencia"
+// #define NEXTION_ID_BTN_RESET_EMERGENCIA 10 // Botón "Reset Emergencia" (OBSOLETO - usar NEXTION_ID_BTN_REINICIAR)
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 
@@ -249,6 +249,8 @@
 #define NEXTION_COMP_BTN_TANDA2 "tanda2" // Componente botón tanda 2
 #define NEXTION_COMP_BTN_TANDA3 "tanda3" // Componente botón tanda 3
 #define NEXTION_COMP_BTN_TANDA4 "tanda4" // Componente botón tanda 4
+
+#define NEXTION_ID_BTN_REINICIAR 3 // ID de Botón "Reiniciar ERROR"
 
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
 #define NEXTION_ID_PARAM_NIVEL_EDIT                                            \

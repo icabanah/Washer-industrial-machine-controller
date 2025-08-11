@@ -153,7 +153,11 @@ private:
   void _handleExecutionPageEvents(uint8_t componentId);
   void _handleEmergencyPageEvents(uint8_t componentId);
   
-  // Funciones de validación optimizadas
+  // Flujo simplificado (nueva implementación)
+  bool validateConditions(); // Todas las validaciones en un solo método
+  void executeStart(); // Ejecución directa sin capas intermedias
+  
+  // Funciones de validación optimizadas (obsoletas - mantener temporalmente)
   bool _validateStartConditions(const String& context = "");
   
   // Métodos de gestión de edición (uso interno)
