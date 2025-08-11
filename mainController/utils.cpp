@@ -91,7 +91,7 @@ int UtilsClass::registerTimerCallback(TaskCallback callback)
     _timerCallbackCount++;
   }
 
-  debug("UtilsClass::registerTimerCallback| Nuevo callback registrado para temporizador principal con ID " + String(_timerCallbacks[freeSlot].id));
+  debug("Nuevo callback registrado para temporizador principal con ID " + String(_timerCallbacks[freeSlot].id));
   return _timerCallbacks[freeSlot].id;
 }
 
@@ -107,7 +107,7 @@ bool UtilsClass::unregisterTimerCallback(int callbackId)
     }
   }
 
-  debug("UtilsClass::unregisterTimerCallback| Error: Intento de eliminar callback inexistente con ID " + String(callbackId));
+  debug("Error: Intento de eliminar callback inexistente con ID " + String(callbackId));
   return false;
 }
 
@@ -119,7 +119,7 @@ void UtilsClass::_setupMainTimer()
 {
   // Configurar el temporizador principal basado en millis()
   _mainTimerLastRun = millis();
-  debug("UtilsClass::_setupMainTimer| Temporizador principal configurado con intervalo de " + String(INTERVALO_TEMPORIZADOR) + " ms");
+  debug("Temporizador principal configurado con intervalo de " + String(INTERVALO_TEMPORIZADOR) + " ms");
 }
 
 void UtilsClass::startMainTimer()
@@ -128,7 +128,7 @@ void UtilsClass::startMainTimer()
   {
     _mainTimerRunning = true;
     _mainTimerLastRun = millis();
-    debug("UtilsClass::startMainTimer| Temporizador principal iniciado");
+    debug("Temporizador principal iniciado");
   }
 }
 
@@ -137,7 +137,7 @@ void UtilsClass::stopMainTimer()
   if (_mainTimerRunning)
   {
     _mainTimerRunning = false;
-    debug("UtilsClass::stopMainTimer| UtilsClass::stopMainTimer| Temporizador principal detenido");
+    debug("Temporizador principal detenido");
   }
 }
 
@@ -209,7 +209,7 @@ int UtilsClass::createTimeout(unsigned long duration, TaskCallback callback)
 {
   if (callback == nullptr)
   {
-    debug("UtilsClass::createTimeout| Error: Intento de crear temporizador con callback nulo");
+    debug("Error: Intento de crear temporizador con callback nulo");
     return -1;
   }
 
@@ -217,7 +217,7 @@ int UtilsClass::createTimeout(unsigned long duration, TaskCallback callback)
   int slotIndex = _findFreeTaskSlot();
   if (slotIndex < 0)
   {
-    debug("UtilsClass::createTimeout| Error: No se puede crear más temporizadores, límite alcanzado");
+    debug("Error: No se puede crear más temporizadores, límite alcanzado");
     return -1;
   }
 
@@ -236,7 +236,7 @@ int UtilsClass::createTimeout(unsigned long duration, TaskCallback callback)
     _taskCount++;
   }
 
-  debug("UtilsClass::createTimeout| Nuevo temporizador creado con ID " + String(task.id) + " y duración de " + String(duration) + " ms");
+  debug("Nuevo temporizador creado con ID " + String(task.id) + " y duración de " + String(duration) + " ms");
   return task.id;
 }
 

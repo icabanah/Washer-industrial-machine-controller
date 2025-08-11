@@ -223,6 +223,9 @@
 #define NEXTION_ID_BTN_PAUSAR 21 // Botón "Pausar"
 #define NEXTION_ID_BTN_PARAR 22  // Botón "Parar"
 
+// === COMPONENTES PÁGINA 5 - EMERGENCIA ===
+#define NEXTION_ID_BTN_RESET_EMERGENCIA 10 // Botón "Reset Emergencia"
+
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 
 // Componentes de edición

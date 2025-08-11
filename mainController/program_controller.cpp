@@ -62,6 +62,7 @@ void ProgramControllerClass::init() {
   _pauseBlinkTaskId = -1;
   _errorBlinkTaskId = -1;
   _emergencyBlinkTaskId = -1;
+  _emergencyDoorUnlockTaskId = -1;
   _blinkState = false;
 
   // Cargar datos de programa desde almacenamiento
@@ -137,6 +138,11 @@ void ProgramControllerClass::setState(uint8_t newState) {
           tandaEjecucion);
       // Resetear tiempo a "00:00" SOLO cuando se inicia programa nuevo (no reanudación)
       Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00");
+      
+      // NO activar temporizador inmediatamente - esperar a que se cumplan condiciones
+      // El temporizador se activa en _checkSensorConditions() cuando se cumplen las condiciones
+      _timerRunning = false;
+      _preparingPhase = true;
       break;
     }
 
@@ -208,29 +214,32 @@ void ProgramControllerClass::selectProgram(uint8_t program) {
 uint8_t ProgramControllerClass::getCurrentProgram() { return _currentProgram; }
 
 void ProgramControllerClass::startProgram() {
+  Utils.debug("🚀 PASO 9: startProgram() - Estado actual:" + String(_currentState) + 
+              " (SELECCION=" + String(ESTADO_SELECCION) + ")");
+              
   if (_currentState == ESTADO_SELECCION) {
-    // === VERIFICACIÓN INICIAL DE PUERTA SEGÚN DOCUMENTO DEL CLIENTE ===
-    if (!Actuators.isDoorLocked()) {
-      // Mostrar advertencia en componente de mensajes de Nextion
-      Hardware.nextionSetText(NEXTION_COMP_MSG, "PUERTA ABIERTA");
-      return;
-    } else {
-      // Limpiar mensaje si la puerta está cerrada
-      Hardware.nextionSetText(NEXTION_COMP_MSG, "");
-    }
-
-    setState(ESTADO_EJECUCION);
-
+    Utils.debug("✅ PASO 10: Estado SELECCION correcto - Iniciando programa P" + String(_currentProgram + 22));
+    
     // Para P24: Asegurar que siempre comience con tanda 1 (índice 0)
     if (_currentProgram == 2) { // P24
-      _editingTanda = 0; // Reiniciar a tanda 1
+      _tandaCounter = 0; // Reiniciar a tanda 1 (índice 0)
+      Utils.debug("P24 detectado - _tandaCounter reiniciado a 0");
     }
+
+    Utils.debug("✅ PASO 11: Llamando setState(ESTADO_EJECUCION)");
+    // Cambiar al estado de ejecución (esto activará automáticamente la inicialización)
+    setState(ESTADO_EJECUCION);
+    Utils.debug("✅ PASO 12: setState() ejecutado - Nuevo estado:" + String(_currentState));
 
     // Asegurar que el botón pausar muestre "PAUSAR" al iniciar
     Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "PAUSAR");
     Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa P" +
                                                   String(_currentProgram + 22) +
                                                   " iniciado");
+    Utils.debug("✅ PASO 13: Programa P" + String(_currentProgram + 22) + " INICIADO EXITOSAMENTE");
+  } else {
+    Utils.debug("❌ FALLO 4: Estado incorrecto - _currentState=" + String(_currentState) + 
+                " (debe ser " + String(ESTADO_SELECCION) + ")");
   }
 }
 
@@ -1035,9 +1044,11 @@ void ProgramControllerClass::endEditing() {
 }
 
 void ProgramControllerClass::processUserEvent(const String &event) {
+  Utils.debug("📥 processUserEvent - Evento recibido: " + event);
+  
   // Verificar si hay un evento táctil válido
   if (!Hardware.hasValidTouchEvent()) {
-    // Utils.debug("⚠️ Evento táctil no válido recibido: " + event);
+    Utils.debug("❌ FALLO 1: Evento táctil NO VÁLIDO - hasValidTouchEvent() = false");
     return; // No hay evento táctil válido
   }
 
@@ -1045,35 +1056,40 @@ void ProgramControllerClass::processUserEvent(const String &event) {
   uint8_t touchComponent = Hardware.getTouchEventComponent();
   uint8_t touchType = Hardware.getTouchEventType();
 
+  Utils.debug("✅ PASO 1: Evento táctil VÁLIDO - Página:" + String(touchPage) + 
+              " Componente:" + String(touchComponent) + " Tipo:" + String(touchType));
+
   // Solo procesar eventos de botón presionado (touchType == 1)
   if (touchType != 1) {
+    Utils.debug("❌ FALLO 2: Tipo de evento incorrecto - touchType=" + String(touchType) + " (debe ser 1)");
     return;
   }
 
-  // Nextion maneja el debouncing internamente, no necesitamos anti-rebote adicional
+  Utils.debug("✅ PASO 2: Tipo de evento correcto (touchType=1)");
 
-  // Debug solo para componentes importantes (botones de control)
-  if (touchComponent == NEXTION_ID_BTN_PARAR ||
-      touchComponent == NEXTION_ID_BTN_PAUSAR ||
-      touchComponent == NEXTION_ID_BTN_START) {
-    Utils.debug("🎯 Evento botón control - Página: " + String(touchPage) +
-                ", Componente: " + String(touchComponent));
+  // Debug para TODOS los componentes cuando es botón START
+  if (touchComponent == NEXTION_ID_BTN_START) {
+    Utils.debug("🎯 BOTÓN START DETECTADO - Página:" + String(touchPage) + 
+                " Estado:" + String(_currentState) + " (SELECCION=" + String(ESTADO_SELECCION) + ")");
   }
 
   // Procesar eventos según la página actual
+  Utils.debug("✅ PASO 3: Routing por página - touchPage=" + String(touchPage) + 
+              " (SELECTION=" + String(NEXTION_PAGE_SELECTION) + ")");
+              
   switch (touchPage) {
   case NEXTION_PAGE_SELECTION:
-    // Solo procesar eventos de selección si estamos en el estado correcto
+    Utils.debug("✅ PASO 4: Página SELECTION detectada - llamando _handleSelectionPageEvents()");
     _handleSelectionPageEvents(touchComponent);
     break;
 
   case NEXTION_PAGE_EDIT:
-    // Utils.debug("📄 Procesando eventos de página de edición");
+    Utils.debug("📄 Página EDIT - procesando eventos de edición");
     _handleEditPageEvents(touchComponent);
     break;
 
   case NEXTION_PAGE_EXECUTION:
-    // Debug específico para botones de control
+    Utils.debug("📄 Página EXECUTION - procesando eventos de ejecución");
     if (touchComponent == NEXTION_ID_BTN_PARAR || touchComponent == NEXTION_ID_BTN_PAUSAR) {
       Utils.debug("🎯 Botón de control presionado - Componente: " + String(touchComponent) + 
                   " | Estado: " + String(_currentState) + 
@@ -1082,8 +1098,13 @@ void ProgramControllerClass::processUserEvent(const String &event) {
     _handleExecutionPageEvents(touchComponent);
     break;
 
+  case NEXTION_PAGE_EMERGENCY:
+    Utils.debug("📄 Página EMERGENCY - procesando eventos de emergencia");
+    _handleEmergencyPageEvents(touchComponent);
+    break;
+
   default:
-    Utils.debug("⚠️ Página no manejada: " + String(touchPage));
+    Utils.debug("❌ FALLO 3: Página NO MANEJADA: " + String(touchPage));
     break;
   }
 }
@@ -1233,15 +1254,29 @@ void ProgramControllerClass::_handleEmergencyState() {
 
   // Aplicar medidas de emergencia inmediatas
   static bool emergencyMeasuresApplied = false;
+  
+  // Permitir resetear la variable desde resetEmergency()
+  if (_currentState != ESTADO_EMERGENCIA) {
+    emergencyMeasuresApplied = false;
+    return;
+  }
+  
   if (!emergencyMeasuresApplied) {
     // Detener TODO inmediatamente
     Actuators.emergencyStop();
 
-    // Abrir todas las válvulas de seguridad
+    // Abrir válvula de drenaje para evacuar agua
     Actuators.openDrainValve();
 
-    // Desbloquear puerta inmediatamente
-    Actuators.unlockDoor();
+    // Programar desbloqueo de puerta después del tiempo de drenaje de seguridad
+    if (_emergencyDoorUnlockTaskId == -1) {
+      _emergencyDoorUnlockTaskId = Utils.createTimeout(TIEMPO_DRENAJE * 1000, []() {
+        Actuators.unlockDoor();
+        Utils.debug("🔓 Puerta desbloqueada después de drenaje de emergencia");
+        ProgramController._emergencyDoorUnlockTaskId = -1;
+      });
+      Utils.debug("⏱️ Puerta se desbloqueará en " + String(TIEMPO_DRENAJE) + " segundos");
+    }
 
     // Detener todos los temporizadores
     _timerRunning = false;
@@ -1270,6 +1305,45 @@ void ProgramControllerClass::handleEmergency() {
   }
 }
 
+void ProgramControllerClass::resetEmergency() {
+  if (_currentState == ESTADO_EMERGENCIA) {
+    // Verificar que el botón de emergencia ya no esté presionado
+    if (!Hardware.isEmergencyButtonPressed()) {
+      Utils.debug("RESET EMERGENCIA - Saliendo del estado de emergencia");
+      
+      // Detener parpadeo de emergencia
+      if (_emergencyBlinkTaskId != -1) {
+        Utils.stopTask(_emergencyBlinkTaskId);
+        _emergencyBlinkTaskId = -1;
+      }
+      
+      // Detener temporizador de desbloqueo de puerta si está activo
+      if (_emergencyDoorUnlockTaskId != -1) {
+        Utils.stopTask(_emergencyDoorUnlockTaskId);
+        _emergencyDoorUnlockTaskId = -1;
+      }
+      
+      // Resetear actuadores a estado seguro
+      Actuators.emergencyReset();
+      
+      // Volver al estado de selección
+      setState(ESTADO_SELECCION);
+      
+      // Resetear la variable static de emergencia llamando al handler
+      _handleEmergencyState();
+      
+      // Mostrar pantalla de selección
+      UIController.showSelectionScreen(_currentProgram + 1);
+      
+      Utils.debug("Sistema restablecido desde emergencia");
+    } else {
+      Utils.debug("RESET EMERGENCIA FALLIDO - Botón de emergencia aún presionado");
+      // Mantener pantalla de emergencia (el mensaje se manejará en la UI)
+      UIController.showEmergencyScreen();
+    }
+  }
+}
+
 void ProgramControllerClass::_triggerError(uint8_t errorCode,
                                            const String &errorMessage) {
   // Activar estado de error con código y mensaje específicos
@@ -1281,8 +1355,8 @@ void ProgramControllerClass::_triggerError(uint8_t errorCode,
 // ===== IMPLEMENTACIÓN DE MANEJO DE EVENTOS TÁCTILES =====
 
 void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
-  Utils.debug("🔘 Evento en página de selección - Componente: " +
-              String(componentId));
+  Utils.debug("✅ PASO 5: _handleSelectionPageEvents() - Componente:" + String(componentId) + 
+              " (START=" + String(NEXTION_ID_BTN_START) + ") Estado:" + String(_currentState));
 
   switch (componentId) {
   case NEXTION_ID_BTN_PROGRAM1:
@@ -1316,19 +1390,23 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
     break;
 
   case NEXTION_ID_BTN_START:
+    Utils.debug("🎯 PASO 6: BOTÓN START presionado - verificando estado de puerta");
+    
     // Verificar estado de puerta para determinar acción
-    if (!Sensors.isDoorClosed()) {
+    bool doorClosed = Sensors.isDoorClosed();
+    Utils.debug("🚪 Estado puerta: " + String(doorClosed ? "CERRADA" : "ABIERTA"));
+    
+    if (!doorClosed) {
       // Puerta abierta - bloquear puerta
-      Utils.debug("🔒 Cerrando y bloqueando puerta");
+      Utils.debug("🔒 PUERTA ABIERTA - Bloqueando puerta");
       Actuators.lockDoor();
       Hardware.nextionSetText(NEXTION_COMP_MSG, "PUERTA BLOQUEADA");
-
-      // Actualizar texto del botón después de bloquear
       Hardware.nextionSetText(NEXTION_COMP_BTN_START, "INICIAR");
     } else {
       // Puerta cerrada - iniciar programa
-      Utils.debug("▶️ Iniciando programa " + String(_currentProgram + 22));
+      Utils.debug("✅ PASO 7: PUERTA CERRADA - Llamando startProgram() para P" + String(_currentProgram + 22));
       startProgram();
+      Utils.debug("✅ PASO 8: startProgram() ejecutado - Estado actual:" + String(_currentState));
     }
     break;
 
@@ -1457,6 +1535,21 @@ void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
   default:
     Utils.debug("⚠️ Componente no reconocido en página de ejecución: " +
                 String(componentId));
+    break;
+  }
+}
+
+void ProgramControllerClass::_handleEmergencyPageEvents(uint8_t componentId) {
+  Utils.debug("🚨 Evento en página de emergencia - Componente: " + String(componentId));
+
+  switch (componentId) {
+  case NEXTION_ID_BTN_RESET_EMERGENCIA:
+    Utils.debug("🔄 Botón Reset Emergencia presionado");
+    resetEmergency();
+    break;
+
+  default:
+    Utils.debug("⚠️ Componente no reconocido en página de emergencia: " + String(componentId));
     break;
   }
 }
@@ -1809,5 +1902,9 @@ void ProgramControllerClass::_stopAllBlinkTasks() {
   if (_emergencyBlinkTaskId != -1) {
     Utils.stopTask(_emergencyBlinkTaskId);
     _emergencyBlinkTaskId = -1;
+  }
+  if (_emergencyDoorUnlockTaskId != -1) {
+    Utils.stopTask(_emergencyDoorUnlockTaskId);
+    _emergencyDoorUnlockTaskId = -1;
   }
 }

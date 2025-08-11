@@ -873,7 +873,7 @@ void UIControllerClass::updateEditDisplay() {
   char buffer[20];
 
   // Actualizar programa y fase en edición
-  generarTextoPrograma(_programaEnEdicion, buffer, sizeof(buffer));
+  _generateProgramText(_programaEnEdicion, buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_SET_PROG, buffer);
 
   Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL,
@@ -928,11 +928,11 @@ void UIControllerClass::updateParameterDisplay() {
   char buffer[20];
 
   // Actualizar nombre del parámetro actual
-  const char *textoParam = obtenerTextoParametro(_parametroActual);
+  const char *textoParam = _getParameterName(_parametroActual);
   Hardware.nextionSetText(NEXTION_COMP_PARAM_EDITAR, textoParam);
 
   // Actualizar valor del parámetro actual con formato
-  formatearParametroConUnidad(_parametroActual,
+  _formatParameterWithUnit(_parametroActual,
                               _valoresTemporales[_parametroActual], buffer,
                               sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
@@ -1003,11 +1003,11 @@ void UIControllerClass::_updateAllPanelParameters() {
   Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, buffer);
   
   // Centrifugado
-  formatearParametroConUnidad(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
+  _formatParameterWithUnit(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, buffer);
   
   // Tipo de agua
-  formatearParametroConUnidad(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
+  _formatParameterWithUnit(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, buffer);
 }
 
@@ -1035,11 +1035,11 @@ void UIControllerClass::_updateSinglePanelParameter(uint8_t parametro) {
       Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, buffer);
       break;
     case PARAM_CENTRIF:
-      formatearParametroConUnidad(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
+      _formatParameterWithUnit(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
       Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, buffer);
       break;
     case PARAM_AGUA:
-      formatearParametroConUnidad(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
+      _formatParameterWithUnit(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
       Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, buffer);
       break;
   }
@@ -1050,10 +1050,10 @@ void UIControllerClass::_updateSinglePanelParameter(uint8_t parametro) {
  */
 void UIControllerClass::_updateMainParameter(uint8_t parametro) {
   char buffer[20];
-  const char *textoParam = obtenerTextoParametro(parametro);
+  const char *textoParam = _getParameterName(parametro);
   
   Hardware.nextionSetText(NEXTION_COMP_PARAM_EDITAR, textoParam);
-  formatearParametroConUnidad(parametro, _valoresTemporales[parametro], buffer, sizeof(buffer));
+  _formatParameterWithUnit(parametro, _valoresTemporales[parametro], buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
 }
 
@@ -1279,13 +1279,13 @@ void UIControllerClass::handleParameterDecrement() {
 void UIControllerClass::handleNextParameter() {
   // Obtener el siguiente parámetro en el ciclo usando las funciones de
   // config.cpp
-  _parametroActual = obtenerSiguienteParametro(_parametroActual);
+  _parametroActual = _getNextParameter(_parametroActual);
 
   // Saltar parámetro FASE en P22 y P23 (solo editable en P24)
   if (_parametroActual == PARAM_FASE &&
       (_programaEnEdicion == 0 || _programaEnEdicion == 1)) {
     _parametroActual =
-        obtenerSiguienteParametro(_parametroActual); // Saltar al siguiente
+        _getNextParameter(_parametroActual); // Saltar al siguiente
   }
 
   // Al cambiar parámetro, actualizar panel derecho para mostrar estado completo
@@ -1298,13 +1298,13 @@ void UIControllerClass::handleNextParameter() {
 void UIControllerClass::handlePreviousParameter() {
   // Obtener el parámetro anterior en el ciclo usando las funciones de
   // config.cpp
-  _parametroActual = obtenerAnteriorParametro(_parametroActual);
+  _parametroActual = _getPreviousParameter(_parametroActual);
 
   // Saltar parámetro FASE en P22 y P23 (solo editable en P24)
   if (_parametroActual == PARAM_FASE &&
       (_programaEnEdicion == 0 || _programaEnEdicion == 1)) {
     _parametroActual =
-        obtenerAnteriorParametro(_parametroActual); // Saltar al anterior
+        _getPreviousParameter(_parametroActual); // Saltar al anterior
   }
 
   // Al cambiar parámetro, actualizar panel derecho para mostrar estado completo
@@ -1476,12 +1476,6 @@ void UIControllerClass::_saveParametersToStorage(uint8_t programa,
   _centrifugadoPorTanda[programa][fase] =
       _valoresTemporales[PARAM_CENTRIF]; // fase representa tanda
   _tipoAguaPrograma[programa][fase] = _valoresTemporales[PARAM_AGUA];
-
-  Serial.println("✅ Parámetros guardados en Storage - P" +
-                 String(programa + 22) + " Tanda/Fase: " + String(fase + 1) +
-                 " [Nivel:" + String(_valoresTemporales[PARAM_NIVEL]) +
-                 ", Temp:" + String(_valoresTemporales[PARAM_TEMPERATURA]) +
-                 ", Tiempo:" + String(_valoresTemporales[PARAM_TIEMPO]) + "]");
 }
 
 /**
@@ -1489,10 +1483,10 @@ void UIControllerClass::_saveParametersToStorage(uint8_t programa,
  * @return true si todos los parámetros son válidos, false si no
  */
 bool UIControllerClass::_validateAllParameters() {
-  for (int i = 0; i < 7; i++) // Ahora validamos los 7 parámetros (0-6)
+  for (int i = 0; i < 7; i++) // Validamos los 7 parámetros (0-6)
   {
-    if (!esParametroValido(i, _valoresTemporales[i])) {
-      Serial.println("Parámetro inválido: " + String(obtenerTextoParametro(i)) +
+    if (!_isParameterValid(i, _valoresTemporales[i])) {
+      Serial.println("Parámetro inválido: " + String(_getParameterName(i)) +
                      " = " + String(_valoresTemporales[i]));
       return false;
     }
@@ -1505,9 +1499,152 @@ bool UIControllerClass::_validateAllParameters() {
  */
 void UIControllerClass::_checkEditTimeout() {
   // Solo sale manualmente con Guardar o Cancelar
-  return;
+  // Timeout desactivado por diseño
+}
 
-  Serial.println("Timeout de edición alcanzado - Saliendo automáticamente");
+/**
+ * @brief Formatear parámetro con unidades apropiadas
+ */
+void UIControllerClass::_formatParameterWithUnit(int tipoParam, int valor, char* buffer, int size) {
+  switch (tipoParam) {
+    case PARAM_NIVEL:
+      snprintf(buffer, size, "%d", valor);
+      break;
+    case PARAM_TEMPERATURA:
+      snprintf(buffer, size, "%d°C", valor);
+      break;
+    case PARAM_TIEMPO:
+      snprintf(buffer, size, "%d min", valor);
+      break;
+    case PARAM_ROTACION:
+      snprintf(buffer, size, "%d RPM", valor);
+      break;
+    case PARAM_FASE:
+      snprintf(buffer, size, "%d", valor);
+      break;
+    case PARAM_CENTRIF:
+      snprintf(buffer, size, "%s", valor ? "SI" : "NO");
+      break;
+    case PARAM_AGUA:
+      snprintf(buffer, size, "%s", valor ? "Caliente" : "Fria");
+      break;
+    default:
+      snprintf(buffer, size, "%d", valor);
+      break;
+  }
+}
+
+/**
+ * @brief Valida si un parámetro tiene un valor válido
+ */
+bool UIControllerClass::_isParameterValid(int paramType, int value) {
+  switch (paramType) {
+    case PARAM_NIVEL:
+      return (value >= 0 && value <= 4);
+    case PARAM_TEMPERATURA:
+      return (value >= 0 && value <= 100);
+    case PARAM_TIEMPO:
+      return (value >= 1 && value <= 60);
+    case PARAM_ROTACION:
+      return (value >= 0 && value <= 4);
+    case PARAM_FASE:
+      return (value >= 0 && value <= 4);
+    case PARAM_CENTRIF:
+      return (value == 0 || value == 1);
+    case PARAM_AGUA:
+      return (value == 0 || value == 1);
+    default:
+      return false;
+  }
+}
+
+/**
+ * @brief Obtiene el nombre de un parámetro
+ */
+const char* UIControllerClass::_getParameterName(int paramType) {
+  switch (paramType) {
+    case PARAM_NIVEL:
+      return "Nivel";
+    case PARAM_TEMPERATURA:
+      return "Temperatura";
+    case PARAM_TIEMPO:
+      return "Tiempo";
+    case PARAM_ROTACION:
+      return "Rotacion";
+    case PARAM_FASE:
+      return "Fase";
+    case PARAM_CENTRIF:
+      return "Centrifugado";
+    case PARAM_AGUA:
+      return "Tipo Agua";
+    default:
+      return "Desconocido";
+  }
+}
+
+/**
+ * @brief Actualiza el indicador de pausa en la pantalla de ejecución
+ */
+void UIControllerClass::updatePauseIndicator(bool visible) {
+  if (_currentPage != NEXTION_PAGE_EXECUTION)
+    return;
+    
+  if (visible) {
+    // Mostrar indicador de pausa
+    Hardware.nextionSetText(NEXTION_COMP_MSG, "PROGRAMA PAUSADO");
+    // Opcional: cambiar color o mostrar icono de pausa
+  } else {
+    // Ocultar indicador de pausa
+    Hardware.nextionSetText(NEXTION_COMP_MSG, "");
+  }
+}
+
+/**
+ * @brief Obtiene el siguiente parámetro en el ciclo
+ */
+uint8_t UIControllerClass::_getNextParameter(uint8_t currentParam) {
+  switch (currentParam) {
+    case PARAM_NIVEL:
+      return PARAM_TEMPERATURA;
+    case PARAM_TEMPERATURA:
+      return PARAM_TIEMPO;
+    case PARAM_TIEMPO:
+      return PARAM_ROTACION;
+    case PARAM_ROTACION:
+      return PARAM_FASE;
+    case PARAM_FASE:
+      return PARAM_CENTRIF;
+    case PARAM_CENTRIF:
+      return PARAM_AGUA;
+    case PARAM_AGUA:
+      return PARAM_NIVEL; // Volver al inicio
+    default:
+      return PARAM_NIVEL;
+  }
+}
+
+/**
+ * @brief Obtiene el parámetro anterior en el ciclo
+ */
+uint8_t UIControllerClass::_getPreviousParameter(uint8_t currentParam) {
+  switch (currentParam) {
+    case PARAM_NIVEL:
+      return PARAM_AGUA; // Ir al último
+    case PARAM_TEMPERATURA:
+      return PARAM_NIVEL;
+    case PARAM_TIEMPO:
+      return PARAM_TEMPERATURA;
+    case PARAM_ROTACION:
+      return PARAM_TIEMPO;
+    case PARAM_FASE:
+      return PARAM_ROTACION;
+    case PARAM_CENTRIF:
+      return PARAM_FASE;
+    case PARAM_AGUA:
+      return PARAM_CENTRIF;
+    default:
+      return PARAM_NIVEL;
+  }
 }
 
 /**
@@ -1559,7 +1696,7 @@ void UIControllerClass::updateProgramInfo(uint8_t programa) {
   // Actualizar texto descriptivo del programa usando componente mensaje común
   char buffer[100];
   // Convertir de rango 1-3 (usado por ProgramController) a rango 0-2 (usado por generarTextoPrograma)
-  generarTextoPrograma(programa - 1, buffer, sizeof(buffer));
+  _generateProgramText(programa - 1, buffer, sizeof(buffer));
 
   Hardware.nextionSetText(NEXTION_COMP_MSG, String(buffer));
 }
@@ -1717,7 +1854,7 @@ void UIControllerClass::selectWater() {
  */
 bool UIControllerClass::_validateCurrentParameter() {
   int value = _valoresTemporales[_parametroActual];
-  return esParametroValido(_parametroActual, value);
+  return _isParameterValid(_parametroActual, value);
 }
 
 /**
@@ -1726,7 +1863,7 @@ bool UIControllerClass::_validateCurrentParameter() {
 void UIControllerClass::_saveCurrentParameterToTemp() {
   // El valor ya está en _valoresTemporales[_parametroActual]
   // Solo mostramos confirmación
-  String paramName = String(obtenerTextoParametro(_parametroActual));
+  String paramName = String(_getParameterName(_parametroActual));
   int value = _valoresTemporales[_parametroActual];
 
   Serial.println("💾 Guardando temporalmente " + paramName + ": " +
@@ -1895,4 +2032,24 @@ void UIControllerClass::_callbackShowExecution() {
 
 void UIControllerClass::_callbackShowEdit() {
   UIController._finishEventClearingAndShowEdit(_tempPrograma, _tempFase);
+}
+
+/**
+ * @brief Genera texto descriptivo para un programa
+ */
+void UIControllerClass::_generateProgramText(uint8_t programa, char* buffer, int size) {
+  switch (programa) {
+    case 0: // P22
+      snprintf(buffer, size, "P22 - Agua Caliente");
+      break;
+    case 1: // P23
+      snprintf(buffer, size, "P23 - Agua Fria");
+      break;
+    case 2: // P24
+      snprintf(buffer, size, "P24 - Multi-ciclo");
+      break;
+    default:
+      snprintf(buffer, size, "P%d - Desconocido", programa + 22);
+      break;
+  }
 }

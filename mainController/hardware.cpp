@@ -119,10 +119,10 @@ void HardwareClass::updateDebouncer()
 /// Verifica si el botón de emergencia está presionado.
 /// Este método lee el estado del botón de emergencia y determina si está presionado o no.
 /// @return 
-/// Retorna `true` si el botón de emergencia está presionado (estado LOW), o `false` si no lo está (estado HIGH).
+/// Retorna `true` si el botón de emergencia está presionado (estado HIGH), o `false` si no lo está (estado LOW).
 bool HardwareClass::isEmergencyButtonPressed()
 {
-  // Con pulldown físico: LOW = no presionado, HIGH = presionado
+  // Lógica invertida: HIGH (5V) = no presionado, LOW (0V) = presionado/emergencia
   return (_emergencyButtonState == LOW);
 }
 
@@ -390,8 +390,6 @@ void HardwareClass::testNextionConnectivity()
   // Intentar comando de texto simple
   Serial.println("Enviando comando de texto...");
   nextionSetText("lbl_titulo", "TEST");
-
-  Serial.println("🔧 === FIN PRUEBA CONECTIVIDAD ===");
 }
 
 void HardwareClass::digitalWrite(uint8_t pin, uint8_t state)

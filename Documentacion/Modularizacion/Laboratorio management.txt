@@ -1,0 +1,10 @@
+Los mantenimientos preventivos implican que luego del servicio se compruebe el correcto funcionamiento del instrumento. Esto quiere decir que debe haber una forma de pedir alguna magnitud del instrumento que acredite que funciona correctamente luego del mantenimiento. 
+
+El laboratorio también cuenta con:
+- Calibrador multifunción Time Electronics 5025
+- Multímetro Fluke 8845A
+- Calibrator Calmet C101
+- Three phase power calibrator & tester Calmet C300B
+- Caja de resistencias IET HARS-X2 Series
+
+Ahora, tambien existen otras áreas de la empresa (laboratorios) para diferentes magnitudes, tales como Masa (pesas, balanzas, etc.), temperatura (termómetros, estufas, autoclaves, etc.), PMR (colorímetros, conductímetros, materiales de referencia, etc.), Volumen, Fuerza y Presión.

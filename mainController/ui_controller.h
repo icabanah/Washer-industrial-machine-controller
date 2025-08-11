@@ -90,7 +90,6 @@ public:
   
   // Métodos de ayuda para interfaz
   void showMessage(const String& message, uint16_t duration = 2000);
-  void playSound(uint8_t soundType);
   void updateStartButtonText(); // Actualizar texto del botón según estado de puerta
   
   // Acceso a estado de edición para ProgramController
@@ -175,6 +174,11 @@ private:
   // Validación y formateo
   bool _validateAllParameters();
   void _formatParameterWithUnit(int tipoParam, int valor, char* buffer, int size);
+  bool _isParameterValid(int paramType, int value);
+  const char* _getParameterName(int paramType);
+  uint8_t _getNextParameter(uint8_t currentParam);
+  uint8_t _getPreviousParameter(uint8_t currentParam);
+  void _generateProgramText(uint8_t programa, char* buffer, int size);
   
   // Gestión de timeout de edición
   void _checkEditTimeout();

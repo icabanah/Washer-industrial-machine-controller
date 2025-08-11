@@ -97,7 +97,7 @@ void setup() {
 
 void loop() {
   // Verificar botón de emergencia con máxima prioridad
-  // checkEmergencyButton();
+  checkEmergencyButton();
 
   // Verificar eventos táctiles de la interfaz de usuario - Procesamiento múltiple para máxima respuesta
   for (int i = 0; i < 3; i++) { // Procesar hasta 3 eventos por ciclo para respuesta instantánea

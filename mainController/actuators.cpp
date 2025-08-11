@@ -314,12 +314,39 @@ void ActuatorsClass::emergencyStop() {
   closeWaterValve();
   closeSteamValve();
   openDrainValve();
-  lockDoor(); // en caso de emergencia, bloquear la puerta
+  // Mantener puerta bloqueada durante emergencia para evitar desbordamiento
+  // El desbloqueo se programa con delay en _handleEmergencyState()
   
 }
 
 void ActuatorsClass::emergencyReset() {
   // Restablecer el sistema después de una emergencia
+  
+  // Detener todos los actuadores primero
+  stopMotor();
+  stopCentrifuge();
+  stopAutoRotation();
+  
+  // Cerrar todas las válvulas de entrada
+  closeWaterValve();
+  closeSteamValve();
+  
+  // Mantener drenaje cerrado inicialmente (será controlado por el programa)
+  closeDrainValve();
+  
+  // Desbloquear puerta para permitir acceso
+  unlockDoor();
+  
+  // Resetear banderas de estado
+  _rotationDirection = 0;
+  _autoRotationActive = false;
+  _centrifugeActive = false;
+  _waterValveOpen = false;
+  _steamValveOpen = false;
+  _drainValveOpen = false;
+  _doorLocked = false;
+  
+  Utils.debug("🔄 Actuadores restablecidos desde emergencia");
 }
 
 

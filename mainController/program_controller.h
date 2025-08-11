@@ -47,6 +47,7 @@ public:
   
   // Manejo de emergencias
   void handleEmergency();
+  void resetEmergency();
   
   // Actualización periódica (debe llamarse en cada ciclo)
   void update();
@@ -92,6 +93,7 @@ private:
   int _pauseBlinkTaskId;
   int _errorBlinkTaskId;
   int _emergencyBlinkTaskId;
+  int _emergencyDoorUnlockTaskId;
   bool _blinkState;
   
   // Variables para edición
@@ -144,6 +146,7 @@ private:
   void _handleSelectionPageEvents(uint8_t componentId);
   void _handleEditPageEvents(uint8_t componentId);
   void _handleExecutionPageEvents(uint8_t componentId);
+  void _handleEmergencyPageEvents(uint8_t componentId);
   
   // Métodos de gestión de edición (uso interno)
   void startEditing(uint8_t program, uint8_t phase);
