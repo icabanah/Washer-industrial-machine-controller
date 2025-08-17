@@ -1,5 +1,6 @@
 // program_controller.cpp
 #include "program_controller.h"
+#include "debug.h"
 
 // Instancia global
 ProgramControllerClass ProgramController;
@@ -208,7 +209,7 @@ void ProgramControllerClass::selectProgram(uint8_t program) {
     
     // Actualizar interfaz inmediatamente
     _updateProgramButtons();
-    Utils.debug("Programa seleccionado: P" + String(program + 22) + " - Botones actualizados");
+    Debug.print("Programa seleccionado: P" + String(program + 22) + " - Botones actualizados");
   }
 }
 
@@ -339,7 +340,7 @@ void ProgramControllerClass::nextPhase() {
         !_isCentrifugadoEnabled(_currentProgram, _currentPhase)) {
       // Centrifugado está deshabilitado en esta tanda, saltar al drenaje (fase
       // 3)
-      Utils.debug(
+      Debug.print(
           "⏭️ Saltando centrifugado (deshabilitado) - Avanzando a drenaje");
       _currentPhase++; // Avanzar a fase 3 (drenaje)
       Storage.savePhase(_currentPhase);
@@ -498,7 +499,7 @@ void ProgramControllerClass::_checkCriticalSafety() {
   // 1. VERIFICACIÓN DE SOBRECALENTAMIENTO CRÍTICO
   float currentTemp = Sensors.getCurrentTemperature();
   if (currentTemp >= TEMPERATURA_EMERGENCIA) {
-    Utils.debug("🚨 EMERGENCIA: Sobrecalentamiento detectado - " + String(currentTemp) + "°C");
+    Debug.print("🚨 EMERGENCIA: Sobrecalentamiento detectado - " + String(currentTemp) + "°C");
     handleEmergency(false); // Emergencia por software
     return;
   }
@@ -511,7 +512,7 @@ void ProgramControllerClass::_checkCriticalSafety() {
                              (_currentProgram == 2 && Storage.loadTipoAgua(_currentProgram, _tandaCounter, _currentPhase) == 1); // P24 caliente
     
     if (isHotWaterProgram) {
-      Utils.debug("🚨 EMERGENCIA: Falla crítica sensor temperatura en programa agua caliente");
+      Debug.print("🚨 EMERGENCIA: Falla crítica sensor temperatura en programa agua caliente");
       handleEmergency(false); // Emergencia por software
       return;
     }
@@ -520,7 +521,7 @@ void ProgramControllerClass::_checkCriticalSafety() {
   // 3. VERIFICACIÓN DE NIVEL DE AGUA CRÍTICO
   uint8_t currentLevel = Sensors.getCurrentWaterLevel();
   if (currentLevel >= 100) { // Nivel excesivo = posible desbordamiento
-    Utils.debug("🚨 EMERGENCIA: Nivel de agua crítico detectado - " + String(currentLevel) + "%");
+    Debug.print("🚨 EMERGENCIA: Nivel de agua crítico detectado - " + String(currentLevel) + "%");
     handleEmergency(false); // Emergencia por software
     return;
   }
@@ -528,7 +529,7 @@ void ProgramControllerClass::_checkCriticalSafety() {
   // 4. VERIFICACIÓN DE TIEMPO EXCESIVO EN FASE (posible bloqueo)
   unsigned long phaseTime = millis() - _phaseStartTime;
   if (phaseTime > 3600000) { // Más de 1 hora en una fase = anómalo
-    Utils.debug("🚨 EMERGENCIA: Tiempo excesivo en fase - " + String(phaseTime/60000) + " minutos");
+    Debug.print("🚨 EMERGENCIA: Tiempo excesivo en fase - " + String(phaseTime/60000) + " minutos");
     handleEmergency(false); // Emergencia por software
     return;
   }

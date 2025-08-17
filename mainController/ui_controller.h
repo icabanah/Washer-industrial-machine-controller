@@ -15,6 +15,11 @@ enum UpdateMode {
 };
 
 class UIControllerClass {
+  // Declaraciones friend para handlers externos
+  friend void handleSelectionEvents(uint8_t componentId, UIControllerClass& uiController);
+  friend void handleExecutionEvents(uint8_t componentId, UIControllerClass& uiController);
+  friend void handleEditEvents(uint8_t componentId, UIControllerClass& uiController);
+
 public:
   // Inicialización
   void init();
@@ -135,8 +140,7 @@ private:
   
   // Métodos internos para procesar componentes
   void _handleTouchEvent();                        // Nuevo método para eventos táctiles
-  void _handleSelectionPageEvent(uint8_t componentId);
-  void _handleExecutionPageEvent(uint8_t componentId);
+  // === Métodos de manejo de eventos movidos a ui_handlers.cpp ===
   void _formatTimeDisplay(uint8_t minutos, uint8_t segundos, char* buffer);
   void _updateProgramInfo(uint8_t programa);
   void _updateExecutionData(uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion);

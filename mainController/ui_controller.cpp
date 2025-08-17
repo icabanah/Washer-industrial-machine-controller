@@ -1,5 +1,6 @@
 // ui_controller.cpp
 #include "ui_controller.h"
+#include "ui_handlers.h"
 #include "Arduino.h"
 #include "actuators.h"
 #include "debug.h"
@@ -432,20 +433,20 @@ void UIControllerClass::_handleTouchEvent() {
   // OPTIMIZACIÓN ESPECÍFICA PARA PÁGINAS DE ALTA INTERACTIVIDAD
   if (pageId == NEXTION_PAGE_EDIT) {
     // Llamada directa sin switch para máxima velocidad
-    handleEditPageEvent(componentId);
+    handleEditEvents(componentId, *this);
     return;
   }
   
   if (pageId == NEXTION_PAGE_EXECUTION) {
     // Llamada directa para máxima velocidad en botones críticos
-    _handleExecutionPageEvent(componentId);
+    handleExecutionEvents(componentId, *this);
     return;
   }
 
   // Procesar páginas restantes normalmente
   switch (pageId) {
   case NEXTION_PAGE_SELECTION:
-    _handleSelectionPageEvent(componentId);
+    handleSelectionEvents(componentId, *this);
     break;
 
   default:
@@ -454,66 +455,7 @@ void UIControllerClass::_handleTouchEvent() {
   }
 }
 
-/**
- * @brief Manejar eventos de la página de selección
- */
-void UIControllerClass::_handleSelectionPageEvent(uint8_t componentId) {
-  if (componentId == NEXTION_ID_BTN_PROGRAM1) {
-    _lastUserAction = "PROGRAM_1";
-    _userActionPending = true;
-    UIController.showMessage("Programa P22 seleccionado", 2000);
-    // Nota: No actualizar aquí - se hace en ProgramController al cambiar el
-    // programa
-  } else if (componentId == NEXTION_ID_BTN_PROGRAM2) {
-    _lastUserAction = "PROGRAM_2";
-    _userActionPending = true;
-    UIController.showMessage("Programa P23 seleccionado", 2000);
-    // Nota: No actualizar aquí - se hace en ProgramController al cambiar el
-    // programa
-  } else if (componentId == NEXTION_ID_BTN_PROGRAM3) {
-    _lastUserAction = "PROGRAM_3";
-    _userActionPending = true;
-    UIController.showMessage("Programa P24 seleccionado", 2000);
-    // Nota: No actualizar aquí - se hace en ProgramController al cambiar el
-    // programa
-  } else if (componentId == NEXTION_ID_BTN_START) {
-    // Verificar estado de puerta para determinar acción
-    if (!Sensors.isDoorClosed()) {
-      // Puerta abierta - botón dice "CERRAR" - activar bloqueo de puerta
-      _lastUserAction = "CLOSE_DOOR";
-      _userActionPending = true;
-      showMessage("Puerta cerrada", 2000);
-    } else {
-      // Puerta cerrada - botón dice "INICIAR" - iniciar programa
-      _lastUserAction = "START";
-      _userActionPending = true;
-      showMessage("Programa iniciado", 2000);
-    }
-  } else if (componentId == NEXTION_ID_BTN_EDIT) {
-    _lastUserAction = "EDIT";
-    _userActionPending = true;
-    showMessage("Modo edición activado", 2000);
-  } else {
-    showMessage("Componente no reconocido", 2000);
-  }
-}
-
-/**
- * @brief Manejar eventos de la página de ejecución
- */
-void UIControllerClass::_handleExecutionPageEvent(uint8_t componentId) {
-  if (componentId == NEXTION_ID_BTN_PARAR) {
-    _lastUserAction = "STOP";
-    _userActionPending = true;
-    showMessage("Programa detenido", 2000);
-  } else if (componentId == NEXTION_ID_BTN_PAUSAR) {
-    _lastUserAction = "PAUSE";
-    _userActionPending = true;
-    showMessage("Programa pausado", 2000);
-  } else {
-    Serial.println("   ❓ ComponentID no reconocido: " + String(componentId));
-  }
-}
+// === MÉTODOS DE MANEJO DE EVENTOS MOVIDOS A ui_handlers.cpp ===
 
 /// Este método actualiza los componentes de la pantalla Nextion con los valores
 /// del programa seleccionado.

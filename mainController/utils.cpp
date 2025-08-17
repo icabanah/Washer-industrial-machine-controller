@@ -348,33 +348,8 @@ void UtilsClass::convertFromSeconds(uint16_t totalSeconds, uint8_t &minutes, uin
   seconds = totalSeconds % 60;
 }
 
-void UtilsClass::debug(const String &message)
-{
-  // En producción, esta función podría ser configurada
-  // para imprimir por Serial solo en modo debug
-  Serial.println(message);
-}
+// === MÉTODOS DEBUG ELIMINADOS ===
+// Usar Debug.print() del sistema centralizado
 
-void UtilsClass::debugValue(const String &label, int value)
-{
-  Serial.print(label);
-  Serial.print(": ");
-  Serial.println(value);
-}
-
-bool UtilsClass::isInRange(int value, int target, int range)
-{
-  return (value >= (target - range)) && (value <= (target + range));
-}
-
-int UtilsClass::mapValue(int value, int inMin, int inMax, int outMin, int outMax)
-{
-  return map(value, inMin, inMax, outMin, outMax);
-}
-
-uint8_t UtilsClass::calculateProgress(uint16_t current, uint16_t total)
-{
-  if (total == 0)
-    return 0;
-  return (current * 100) / total;
-}
+// === MÉTODOS MATEMÁTICOS MOVIDOS A MathUtils ===
+// Usar MathUtils::isInRange(), MathUtils::mapValue(), MathUtils::calculateProgress()

@@ -11,7 +11,8 @@
       "Bash(\"C:\\arduino-cli\\arduino-cli.exe\" compile --fqbn esp32:esp32:esp32-wroom-da ./mainController/)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(wc:*)"
     ],
     "deny": []
   }

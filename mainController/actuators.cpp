@@ -1,5 +1,6 @@
 // actuators.cpp
 #include "actuators.h"
+#include "debug.h"
 #include "utils.h"
 
 // Instancia global
@@ -346,7 +347,7 @@ void ActuatorsClass::emergencyReset() {
   _drainValveOpen = false;
   _doorLocked = false;
   
-  Utils.debug("🔄 Actuadores restablecidos desde emergencia");
+  Debug.print("🔄 Actuadores restablecidos desde emergencia");
 }
 
 

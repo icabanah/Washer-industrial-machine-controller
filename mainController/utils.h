@@ -45,19 +45,15 @@ public:
   // Sistema unificado - usar createInterval() en su lugar
 
   // Manejo y conversión de tiempo
-  void updateTimers();
   void formatTime(uint8_t minutes, uint8_t seconds, char *buffer, size_t bufferSize);
   uint16_t convertToSeconds(uint8_t minutes, uint8_t seconds);
   void convertFromSeconds(uint16_t totalSeconds, uint8_t &minutes, uint8_t &seconds);
 
-  // Utilidades para depuración
-  void debug(const String &message);
-  void debugValue(const String &label, int value);
+  // === UTILIDADES DEBUG ELIMINADAS ===
+  // Usar Debug.print() del sistema centralizado
 
-  // Funciones auxiliares generales
-  bool isInRange(int value, int target, int range);
-  int mapValue(int value, int inMin, int inMax, int outMin, int outMax);
-  uint8_t calculateProgress(uint16_t current, uint16_t total);
+  // === FUNCIONES MATEMÁTICAS MOVIDAS A MathUtils ===
+  // Usar MathUtils::isInRange(), MathUtils::mapValue(), MathUtils::calculateProgress()
 
 private:
   // === MAIN TIMER VARIABLES ELIMINADAS ===

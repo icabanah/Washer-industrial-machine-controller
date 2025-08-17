@@ -3,35 +3,31 @@
 #define CONFIG_H
 
 #include "Arduino.h"
+#include "config_structs.h"  // Nuevas estructuras organizadas
 
 // === DEFINICIÓN DE PINES ===
-// Entrada de Emergencia
-#define PIN_BTN_EMERGENCIA 15 // Pin para botón de emergencia con antirrebote
+// Usando HardwarePins struct de config_structs.h
+#define PIN_BTN_EMERGENCIA HardwarePins::EMERGENCY_BUTTON
 
 // Salidas (Actuadores)
-#define PIN_MOTOR_DIR_IZQ 12 // Control dirección izquierda del motor
-#define PIN_MOTOR_DIR_DER 13 // Control dirección derecha del motor
-#define PIN_CENTRIFUGADO 14  // Control centrifugado del motor
-#define PIN_VALVULA_AGUA 27  // Control de la válvula de agua fría (P23)
-#define PIN_ELECTROV_VAPOR                                                     \
-  33 // Control de la electroválvula de agua caliente (P22)
-#define PIN_VALVULA_DESFOGUE 25 // Control de la válvula de drenaje
-#define PIN_MAGNET_PUERTA                                                      \
-  26 // Control del bloqueo electromagnético de la puerta
+#define PIN_MOTOR_DIR_IZQ HardwarePins::MOTOR_DIR_LEFT
+#define PIN_MOTOR_DIR_DER HardwarePins::MOTOR_DIR_RIGHT
+#define PIN_CENTRIFUGADO HardwarePins::CENTRIFUGE
+#define PIN_VALVULA_AGUA HardwarePins::WATER_VALVE
+#define PIN_ELECTROV_VAPOR HardwarePins::STEAM_VALVE
+#define PIN_VALVULA_DESFOGUE HardwarePins::DRAIN_VALVE
+#define PIN_MAGNET_PUERTA HardwarePins::DOOR_MAGNET
 
 // Comunicación Serial para Nextion
 #define NEXTION_SERIAL Serial2
-#define NEXTION_BAUD_RATE 115200
-#define NEXTION_RX_PIN 16 // ESP32 U2_RXD pin conectado al TX de Nextion
-#define NEXTION_TX_PIN 17 // ESP32 U2_TXD pin conectado al RX de Nextion
+#define NEXTION_BAUD_RATE NextionConfig::BAUD_RATE
+#define NEXTION_RX_PIN HardwarePins::NEXTION_RX
+#define NEXTION_TX_PIN HardwarePins::NEXTION_TX
 
 // Pines para sensores
-// Sensor de Presión (HX710B)
-#define PIN_PRESION_DOUT 5 // Pin DOUT del sensor de presión
-#define PIN_PRESION_SCLK 4 // Pin SCLK del sensor de presión
-
-// Sensor de Temperatura (OneWire Dallas)
-#define PIN_TEMP_SENSOR 23 // Pin de datos para sensor de temperatura
+#define PIN_PRESION_DOUT HardwarePins::PRESSURE_DOUT
+#define PIN_PRESION_SCLK HardwarePins::PRESSURE_SCLK
+#define PIN_TEMP_SENSOR HardwarePins::TEMPERATURE
 
 // Sensor de Puerta (Opcional - para implementación futura)
 // #define PIN_SENSOR_PUERTA 22 // Pin para sensor magnético/reed switch de
@@ -43,27 +39,24 @@
 #define LIMITE_BLOQUEO 10000
 #define NIVEL_ACTIVO LOW
 
-// Configuración de la pantalla Nextion
-#define NEXTION_TIMEOUT                                                        \
-  5 // Timeout ULTRA-RÁPIDO para comunicación Nextion (máxima respuesta)
-#define NEXTION_END_CMD 0xFF, 0xFF, 0xFF // Bytes de finalización de comando
+// Configuración de la pantalla Nextion usando NextionConfig struct
+#define NEXTION_TIMEOUT NextionConfig::TIMEOUT
+#define NEXTION_END_CMD SystemTiming::NEXTION_END_CMD[0], SystemTiming::NEXTION_END_CMD[1], SystemTiming::NEXTION_END_CMD[2]
 
-// Configuración de temperatura
-#define TEMP_RESOLUTION 9
-#define TEMP_RANGE 2
-
-// Dirección del sensor de temperatura (OneWire Dallas)
-#define TEMP_SENSOR_ADDR {0x28, 0xFF, 0x64, 0x1E, 0x0C, 0x31, 0x18, 0x66}
+// Configuración de sensores usando SensorConfig struct
+#define TEMP_RESOLUTION SensorConfig::TEMP_RESOLUTION
+#define TEMP_RANGE SensorConfig::TEMP_RANGE
+#define TEMP_SENSOR_ADDR SensorConfig::TEMP_SENSOR_ADDR
 
 // Configuración de presión
-#define NIVEL_PRESION_1 601
-#define NIVEL_PRESION_2 628
-#define NIVEL_PRESION_3 645
-#define NIVEL_PRESION_4 663
+#define NIVEL_PRESION_1 SensorConfig::PRESSURE_LEVEL_1
+#define NIVEL_PRESION_2 SensorConfig::PRESSURE_LEVEL_2
+#define NIVEL_PRESION_3 SensorConfig::PRESSURE_LEVEL_3
+#define NIVEL_PRESION_4 SensorConfig::PRESSURE_LEVEL_4
 
-// Configuración de tiempos
-#define TIEMPO_BIENVENIDA 3000
-#define INTERVALO_TEMPORIZADOR 1000
+// Configuración de tiempos usando SystemTiming struct
+#define TIEMPO_BIENVENIDA SystemTiming::WELCOME_SCREEN
+#define INTERVALO_TEMPORIZADOR SystemTiming::TIMER_INTERVAL
 
 // === CONFIGURACIÓN DE MOTOR BIDIRECCIONAL (PERMUTACIÓN EN LAVADO) ===
 //
@@ -79,32 +72,30 @@
 // |   3   |   10s    |    10s     |    1s   |   22s (intensa)|
 // +-------+----------+------------+---------+----------------+
 
+// Configuración de motor usando MotorConfig struct
 // Nivel 1 - Rotación Suave
-#define MOTOR_L1_TIEMPO_DERECHA 5   // Segundos activo hacia la derecha
-#define MOTOR_L1_TIEMPO_IZQUIERDA 5 // Segundos activo hacia la izquierda
-#define MOTOR_L1_TIEMPO_PAUSA 2     // Segundos de pausa entre cambios
+#define MOTOR_L1_TIEMPO_DERECHA MotorConfig::Level1::TIME_RIGHT
+#define MOTOR_L1_TIEMPO_IZQUIERDA MotorConfig::Level1::TIME_LEFT
+#define MOTOR_L1_TIEMPO_PAUSA MotorConfig::Level1::TIME_PAUSE
 
 // Nivel 2 - Rotación Media
-#define MOTOR_L2_TIEMPO_DERECHA 8   // Segundos activo hacia la derecha
-#define MOTOR_L2_TIEMPO_IZQUIERDA 8 // Segundos activo hacia la izquierda
-#define MOTOR_L2_TIEMPO_PAUSA 2     // Segundos de pausa entre cambios
+#define MOTOR_L2_TIEMPO_DERECHA MotorConfig::Level2::TIME_RIGHT
+#define MOTOR_L2_TIEMPO_IZQUIERDA MotorConfig::Level2::TIME_LEFT
+#define MOTOR_L2_TIEMPO_PAUSA MotorConfig::Level2::TIME_PAUSE
 
 // Nivel 3 - Rotación Intensa
-#define MOTOR_L3_TIEMPO_DERECHA 10   // Segundos activo hacia la derecha
-#define MOTOR_L3_TIEMPO_IZQUIERDA 10 // Segundos activo hacia la izquierda
-#define MOTOR_L3_TIEMPO_PAUSA 1      // Segundos de pausa entre cambios
+#define MOTOR_L3_TIEMPO_DERECHA MotorConfig::Level3::TIME_RIGHT
+#define MOTOR_L3_TIEMPO_IZQUIERDA MotorConfig::Level3::TIME_LEFT
+#define MOTOR_L3_TIEMPO_PAUSA MotorConfig::Level3::TIME_PAUSE
 
-// Configuración de motor bidireccional - tiempos de compatibilidad
-#define MOTOR_TIEMPO_ON                                                        \
-  5000 // Tiempo que permanece activo cada dirección (5 segundos)
-#define MOTOR_TIEMPO_PAUSA                                                     \
-  2000 // Tiempo de pausa entre cambios de dirección (2 segundos)
+// Tiempos de compatibilidad
+#define MOTOR_TIEMPO_ON MotorConfig::COMPATIBILITY_TIME_ON
+#define MOTOR_TIEMPO_PAUSA MotorConfig::COMPATIBILITY_TIME_OFF
 
-// Configuración de temporizadores especiales
-#define TIEMPO_DRENAJE 45 // 45 segundos de drenaje al final
-#define TIEMPO_PUERTA_BLOQUEO                                                  \
-  60 // 60 segundos (1 minuto) antes de desbloquear puerta
-#define TIEMPO_CENTRIFUGADO 45 // 45 segundos de centrifugado
+// Configuración de temporizadores especiales usando SystemTiming struct
+#define TIEMPO_DRENAJE SystemTiming::DRAIN_TIME
+#define TIEMPO_PUERTA_BLOQUEO SystemTiming::DOOR_LOCK_TIME
+#define TIEMPO_CENTRIFUGADO SystemTiming::CENTRIFUGE_TIME
 
 // Configuración de tareas asíncronas
 #define MAX_ASYNC_TASKS                                                        \
@@ -113,7 +104,7 @@
 // Configuración de programas
 #define NUM_PROGRAMAS 3
 #define NUM_FASES 4 // 0=Llenado, 1=Lavado, 2=Centrifugado(opcional), 3=Drenaje
-#define MAX_NIVEL_ROTACION 3
+#define MAX_NIVEL_ROTACION MotorConfig::MAX_ROTATION_LEVEL
 
 // P22/P23: 1 tanda × 4 fases, P24: 4 tandas × 4 fases
 
@@ -147,13 +138,13 @@
 #define ERROR_COMUNICACION 7 // Nuevo estado para manejo de emergencias
 
 // === COMPONENTES DE LA PANTALLA NEXTION ===
-// IDs de las páginas
-#define NEXTION_PAGE_WELCOME 0
-#define NEXTION_PAGE_SELECTION 1
-#define NEXTION_PAGE_EXECUTION 2
-#define NEXTION_PAGE_EDIT 3
-#define NEXTION_PAGE_ERROR 4
-#define NEXTION_PAGE_EMERGENCY 5
+// IDs de las páginas usando NextionConfig struct
+#define NEXTION_PAGE_WELCOME NextionConfig::PAGE_WELCOME
+#define NEXTION_PAGE_SELECTION NextionConfig::PAGE_SELECTION
+#define NEXTION_PAGE_EXECUTION NextionConfig::PAGE_EXECUTION
+#define NEXTION_PAGE_EDIT NextionConfig::PAGE_EDIT
+#define NEXTION_PAGE_ERROR NextionConfig::PAGE_ERROR
+#define NEXTION_PAGE_EMERGENCY NextionConfig::PAGE_EMERGENCY
 
 // Valores de los parámetros de programa seteado
 #define NEXTION_COMP_SET_PROG "progr_sel"    // Programa en seleccion
@@ -275,21 +266,22 @@
 #define PARAM_AGUA 6
 
 // === LÍMITES DE PARÁMETROS ===
-#define MIN_NIVEL 1
-#define MAX_NIVEL 4
-#define MIN_TEMPERATURA 5
-#define MAX_TEMPERATURA 100
-#define TEMPERATURA_EMERGENCIA 95  // Temperatura crítica que activa emergencia
-#define MIN_TIEMPO 1
-#define MAX_TIEMPO 60
-#define MIN_ROTACION 1
-#define MAX_ROTACION 3
-#define MIN_FASE 1 // 1=llenado, 2=lavado, 3=centrifugado, 4=drenaje
-#define MAX_FASE 4
-#define MIN_CENTRIF 0 // 0=inactivo, 1=activo
-#define MAX_CENTRIF 1
-#define MIN_AGUA 0 // 0=fría, 1=caliente
-#define MAX_AGUA 1
+// Usando ParameterLimits struct de config_structs.h
+#define MIN_NIVEL ParameterLimits::MIN_LEVEL
+#define MAX_NIVEL ParameterLimits::MAX_LEVEL
+#define MIN_TEMPERATURA ParameterLimits::MIN_TEMPERATURE
+#define MAX_TEMPERATURA ParameterLimits::MAX_TEMPERATURE
+#define TEMPERATURA_EMERGENCIA ParameterLimits::EMERGENCY_TEMPERATURE
+#define MIN_TIEMPO ParameterLimits::MIN_TIME
+#define MAX_TIEMPO ParameterLimits::MAX_TIME
+#define MIN_ROTACION ParameterLimits::MIN_ROTATION
+#define MAX_ROTACION ParameterLimits::MAX_ROTATION
+#define MIN_FASE ParameterLimits::MIN_PHASE
+#define MAX_FASE ParameterLimits::MAX_PHASE
+#define MIN_CENTRIF ParameterLimits::MIN_CENTRIFUGE
+#define MAX_CENTRIF ParameterLimits::MAX_CENTRIFUGE
+#define MIN_AGUA ParameterLimits::MIN_WATER_TYPE
+#define MAX_AGUA ParameterLimits::MAX_WATER_TYPE
 
 // === INCREMENTOS DE EDICIÓN ===
 #define INCREMENT_NIVEL 1    // Incremento para nivel de agua
