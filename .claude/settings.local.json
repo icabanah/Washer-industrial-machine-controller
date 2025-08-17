@@ -12,7 +12,8 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(awk:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

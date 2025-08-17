@@ -1,6 +1,5 @@
 // ui_controller.cpp
 #include "ui_controller.h"
-#include "ui_handlers.h"
 #include "Arduino.h"
 #include "actuators.h"
 #include "debug.h"
@@ -11,14 +10,6 @@
 
 // Definición de la instancia global
 UIControllerClass UIController;
-
-// Declaración de variables estáticas
-uint8_t UIControllerClass::_tempPrograma = 0;
-uint8_t UIControllerClass::_tempFase = 0;
-uint8_t UIControllerClass::_tempNivelAgua = 0;
-uint8_t UIControllerClass::_tempTemperatura = 0;
-uint8_t UIControllerClass::_tempRotacion = 0;
-uint8_t UIControllerClass::_tempTanda = 0;
 
 // === CONFIGURACIÓN SEGÚN STORAGE ===
 // Los datos de programas ahora se almacenan exclusivamente en Storage
@@ -210,7 +201,7 @@ void UIControllerClass::showEditScreen(uint8_t programa, uint8_t fase) {
   // updateEditPanel(UPDATE_FULL)
 
   // Actualizar toda la pantalla con los valores iniciales
-  updateEditDisplay();
+  updateDisplay(true);
 
   // Ejecutar diagnóstico del estado de edición
   // diagnosticarEstadoEdicion();
@@ -255,11 +246,11 @@ void UIControllerClass::showErrorScreen(uint8_t errorCode,
 }
 
 void UIControllerClass::showEmergencyScreen() {
-  Utils.debug("🚨 FORZANDO CAMBIO A PANTALLA DE EMERGENCIA");
+  Debug.print("🚨 FORZANDO CAMBIO A PANTALLA DE EMERGENCIA");
   
   // Cambiar a la página de emergencia con múltiples intentos para mayor robustez
   for (int i = 0; i < 3; i++) {
-    Utils.debug("🔄 Intento " + String(i + 1) + " - Enviando comando page 5");
+    Debug.print("🔄 Intento " + String(i + 1) + " - Enviando comando page 5");
     Hardware.nextionSetPage(NEXTION_PAGE_EMERGENCY);
     delay(100); // Pequeña pausa entre intentos
   }
@@ -275,7 +266,7 @@ void UIControllerClass::showEmergencyScreen() {
   // Reproducir sonido de alarma
   // playSound(2);  // Código 2 para sonido de alarma
 
-  Utils.debug("✅ EMERGENCIA: Pantalla configurada - Estado interno sincronizado");
+  Debug.print("✅ EMERGENCIA: Pantalla configurada - Estado interno sincronizado");
   Serial.println("EMERGENCIA: Sistema detenido");
 }
 
@@ -430,28 +421,117 @@ void UIControllerClass::_handleTouchEvent() {
     return; // Sin Serial.println para máxima velocidad
   }
 
-  // OPTIMIZACIÓN ESPECÍFICA PARA PÁGINAS DE ALTA INTERACTIVIDAD
+  // MANEJO DE EVENTOS INLINE - SIN SOBREINGENIERÍA
   if (pageId == NEXTION_PAGE_EDIT) {
-    // Llamada directa sin switch para máxima velocidad
-    handleEditEvents(componentId, *this);
+    // Edición - verificar modo activo
+    if (!_modoEdicionActivo) {
+      Debug.print("Evento de edición recibido pero modo edición no está activo");
+      return;
+    }
+    
+    switch (componentId) {
+    case NEXTION_ID_BTN_PARAM_MAS:
+      handleParameterIncrement();
+      break;
+    case NEXTION_ID_BTN_PARAM_MENOS:
+      handleParameterDecrement();
+      break;
+    case NEXTION_ID_BTN_PARAM_SIGUIENTE:
+      handleNextParameter();
+      break;
+    case NEXTION_ID_BTN_PARAM_ANTERIOR:
+      handlePreviousParameter();
+      break;
+    case NEXTION_ID_BTN_GUARDAR:
+      handleSaveParameters();
+      break;
+    case NEXTION_ID_BTN_CANCELAR:
+      handleCancelEdit();
+      break;
+    case NEXTION_ID_PARAM_NIVEL_EDIT:
+      setParameter(PARAM_NIVEL);
+      break;
+    case NEXTION_ID_PARAM_TEMP_EDIT:
+      setParameter(PARAM_TEMPERATURA);
+      break;
+    case NEXTION_ID_PARAM_TIEMPO_EDIT:
+      setParameter(PARAM_TIEMPO);
+      break;
+    case NEXTION_ID_PARAM_ROTAC_EDIT:
+      setParameter(PARAM_ROTACION);
+      break;
+    case NEXTION_ID_BTN_TANDA1:
+      setParameter(PARAM_FASE, 0);
+      break;
+    case NEXTION_ID_BTN_TANDA2:
+      setParameter(PARAM_FASE, 1);
+      break;
+    case NEXTION_ID_BTN_TANDA3:
+      setParameter(PARAM_FASE, 2);
+      break;
+    case NEXTION_ID_BTN_TANDA4:
+      setParameter(PARAM_FASE, 3);
+      break;
+    case NEXTION_ID_PARAM_CENTRIF_EDIT:
+      setParameter(PARAM_CENTRIF);
+      break;
+    case NEXTION_ID_PARAM_AGUA_EDIT:
+      setParameter(PARAM_AGUA);
+      break;
+    default:
+      Debug.print("Evento de edición no reconocido: " + String(componentId));
+      break;
+    }
     return;
   }
   
   if (pageId == NEXTION_PAGE_EXECUTION) {
-    // Llamada directa para máxima velocidad en botones críticos
-    handleExecutionEvents(componentId, *this);
+    // Ejecución - botones críticos
+    if (componentId == NEXTION_ID_BTN_PARAR) {
+      _lastUserAction = "STOP";
+      _userActionPending = true;
+      showMessage("Programa detenido", 2000);
+    } else if (componentId == NEXTION_ID_BTN_PAUSAR) {
+      _lastUserAction = "PAUSE";
+      _userActionPending = true;
+      showMessage("Programa pausado", 2000);
+    } else {
+      Debug.print("ComponentID no reconocido: " + String(componentId));
+    }
     return;
   }
 
-  // Procesar páginas restantes normalmente
-  switch (pageId) {
-  case NEXTION_PAGE_SELECTION:
-    handleSelectionEvents(componentId, *this);
-    break;
-
-  default:
-    // Sin Serial.println para máxima velocidad
-    break;
+  if (pageId == NEXTION_PAGE_SELECTION) {
+    // Selección - programas y controles
+    if (componentId == NEXTION_ID_BTN_PROGRAM1) {
+      _lastUserAction = "PROGRAM_1";
+      _userActionPending = true;
+      showMessage("Programa P22 seleccionado", 2000);
+    } else if (componentId == NEXTION_ID_BTN_PROGRAM2) {
+      _lastUserAction = "PROGRAM_2";
+      _userActionPending = true;
+      showMessage("Programa P23 seleccionado", 2000);
+    } else if (componentId == NEXTION_ID_BTN_PROGRAM3) {
+      _lastUserAction = "PROGRAM_3";
+      _userActionPending = true;
+      showMessage("Programa P24 seleccionado", 2000);
+    } else if (componentId == NEXTION_ID_BTN_START) {
+      if (!Sensors.isDoorClosed()) {
+        _lastUserAction = "CLOSE_DOOR";
+        _userActionPending = true;
+        showMessage("Puerta cerrada", 2000);
+      } else {
+        _lastUserAction = "START";
+        _userActionPending = true;
+        showMessage("Programa iniciado", 2000);
+      }
+    } else if (componentId == NEXTION_ID_BTN_EDIT) {
+      _lastUserAction = "EDIT";
+      _userActionPending = true;
+      showMessage("Modo edición activado", 2000);
+    } else {
+      showMessage("Componente no reconocido", 2000);
+    }
   }
 }
 
@@ -598,55 +678,8 @@ void UIControllerClass::clearPendingEvents() {
 // === MÉTODOS COMPLEJOS DE EVENT CLEARING ELIMINADOS ===
 // Sistema simplificado - usar clearPendingEvents() directamente
 
-// ===== MÉTODOS DE TRANSICIÓN SEGURA =====
-
-void UIControllerClass::safeTransitionToSelection(uint8_t programa) {
-  // === TRANSICIÓN SIMPLIFICADA ===
-  // Limpieza rápida y directa sin complejidad asíncrona
-  clearPendingEvents();
-  
-  // Mostrar pantalla directamente
-  showSelectionScreen(programa);
-  _updateProgramInfo(programa);
-}
-
-void UIControllerClass::safeTransitionToExecution(uint8_t programa,
-                                                  uint8_t fase,
-                                                  uint8_t nivelAgua,
-                                                  uint8_t temperatura,
-                                                  uint8_t rotacion,
-                                                  uint8_t tanda) {
-  // === TRANSICIÓN SIMPLIFICADA ===
-  clearPendingEvents();
-  
-  // Mostrar pantalla directamente
-  showExecutionScreen(programa, fase, nivelAgua, temperatura, rotacion, tanda);
-  _updateProgramInfo(programa);
-
-  Debug.print("Transición a pantalla de ejecución completada");
-}
-
-void UIControllerClass::safeTransitionToEdit(uint8_t programa, uint8_t fase) {
-  // === TRANSICIÓN SIMPLIFICADA ===
-  clearPendingEvents();
-  
-  // Mostrar pantalla directamente
-  showEditScreen(programa, fase);
-
-  Debug.print("Transición a pantalla de edición completada");
-}
-
-void UIControllerClass::safeTransitionToError(uint8_t errorCode,
-                                              const String &errorMessage) {
-  // === TRANSICIÓN SIMPLIFICADA PARA ERRORES ===
-  // Errores requieren transición inmediata sin demoras
-  clearPendingEvents();
-  
-  // Mostrar pantalla de error inmediatamente
-  showErrorScreen(errorCode, errorMessage);
-
-  Debug.print("Transición a pantalla de error completada");
-}
+// === MÉTODOS safeTransition* ELIMINADOS ===
+// Usar show*Screen() directamente según simplificación
 
 /**
  * @brief Inicializar el modo de edición con los parámetros del programa y fase
@@ -669,234 +702,16 @@ void UIControllerClass::initEditMode(uint8_t programa, uint8_t fase) {
 
 /// @brief
 /// Cargar los valores de los parámetros del programa y fase especificados desde
-/// Storage
-void UIControllerClass::updateEditDisplay() {
-  if (!_modoEdicionActivo)
-    return;
-
-  char buffer[20];
-
-  // Actualizar programa y fase en edición
-  _generateProgramText(_programaEnEdicion, buffer, sizeof(buffer));
-  Hardware.nextionSetText(NEXTION_COMP_SET_PROG, buffer);
-
-  Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL,
-                          "P" + String(_programaEnEdicion + 22));
-
-  if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
-    // P22 y P23 - tanda y agua deshabilitados, centrifugado habilitado
-    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) +
-                                ",0"); // Deshabilitar touch
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) +
-                                ".pco=33840"); // Color gris
-    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_AGUA) +
-                                ",0"); // Deshabilitar touch
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) +
-                                ".pco=33840"); // Color gris
-    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_CENTRIF) +
-                                ",1"); // Habilitar touch centrifugado
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) +
-                                ".pco=65535"); // Color normal centrifugado
-  } else {
-    // P24 - botones habilitados y colores normales
-    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_FASE) +
-                                ",0"); // Deshabilitar touch
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_FASE) +
-                                ".pco=33840"); // Color gris
-    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_AGUA) +
-                                ",1"); // Habilitar touch
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_AGUA) +
-                                ".pco=65535"); // Color normal
-    Hardware.nextionSendCommand("tsw " + String(NEXTION_COMP_SET_CENTRIF) +
-                                ",1"); // Habilitar touch centrifugado
-    Hardware.nextionSendCommand(String(NEXTION_COMP_SET_CENTRIF) +
-                                ".pco=65535"); // Color normal centrifugado
-    // ELIMINADO: .bco para mantener fondo por defecto del HMI (azul oscuro)
-  }
-
-  // Actualizar parámetro actual y panel derecho DESPUÉS de configurar estilos
-  updateParameterDisplay();
-  updateEditPanel(UPDATE_FULL); // Optimizado como página de selección
-
-  // Configurar botones de tanda según el programa y tanda actual
-  updateTandaButtons(ProgramController.getCurrentEditingTanda());
-}
+// === MÉTODOS OBSOLETOS ELIMINADOS ===
+// updateEditDisplay, updateParameterDisplay, updateEditPanel y helpers
+// Reemplazados por updateDisplay() unificado
 
 /// @brief
 /// Cargar los valores de los parámetros del programa y fase especificados desde
 /// Storage
-void UIControllerClass::updateParameterDisplay() {
-  if (!_modoEdicionActivo)
-    return;
-
-  char buffer[20];
-
-  // Actualizar nombre del parámetro actual
-  const char *textoParam = _getParameterName(_parametroActual);
-  Hardware.nextionSetText(NEXTION_COMP_PARAM_EDITAR, textoParam);
-
-  // Actualizar valor del parámetro actual con formato
-  _formatParameterWithUnit(_parametroActual,
-                              _valoresTemporales[_parametroActual], buffer,
-                              sizeof(buffer));
-  Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
-
-  Serial.println("Parámetro actual actualizado: " + String(textoParam) + " = " +
-                 String(buffer));
-}
-
-/**
- * @brief Actualiza el panel de edición con diferentes niveles de optimización
- * @param updateMode Tipo de actualización:
- *   - UPDATE_FULL: Actualiza todo el panel derecho
- *   - UPDATE_SINGLE: Actualiza solo un parámetro específico
- *   - UPDATE_FAST: Actualiza parámetro principal + componente del panel
- *   - UPDATE_INSTANT: Solo valor principal (máxima velocidad)
- * @param parametro Parámetro específico (solo para UPDATE_SINGLE, UPDATE_FAST, UPDATE_INSTANT)
- */
-void UIControllerClass::updateEditPanel(UpdateMode updateMode, uint8_t parametro) {
-  if (!_modoEdicionActivo) return;
-  
-  char buffer[20];
-  
-  switch (updateMode) {
-    case UPDATE_FULL:
-      // Actualizar todos los parámetros del panel derecho
-      _updateAllPanelParameters();
-      Serial.println("Panel derecho actualizado (6 parámetros)");
-      break;
-      
-    case UPDATE_SINGLE:
-      // Actualizar solo un parámetro específico en panel derecho
-      _updateSinglePanelParameter(parametro);
-      break;
-      
-    case UPDATE_FAST:
-      // Actualizar parámetro principal + componente específico del panel
-      _updateMainParameter(parametro);
-      _updateSinglePanelParameter(parametro);
-      break;
-      
-    case UPDATE_INSTANT:
-      // Solo valor principal - máxima velocidad
-      _updateMainParameterInstant(parametro);
-      break;
-  }
-}
-
-/**
- * @brief Actualiza todos los parámetros del panel derecho
- */
-void UIControllerClass::_updateAllPanelParameters() {
-  char buffer[20];
-  
-  // Nivel
-  snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_NIVEL]);
-  Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, buffer);
-  
-  // Temperatura
-  snprintf(buffer, sizeof(buffer), "%d°C", _valoresTemporales[PARAM_TEMPERATURA]);
-  Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, buffer);
-  
-  // Tiempo
-  snprintf(buffer, sizeof(buffer), "%d min", _valoresTemporales[PARAM_TIEMPO]);
-  Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, buffer);
-  
-  // Rotación
-  snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_ROTACION]);
-  Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, buffer);
-  
-  // Centrifugado
-  _formatParameterWithUnit(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
-  Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, buffer);
-  
-  // Tipo de agua
-  _formatParameterWithUnit(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
-  Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, buffer);
-}
-
-/**
- * @brief Actualiza un solo parámetro en el panel derecho
- */
-void UIControllerClass::_updateSinglePanelParameter(uint8_t parametro) {
-  char buffer[20];
-  
-  switch (parametro) {
-    case PARAM_NIVEL:
-      snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_NIVEL]);
-      Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, buffer);
-      break;
-    case PARAM_TEMPERATURA:
-      snprintf(buffer, sizeof(buffer), "%d°C", _valoresTemporales[PARAM_TEMPERATURA]);
-      Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, buffer);
-      break;
-    case PARAM_TIEMPO:
-      snprintf(buffer, sizeof(buffer), "%d min", _valoresTemporales[PARAM_TIEMPO]);
-      Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, buffer);
-      break;
-    case PARAM_ROTACION:
-      snprintf(buffer, sizeof(buffer), "%d", _valoresTemporales[PARAM_ROTACION]);
-      Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, buffer);
-      break;
-    case PARAM_CENTRIF:
-      _formatParameterWithUnit(PARAM_CENTRIF, _valoresTemporales[PARAM_CENTRIF], buffer, sizeof(buffer));
-      Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, buffer);
-      break;
-    case PARAM_AGUA:
-      _formatParameterWithUnit(PARAM_AGUA, _valoresTemporales[PARAM_AGUA], buffer, sizeof(buffer));
-      Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, buffer);
-      break;
-  }
-}
-
-/**
- * @brief Actualiza el parámetro principal que se está editando
- */
-void UIControllerClass::_updateMainParameter(uint8_t parametro) {
-  char buffer[20];
-  const char *textoParam = _getParameterName(parametro);
-  
-  Hardware.nextionSetText(NEXTION_COMP_PARAM_EDITAR, textoParam);
-  _formatParameterWithUnit(parametro, _valoresTemporales[parametro], buffer, sizeof(buffer));
-  Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
-}
-
-/**
- * @brief Actualiza solo el valor principal - máxima velocidad
- */
-void UIControllerClass::_updateMainParameterInstant(uint8_t parametro) {
-  char buffer[20];
-  int valor = _valoresTemporales[parametro];
-  
-  switch (parametro) {
-    case PARAM_NIVEL:
-      snprintf(buffer, sizeof(buffer), "%d", valor);
-      break;
-    case PARAM_TEMPERATURA:
-      snprintf(buffer, sizeof(buffer), "%d°C", valor);
-      break;
-    case PARAM_TIEMPO:
-      snprintf(buffer, sizeof(buffer), "%d min", valor);
-      break;
-    case PARAM_ROTACION:
-      snprintf(buffer, sizeof(buffer), "%d RPM", valor);
-      break;
-    case PARAM_FASE:
-      snprintf(buffer, sizeof(buffer), "%d", valor);
-      break;
-    case PARAM_CENTRIF:
-      strcpy(buffer, valor ? "SI" : "NO");
-      break;
-    case PARAM_AGUA:
-      strcpy(buffer, valor ? "Caliente" : "Fría");
-      break;
-    default:
-      snprintf(buffer, sizeof(buffer), "%d", valor);
-      break;
-  }
-  
-  Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
-}
+// === MÉTODOS OBSOLETOS ELIMINADOS ===
+// _updateAllPanelParameters, _updateSinglePanelParameter, _updateMainParameter, _updateMainParameterInstant
+// Reemplazados por updateDisplay() unificado
 
 
 
@@ -942,19 +757,19 @@ void UIControllerClass::handleEditPageEvent(int componentId) {
 
   // Nuevos: Selección directa de parámetros
   case NEXTION_ID_PARAM_NIVEL_EDIT:
-    selectParameter(PARAM_NIVEL);
+    setParameter(PARAM_NIVEL);
     break;
 
   case NEXTION_ID_PARAM_TEMP_EDIT:
-    selectParameter(PARAM_TEMPERATURA);
+    setParameter(PARAM_TEMPERATURA);
     break;
 
   case NEXTION_ID_PARAM_TIEMPO_EDIT:
-    selectParameter(PARAM_TIEMPO);
+    setParameter(PARAM_TIEMPO);
     break;
 
   case NEXTION_ID_PARAM_ROTAC_EDIT:
-    selectParameter(PARAM_ROTACION);
+    setParameter(PARAM_ROTACION);
     break;
 
   case NEXTION_ID_PARAM_FASE_EDIT:
@@ -964,27 +779,27 @@ void UIControllerClass::handleEditPageEvent(int componentId) {
 
   // Nuevos botones de tanda para mejor experiencia de usuario
   case NEXTION_ID_BTN_TANDA1:
-    selectTandaDirecta(0);
+    setParameter(PARAM_FASE, 0);
     break;
 
   case NEXTION_ID_BTN_TANDA2:
-    selectTandaDirecta(1);
+    setParameter(PARAM_FASE, 1);
     break;
 
   case NEXTION_ID_BTN_TANDA3:
-    selectTandaDirecta(2);
+    setParameter(PARAM_FASE, 2);
     break;
 
   case NEXTION_ID_BTN_TANDA4:
-    selectTandaDirecta(3);
+    setParameter(PARAM_FASE, 3);
     break;
 
   case NEXTION_ID_PARAM_CENTRIF_EDIT:
-    selectParameter(PARAM_CENTRIF);
+    setParameter(PARAM_CENTRIF);
     break;
 
   case NEXTION_ID_PARAM_AGUA_EDIT:
-    selectParameter(PARAM_AGUA);
+    setParameter(PARAM_AGUA);
     break;
 
   default:
@@ -1032,7 +847,7 @@ void UIControllerClass::handleParameterIncrement() {
   }
 
   // ULTRA-EXTREMA velocidad - SOLO valor principal (1 comando Nextion)
-  updateEditPanel(UPDATE_INSTANT, _parametroActual);
+  updateDisplay(false); // Actualización rápida de parámetro
 }
 
 /**
@@ -1074,7 +889,7 @@ void UIControllerClass::handleParameterDecrement() {
   }
 
   // ULTRA-EXTREMA velocidad - SOLO valor principal (1 comando Nextion)
-  updateEditPanel(UPDATE_INSTANT, _parametroActual);
+  updateDisplay(false); // Actualización rápida de parámetro
 }
 
 /**
@@ -1093,7 +908,7 @@ void UIControllerClass::handleNextParameter() {
   }
 
   // Al cambiar parámetro, actualizar panel derecho para mostrar estado completo
-  updateEditPanel(UPDATE_FAST, _parametroActual);
+  updateDisplay(false); // Actualización rápida de parámetro
 }
 
 /**
@@ -1112,7 +927,7 @@ void UIControllerClass::handlePreviousParameter() {
   }
 
   // Al cambiar parámetro, actualizar panel derecho para mostrar estado completo
-  updateEditPanel(UPDATE_FAST, _parametroActual);
+  updateDisplay(false); // Actualización rápida de parámetro
 }
 
 /**
@@ -1150,7 +965,8 @@ void UIControllerClass::handleSaveParameters() {
       ProgramController.endEditing();
       
       // Volver a la página de selección
-      safeTransitionToSelection(_programaEnEdicion);
+      clearPendingEvents();
+      showSelectionScreen(_programaEnEdicion);
       return;
     }
   }
@@ -1174,7 +990,7 @@ void UIControllerClass::handleSaveParameters() {
                 3000);
 
     // Actualizar display para mostrar que está pendiente de guardado final
-    updateParameterDisplay();
+    updateDisplay(true);
   } else {
     // SEGUNDA PRESIÓN: Guardar programa completo
 
@@ -1204,7 +1020,8 @@ void UIControllerClass::handleSaveParameters() {
     ProgramController.endEditing();
 
     // Volver a la página de selección
-    safeTransitionToSelection(_programaEnEdicion);
+    clearPendingEvents();
+    showSelectionScreen(_programaEnEdicion);
   }
 }
 /**
@@ -1219,7 +1036,8 @@ void UIControllerClass::handleCancelEdit() {
   ProgramController.endEditing();
 
   // Volver a la página de selección
-  safeTransitionToSelection(_programaEnEdicion);
+  clearPendingEvents();
+  showSelectionScreen(_programaEnEdicion);
 }
 
 // ===== MÉTODOS INTERNOS PARA GESTIÓN DE PARÁMETROS =====
@@ -1334,7 +1152,7 @@ void UIControllerClass::_formatParameterWithUnit(int tipoParam, int valor, char*
 /**
  * @brief Valida si un parámetro tiene un valor válido
  */
-bool UIControllerClass::_isParameterValid(int paramType, int value) {
+bool UIControllerClass::_isParameterValid(uint8_t paramType, int value) {
   switch (paramType) {
     case PARAM_NIVEL:
       return (value >= 0 && value <= 4);
@@ -1542,14 +1360,13 @@ void UIControllerClass::selectParameter(uint8_t param) {
   // Los mensajes causan delay innecesario en la respuesta
 
   // Actualizar display para mostrar parámetro activo
-  updateParameterDisplay();
-  updateEditPanel(UPDATE_FULL); // Optimizado como página de selección
+  updateDisplay(true); // Actualización completa de pantalla
 }
 
 /**
  * @brief Selecciona la fase para edición
  */
-void UIControllerClass::selectPhase() {
+void UIControllerClass::selectPhase(uint8_t fase) {
   if (!_modoEdicionActivo)
     return;
 
@@ -1564,11 +1381,10 @@ void UIControllerClass::selectPhase() {
   _parametroActual = PARAM_FASE;
 
   // Actualizar display para mostrar parámetro activo
-  updateParameterDisplay();
-  updateEditPanel(UPDATE_FULL); // Optimizado como página de selección
+  updateDisplay(true); // Actualización completa de pantalla
 }
 
-void UIControllerClass::selectTanda() {
+void UIControllerClass::selectTanda(uint8_t tanda) {
   if (!_modoEdicionActivo)
     return;
 
@@ -1619,29 +1435,27 @@ void UIControllerClass::selectTandaDirecta(uint8_t tanda) {
 /**
  * @brief Selecciona parámetros de centrifugado
  */
-void UIControllerClass::selectCentrifuge() {
+void UIControllerClass::selectCentrifuge(uint8_t centrifuge) {
   if (!_modoEdicionActivo)
     return;
 
   _parametroActual = PARAM_CENTRIF;
 
   // Actualizar display para mostrar parámetro activo
-  updateParameterDisplay();
-  updateEditPanel(UPDATE_FULL); // Optimizado como página de selección
+  updateDisplay(true); // Actualización completa de pantalla
 }
 
 /**
  * @brief Selecciona parámetros de agua
  */
-void UIControllerClass::selectWater() {
+void UIControllerClass::selectWater(uint8_t water) {
   if (!_modoEdicionActivo)
     return;
 
   _parametroActual = PARAM_AGUA;
 
   // Actualizar display para mostrar parámetro activo
-  updateParameterDisplay();
-  updateEditPanel(UPDATE_FULL); // Optimizado como página de selección
+  updateDisplay(true); // Actualización completa de pantalla
 }
 
 // === FUNCIONES AUXILIARES PARA DOBLE GUARDADO ===
@@ -1809,4 +1623,52 @@ void UIControllerClass::_generateProgramText(uint8_t programa, char* buffer, int
  */
 uint8_t UIControllerClass::getCurrentPage() {
   return _currentPage;
+}
+
+// === MÉTODO UNIFICADO PARA ACTUALIZACIÓN DE PANTALLA ===
+/**
+ * @brief Método unificado que reemplaza updateEditDisplay, updateParameterDisplay y updateEditPanel
+ * @param fullUpdate true = actualización completa, false = solo valor actual
+ */
+void UIControllerClass::updateDisplay(bool fullUpdate) {
+  if (!_modoEdicionActivo) return;
+  
+  char buffer[20];
+  
+  if (fullUpdate) {
+    // Actualización completa - equivalent a UPDATE_FULL
+    // Actualizar todos los parámetros del panel derecho
+    Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, String(_valoresTemporales[PARAM_NIVEL]));
+    Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, String(_valoresTemporales[PARAM_TEMPERATURA]) + "°C");
+    Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, String(_valoresTemporales[PARAM_TIEMPO]) + " min");
+    Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(_valoresTemporales[PARAM_ROTACION]) + " RPM");
+    Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, _valoresTemporales[PARAM_CENTRIF] ? "SI" : "NO");
+    Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, _valoresTemporales[PARAM_AGUA] ? "Caliente" : "Fria");
+  }
+  
+  // Actualizar valor del parámetro actual (siempre)
+  const char *textoParam = _getParameterName(_parametroActual);
+  Hardware.nextionSetText(NEXTION_COMP_PARAM_EDITAR, textoParam);
+  
+  _formatParameterWithUnit(_parametroActual, _valoresTemporales[_parametroActual], buffer, sizeof(buffer));
+  Hardware.nextionSetText(NEXTION_COMP_PARAM_VALOR_EDITAR, buffer);
+}
+
+// === MÉTODO UNIFICADO PARA SELECCIÓN DE PARÁMETROS ===
+/**
+ * @brief Método unificado que reemplaza selectParameter, selectTandaDirecta, etc.
+ * @param param Tipo de parámetro (PARAM_NIVEL, PARAM_TEMPERATURA, etc.)
+ * @param value Valor a asignar (-1 = solo seleccionar, >=0 = seleccionar y asignar)
+ */
+void UIControllerClass::setParameter(uint8_t param, int value) {
+  if (!_modoEdicionActivo) return;
+  
+  _parametroActual = param;
+  
+  if (value >= 0) {
+    // Asignar valor específico (para botones de tanda)
+    _valoresTemporales[param] = value;
+  }
+  
+  updateDisplay(true); // Actualización completa
 }

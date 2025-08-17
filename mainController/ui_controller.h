@@ -6,20 +6,9 @@
 #include "config.h"
 #include "hardware.h"
 
-// Enum para tipos de actualización del panel de edición
-enum UpdateMode {
-  UPDATE_FULL,     // Actualizar todo el panel derecho
-  UPDATE_SINGLE,   // Actualizar solo un parámetro específico
-  UPDATE_FAST,     // Actualizar parámetro principal + componente del panel
-  UPDATE_INSTANT   // Solo valor principal (máxima velocidad)
-};
+// === ENUM ELIMINADO: UpdateMode era sobreingeniería ===
 
 class UIControllerClass {
-  // Declaraciones friend para handlers externos
-  friend void handleSelectionEvents(uint8_t componentId, UIControllerClass& uiController);
-  friend void handleExecutionEvents(uint8_t componentId, UIControllerClass& uiController);
-  friend void handleEditEvents(uint8_t componentId, UIControllerClass& uiController);
-
 public:
   // Inicialización
   void init();
@@ -33,9 +22,7 @@ public:
   void showEmergencyScreen();
   
   void initEditMode(uint8_t programa, uint8_t fase);
-  void updateEditDisplay();
-  void updateParameterDisplay();
-  void updateEditPanel(UpdateMode updateMode = UPDATE_FULL, uint8_t parametro = 0);
+  void updateDisplay(bool fullUpdate = true);
   
   void handleEditPageEvent(int componentId);
   void handleParameterIncrement();
@@ -45,24 +32,12 @@ public:
   void handleSaveParameters();
   void handleCancelEdit();
   
-  // Nuevas funciones para selección directa de parámetros
-  void selectParameter(uint8_t param);
-  void selectPhase();
-  void selectTanda();
-  void selectTandaDirecta(uint8_t tanda); // Nueva función para seleccionar tanda directamente
-  void selectCentrifuge(); 
-  void selectWater();
-  void updateTandaButtons(uint8_t tandaActiva); // Actualizar estado visual de botones de tanda
+  // Método unificado para selección de parámetros
+  void setParameter(uint8_t param, int value = -1); // -1 = solo seleccionar, >=0 = seleccionar y asignar valor
   
-  // Funciones auxiliares para doble guardado
-  bool _validateCurrentParameter();
-  void _saveCurrentParameterToTemp();
+  // === MÉTODOS _validate* ELIMINADOS: validación inline simple ===
   
-  // Métodos de transición con limpieza garantizada de eventos
-  void safeTransitionToSelection(uint8_t programa = 0);
-  void safeTransitionToExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, uint8_t tanda = 0);
-  void safeTransitionToEdit(uint8_t programa, uint8_t fase);
-  void safeTransitionToError(uint8_t errorCode = 0, const String& errorMessage = "");
+  // === MÉTODOS safeTransition* ELIMINADOS: sobreingeniería ===
   
   // Método para limpiar eventos pendientes
   void clearPendingEvents();
@@ -104,11 +79,7 @@ public:
   int getCurrentParameter() const { return _parametroActual; }
 
 private:
-  // Métodos internos para actualización optimizada
-  void _updateAllPanelParameters();
-  void _updateSinglePanelParameter(uint8_t parametro);
-  void _updateMainParameter(uint8_t parametro);
-  void _updateMainParameterInstant(uint8_t parametro);
+  // === MÉTODOS DE ACTUALIZACIÓN CONSOLIDADOS EN updateDisplay() ===
   
   // === MÉTODOS DE EVENT CLEARING ELIMINADOS ===
   // Sistema simplificado - transiciones directas
@@ -120,6 +91,15 @@ private:
   bool _messageActive;
   uint16_t _messageDuration;
   uint8_t _currentPage;  // Página actualmente mostrada en la pantalla Nextion
+  bool _clearingEvents;  // Para compatibilidad con isUIStable()
+  
+  // Variables temporales para datos de ejecución
+  uint8_t _tempPrograma;
+  uint8_t _tempFase;
+  uint8_t _tempNivelAgua;
+  uint8_t _tempTemperatura;
+  uint8_t _tempRotacion;
+  uint8_t _tempTanda;
   
   // === EVENT CLEARING VARIABLES ELIMINADAS ===
   // Sistema simplificado - transiciones directas
@@ -152,15 +132,32 @@ private:
   // === MÉTODOS INTERNOS PARA EDICIÓN DE PARÁMETROS ===
   // Carga y guardado de parámetros
   void _saveParametersToStorage(uint8_t programa, uint8_t fase);
+  void _saveCurrentParameterToTemp();
   
   // Validación y formateo
-  bool _validateAllParameters();
   void _formatParameterWithUnit(int tipoParam, int valor, char* buffer, int size);
-  bool _isParameterValid(int paramType, int value);
   const char* _getParameterName(int paramType);
   uint8_t _getNextParameter(uint8_t currentParam);
   uint8_t _getPreviousParameter(uint8_t currentParam);
   void _generateProgramText(uint8_t programa, char* buffer, int size);
+  
+  // Validación de parámetros
+  bool _validateAllParameters();
+  bool _validateCurrentParameter();
+  bool _isParameterValid(uint8_t paramType, int value);
+  
+  // Métodos de selección de parámetros
+  void selectParameter(uint8_t param);
+  void selectPhase(uint8_t fase);
+  void selectTanda(uint8_t tanda);
+  void selectCentrifuge(uint8_t centrifuge);
+  void selectWater(uint8_t water);
+  void selectTandaDirecta(uint8_t tanda);
+  
+  // Métodos de actualización de botones
+  void updateTandaButtons(uint8_t tandaActiva = 0);
+  void updatePhaseButtons();
+  void updateParameterButtons();
   
   // Gestión de timeout de edición
   void _checkEditTimeout();
