@@ -53,7 +53,6 @@
 #define TEMP_RANGE 2
 
 // Dirección del sensor de temperatura (OneWire Dallas)
-// #define TEMP_SENSOR_ADDR {0x28, 0xFF, 0x7, 0x3, 0x93, 0x16, 0x4, 0x7A}
 #define TEMP_SENSOR_ADDR {0x28, 0xFF, 0x64, 0x1E, 0x0C, 0x31, 0x18, 0x66}
 
 // Configuración de presión
@@ -224,7 +223,6 @@
 #define NEXTION_ID_BTN_PARAR 22  // Botón "Parar"
 
 // === COMPONENTES PÁGINA 5 - EMERGENCIA ===
-// #define NEXTION_ID_BTN_RESET_EMERGENCIA 10 // Botón "Reset Emergencia" (OBSOLETO - usar NEXTION_ID_BTN_REINICIAR)
 
 // === COMPONENTES PÁGINA 3 - EDICIÓN DE PARÁMETROS ===
 

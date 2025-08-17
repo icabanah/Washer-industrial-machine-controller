@@ -24,7 +24,6 @@ public:
   // Control de programa
   void selectProgram(uint8_t program);
   uint8_t getCurrentProgram();
-  void startProgram();
   void pauseProgram();
   void resumeProgram();
   void stopProgram();

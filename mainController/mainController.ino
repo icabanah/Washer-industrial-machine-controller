@@ -18,6 +18,7 @@
 
 #include "actuators.h" // Módulo de actuadores para control de válvulas y motor
 #include "config.h"    // Configuración de pines y parámetros del sistema
+#include "debug.h"     // Sistema de debug centralizado
 #include "hardware.h"  // Módulo de hardware para control de pines y Nextion
 #include "program_controller.h" // Controlador de programas para gestionar la lógica de lavado
 #include "sensors.h" // Módulo de sensores para temperatura y presión/nivel
@@ -32,36 +33,24 @@ void showWelcomeScreen();
 void setup() {
   // Inicializar puerto serial para depuración
   Serial.begin(9600);
-  Serial.println("Iniciando sistema de lavadora industrial...");
+  
+  // Inicializar sistema de debug centralizado
+  Debug.init();
+  Debug.print("Iniciando sistema de lavadora industrial...");
 
   // Inicializar módulos en orden de dependencia
   Hardware.init();
   Utils.init();
   Storage.init();
-  // Storage.initializeDefaultValues(); // Inicializar valores predeterminados
-  // si es necesario
   Sensors.init();
   Actuators.init();
   UIController.init();
   ProgramController.init();
 
-  // Actuators.startMotorForward(); // Iniciar motor en modo forward para
-  // pruebas iniciales Actuators.startMotorReverse(); // Iniciar motor en modo
-  // reverse para pruebas iniciales Hardware.digitalWrite(PIN_MOTOR_DIR_IZQ,
-  // HIGH); // Configurar motor en dirección A para pruebas iniciales
-  // Hardware.digitalWrite(PIN_MOTOR_DIR_DER, HIGH); // Configurar motor en
-  // dirección B para pruebas iniciales Actuators.startCentrifuge(); // Iniciar
-  // centrifugado para pruebas iniciales Actuators.openWaterValve(); // Abrir
-  // válvula de agua para pruebas iniciales Actuators.lockDoor(); // Bloquear
-  // puerta para pruebas iniciales Actuators.openDrainValve(); // Abrir válvula
-  // de drenaje para pruebas iniciales Actuators.openSteamValve(); // Abrir
-  // válvula de vapor para pruebas iniciales
 
   // Programar prueba de conectividad después de 1 segundo no bloqueante
   Utils.createTimeout(1000, []() {
-    // Serial.println("Probando conectividad con pantalla Nextion...");
-    // Hardware.testNextionConnectivity();
-    Serial.println("Nextion inicializada (timeout no bloqueante)");
+    Debug.print("Nextion inicializada (timeout no bloqueante)");
   });
 
   // Registrar callbacks para el temporizador principal
@@ -92,7 +81,7 @@ void setup() {
   // Iniciar temporizador principal
   Utils.startMainTimer();
 
-  Serial.println("Sistema inicializado correctamente");
+  Debug.print("Sistema inicializado correctamente");
 }
 
 void loop() {
@@ -133,7 +122,7 @@ void checkEmergencyButton() {
   else if (ProgramController.getState() == ESTADO_EMERGENCIA) {
     // Solo reset automático si la emergencia fue causada por el botón físico
     // Las emergencias por software requieren intervención manual
-    Utils.debug("🔄 Botón emergencia desactivado - Verificando origen para reset automático");
+    Debug.print("🔄 Botón emergencia desactivado - Verificando origen para reset automático");
     ProgramController.resetEmergency();
   }
   
@@ -141,7 +130,7 @@ void checkEmergencyButton() {
   static unsigned long lastSyncCheck = 0;
   if (millis() - lastSyncCheck > 2000) { // Verificar cada 2 segundos
     if (ProgramController.getState() == ESTADO_EMERGENCIA && UIController.getCurrentPage() != NEXTION_PAGE_EMERGENCY) {
-      Utils.debug("⚠️ DESINCRONIZACIÓN DETECTADA - Forzando pantalla Emergency");
+      Debug.print("⚠️ DESINCRONIZACIÓN DETECTADA - Forzando pantalla Emergency");
       UIController.showEmergencyScreen();
     }
     lastSyncCheck = millis();
@@ -151,7 +140,7 @@ void checkEmergencyButton() {
 // Callback para el cambio de pantalla después de la bienvenida
 void welcomeScreenCallback() {
   uint8_t currentProgram = ProgramController.getCurrentProgram();
-  Serial.println("Tiempo de bienvenida finalizado, mostrando pantalla de "
+  Debug.print("Tiempo de bienvenida finalizado, mostrando pantalla de "
                  "selección para el programa " +
                  String(currentProgram));
   UIController.showSelectionScreen(currentProgram +
@@ -166,7 +155,7 @@ void showWelcomeScreen() {
   // bienvenida
   Utils.createTimeout(TIEMPO_BIENVENIDA, welcomeScreenCallback);
 
-  Serial.println(
+  Debug.print(
       "showWelcomeScreen| Pantalla de bienvenida mostrada, cambiará en " +
       String(TIEMPO_BIENVENIDA) + " ms");
 }

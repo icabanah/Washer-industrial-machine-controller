@@ -228,28 +228,6 @@ void ProgramControllerClass::selectProgram(uint8_t program) {
 /// valor por defecto es 0.
 uint8_t ProgramControllerClass::getCurrentProgram() { return _currentProgram; }
 
-// MÉTODO OBSOLETO - Reemplazado por flujo simplificado validateConditions() → executeStart()
-// Mantener temporalmente para compatibilidad con otros componentes
-void ProgramControllerClass::startProgram() {
-  Utils.debug("⚠️ MÉTODO OBSOLETO startProgram() - Usar executeStart() en su lugar");
-  Utils.debug("🚀 Iniciando P" + String(_currentProgram + 22) + " - Estado: " + String(_currentState));
-  
-  // Para P24: Asegurar que siempre comience con tanda 1 (índice 0)
-  if (_currentProgram == 2) { // P24
-    _tandaCounter = 0; // Reiniciar a tanda 1 (índice 0)
-  }
-
-  // Cambiar al estado de ejecución (esto activará automáticamente la inicialización)
-  setState(ESTADO_EJECUCION);
-
-  // Configuración de UI
-  Hardware.nextionSetText(NEXTION_COMP_BTN_PAUSAR, "PAUSAR");
-  Hardware.nextionSetText(NEXTION_COMP_MSG, "Programa P" +
-                                                String(_currentProgram + 22) +
-                                                " iniciado");
-  
-  Utils.debug("✅ P" + String(_currentProgram + 22) + " iniciado exitosamente");
-}
 
 void ProgramControllerClass::pauseProgram() {
   if (_currentState == ESTADO_EJECUCION) {
