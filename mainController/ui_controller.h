@@ -105,17 +105,8 @@ private:
   void _updateMainParameter(uint8_t parametro);
   void _updateMainParameterInstant(uint8_t parametro);
   
-  // Métodos para limpieza no bloqueante de eventos
-  void _processEventClearing();
-  void _finishEventClearing();
-  void _finishEventClearingAndShowSelection(uint8_t programa);
-  void _finishEventClearingAndShowExecution(uint8_t programa, uint8_t fase, uint8_t nivelAgua, uint8_t temperatura, uint8_t rotacion, uint8_t tanda);
-  void _finishEventClearingAndShowEdit(uint8_t programa, uint8_t fase);
-  
-  // Funciones wrapper estáticas para callbacks
-  static void _callbackShowSelection();
-  static void _callbackShowExecution();
-  static void _callbackShowEdit();
+  // === MÉTODOS DE EVENT CLEARING ELIMINADOS ===
+  // Sistema simplificado - transiciones directas
   
   // Variables para controlar estado de UI
   String _lastUserAction;
@@ -125,19 +116,8 @@ private:
   uint16_t _messageDuration;
   uint8_t _currentPage;  // Página actualmente mostrada en la pantalla Nextion
   
-  // Variables para el sistema de limpieza de eventos
-  bool _clearingEvents;
-  unsigned long _clearingStartTime;
-  static const uint16_t EVENT_CLEAR_TIMEOUT = 100; // ms para limpiar eventos
-  int _eventClearTaskId;  // ID para temporizador de limpieza no bloqueante
-  
-  // Variables temporales para callbacks
-  static uint8_t _tempPrograma;
-  static uint8_t _tempFase;
-  static uint8_t _tempNivelAgua;
-  static uint8_t _tempTemperatura;
-  static uint8_t _tempRotacion;
-  static uint8_t _tempTanda;
+  // === EVENT CLEARING VARIABLES ELIMINADAS ===
+  // Sistema simplificado - transiciones directas
   
   // === VARIABLES PARA EDICIÓN DE PARÁMETROS ===
   // Estado de edición actual
@@ -149,14 +129,9 @@ private:
   unsigned long _editTimeoutStart; // Para timeout automático de edición
   bool _parameterSaved;            // Control para doble guardado: parámetro -> programa
   
-  // Referencia a los datos del programa para visualización
-  uint8_t (*_nivelAgua)[4];
-  uint8_t (*_rotacionTam)[4];
-  uint8_t (*_temperaturaLim)[4];
-  uint8_t (*_temporizadorLim)[4];
-  uint8_t (*_fasesPrograma)[4];
-  uint8_t (*_centrifugadoPorTanda)[4];
-  uint8_t (*_tipoAguaPrograma)[4];
+  // === MATRICES ELIMINADAS ===
+  // Los datos de programa se obtienen directamente desde Storage cuando se necesitan
+  // Eliminando referencias duplicadas para simplificar arquitectura
   
   // Métodos internos para procesar componentes
   void _handleTouchEvent();                        // Nuevo método para eventos táctiles

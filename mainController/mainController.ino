@@ -53,24 +53,20 @@ void setup() {
     Debug.print("Nextion inicializada (timeout no bloqueante)");
   });
 
-  // Registrar callbacks para el temporizador principal
-  // Esto centraliza la gestión del tiempo y evita múltiples temporizadores
-  // desincronizados
-  Utils.registerTimerCallback([]() {
+  // Sistema unificado de tareas - usando solo createInterval
+  Utils.createInterval(1000, []() {
     // Verificar estados de sensores periódicamente
     if (ProgramController.getState() == ESTADO_EJECUCION) {
       Sensors.updateSensors();
     }
-  });
+  }, true);
 
-  // Registrar callbacks para actualización de UI (reducido para evitar
-  // saturación)
-  Utils.registerTimerCallback([]() {
+  Utils.createInterval(100, []() {
     // Actualizar UI si es necesario (solo eventos táctiles)
     if (Hardware.isNextionInitComplete()) {
       Hardware.nextionCheckForEvents();
     }
-  });
+  }, true);
 
   // Mostrar pantalla de bienvenida
   showWelcomeScreen();
@@ -78,8 +74,7 @@ void setup() {
   // Iniciar monitoreo de sensores
   Sensors.startMonitoring();
 
-  // Iniciar temporizador principal
-  Utils.startMainTimer();
+  // Sistema unificado - ya no necesitamos startMainTimer()
 
   Debug.print("Sistema inicializado correctamente");
 }

@@ -8,9 +8,7 @@ UtilsClass Utils;
 
 void UtilsClass::init()
 {
-  // Inicializar variables de control
-  _mainTimerRunning = false;
-  _mainTimerLastRun = 0;
+  // Inicializar variables de control simplificadas
   _taskCount = 0;
   _nextTaskId = 1; // Empezamos con ID 1, el 0 lo reservamos para indicar error
 
@@ -22,18 +20,8 @@ void UtilsClass::init()
     _tasks[i].id = 0;
   }
 
-  // Inicializar array de callbacks del temporizador principal
-  for (uint8_t i = 0; i < MAX_ASYNC_TASKS; i++)
-  {
-    _timerCallbacks[i].active = false;
-    _timerCallbacks[i].callback = nullptr;
-    _timerCallbacks[i].id = 0;
-  }
-  _timerCallbackCount = 0;
-  _nextTimerCallbackId = 1;
-
-  // Configurar temporizador principal
-  _setupMainTimer();
+  // === SISTEMA SIMPLIFICADO ===
+  // Timer callbacks eliminados - solo AsyncTask
 
   debug("UtilsClass::init()| Sistema de utils inicializado sin dependencias externas");
 }
@@ -47,104 +35,13 @@ void UtilsClass::init()
 /// La función que se desea registrar como callback.
 /// @return
 /// El ID del callback registrado, o -1 si no se pudo registrar.
-int UtilsClass::registerTimerCallback(TaskCallback callback)
-{
-  if (callback == nullptr)
-  { // Verificar si el callback es nulo
-    debug("UtilsClass::registerTimerCallback| Error: Intento de registrar callback nulo para temporizador principal");
-    return -1;
-  }
+// === MÉTODOS TIMER CALLBACK ELIMINADOS ===
+// Sistema unificado - usar createInterval() en su lugar
 
-  // Buscar un slot libre
-  int freeSlot = -1;
-  for (uint8_t i = 0; i < MAX_ASYNC_TASKS; i++)
-  {
-    if (i < _timerCallbackCount)
-    { // Si ya hay callbacks registrados, buscar uno inactivo
-      if (!_timerCallbacks[i].active)
-      {
-        freeSlot = i;
-        break;
-      }
-    }
-    else
-    { // Si no hay callbacks registrados, usar el primer slot libre
-      freeSlot = i;
-      break;
-    }
-  }
+// === MAIN TIMER METHODS ELIMINADOS ===
+// Sistema simplificado - no necesitamos timer principal centralizado
 
-  if (freeSlot < 0)
-  { // No hay espacio para más callbacks
-    debug("UtilsClass::registerTimerCallback| Error: No se puede registrar más callbacks para el temporizador principal");
-    return -1;
-  }
-
-  // Registrar callback
-  _timerCallbacks[freeSlot].callback = callback;
-  _timerCallbacks[freeSlot].id = _nextTimerCallbackId++;
-  _timerCallbacks[freeSlot].active = true;
-
-  // Incrementar contador si es necesario
-  if (freeSlot == _timerCallbackCount)
-  {
-    _timerCallbackCount++;
-  }
-
-  debug("Nuevo callback registrado para temporizador principal con ID " + String(_timerCallbacks[freeSlot].id));
-  return _timerCallbacks[freeSlot].id;
-}
-
-bool UtilsClass::unregisterTimerCallback(int callbackId)
-{
-  for (uint8_t i = 0; i < _timerCallbackCount; i++)
-  {
-    if (_timerCallbacks[i].active && _timerCallbacks[i].id == callbackId)
-    {
-      _timerCallbacks[i].active = false;
-      debug("Callback con ID " + String(callbackId) + " eliminado del temporizador principal");
-      return true;
-    }
-  }
-
-  debug("Error: Intento de eliminar callback inexistente con ID " + String(callbackId));
-  return false;
-}
-
-/// @brief 
-/// Crea una tarea periódica que se ejecutará en intervalos regulares.
-/// @note
-/// Asegúrate de que el callback no bloquee el hilo principal, ya que esto podría afectar el rendimiento del sistema.
-void UtilsClass::_setupMainTimer()
-{
-  // Configurar el temporizador principal basado en millis()
-  _mainTimerLastRun = millis();
-  debug("Temporizador principal configurado con intervalo de " + String(INTERVALO_TEMPORIZADOR) + " ms");
-}
-
-void UtilsClass::startMainTimer()
-{
-  if (!_mainTimerRunning)
-  {
-    _mainTimerRunning = true;
-    _mainTimerLastRun = millis();
-    debug("Temporizador principal iniciado");
-  }
-}
-
-void UtilsClass::stopMainTimer()
-{
-  if (_mainTimerRunning)
-  {
-    _mainTimerRunning = false;
-    debug("Temporizador principal detenido");
-  }
-}
-
-bool UtilsClass::isMainTimerRunning()
-{
-  return _mainTimerRunning;
-}
+// === STOP/IS MAIN TIMER ELIMINADOS ===
 
 
 /// @brief 
@@ -356,20 +253,8 @@ void UtilsClass::updateTasks()
 {
   unsigned long currentTime = millis();
 
-  // Verificar si el temporizador principal debe ejecutarse
-  if (_mainTimerRunning)
-  {
-    if (currentTime - _mainTimerLastRun >= INTERVALO_TEMPORIZADOR)
-    {
-      _mainTimerLastRun = currentTime;
-
-      // Ejecutar la función de actualización de temporizadores
-      updateTimers();
-
-      // También actualizamos los temporizadores de otros módulos
-      Actuators.updateTimers();
-    }
-  }
+  // === MAIN TIMER LOGIC ELIMINADA ===
+  // Sistema simplificado - cada tarea maneja su propio timing
 
   // Procesar todas las tareas temporizadas
   for (uint8_t i = 0; i < _taskCount; i++)
@@ -438,77 +323,14 @@ void UtilsClass::updateTasks()
       debug("Array de tareas compactado. Tareas activas: " + String(_taskCount));
     }
 
-    // También compactar los callbacks del temporizador principal
-    if (_timerCallbackCount > 0)
-    {
-      int inactiveCallbacks = 0;
-      for (uint8_t i = 0; i < _timerCallbackCount; i++)
-      {
-        if (!_timerCallbacks[i].active)
-        {
-          inactiveCallbacks++;
-        }
-      }
-
-      if (inactiveCallbacks > 3)
-      {
-        uint8_t newIndex = 0;
-
-        // Mover todos los callbacks activos al principio del array
-        for (uint8_t i = 0; i < _timerCallbackCount; i++)
-        {
-          if (_timerCallbacks[i].active)
-          {
-            if (i != newIndex)
-            {
-              _timerCallbacks[newIndex] = _timerCallbacks[i];
-            }
-            newIndex++;
-          }
-        }
-
-        // Actualizar el contador
-        _timerCallbackCount = newIndex;
-        debug("Array de callbacks compactado. Callbacks activos: " + String(_timerCallbackCount));
-      }
-    }
+    // === COMPACTACIÓN DE TIMER CALLBACKS ELIMINADA ===
+    // Sistema simplificado - solo gestiona AsyncTasks
   }
 }
 
-void UtilsClass::updateTimers()
-{
-  // Esta función es llamada por el temporizador principal
-  // y actualiza los contadores y estados del sistema
-
-  // Actualizar los temporizadores de otros módulos
-  static unsigned long lastGlobalUpdate = 0;
-  unsigned long currentTime = millis();
-
-  // Actualización global cada 1000 ms (1 segundo)
-  if (currentTime - lastGlobalUpdate >= 1000)
-  {
-    lastGlobalUpdate = currentTime;
-
-    // Aquí actualizamos los temporizadores del sistema
-    // Ejecutamos todos los callbacks registrados
-    for (uint8_t i = 0; i < _timerCallbackCount; i++)
-    {
-      if (_timerCallbacks[i].active && _timerCallbacks[i].callback != nullptr)
-      {
-        _timerCallbacks[i].callback();
-      }
-    }
-
-    // Actualizar temporizador del programa (si está en ejecución)
-    if (ProgramController.getState() == ESTADO_EJECUCION)
-    {
-      ProgramController.updateTimers();
-    }
-
-    // Registrar tiempo de actualización (comentado para reducir ruido en consola)
-    // debug("Actualizando temporizadores globales - " + String(currentTime));
-  }
-}
+// === UPDATE TIMERS ELIMINADO ===
+// Sistema simplificado - ProgramController maneja sus propios timers
+// via createInterval() para máxima independencia
 
 void UtilsClass::formatTime(uint8_t minutes, uint8_t seconds, char *buffer, size_t bufferSize)
 {
