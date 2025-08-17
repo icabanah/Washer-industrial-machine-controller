@@ -6,24 +6,25 @@ ProgramControllerClass ProgramController;
 
 /// @brief Actualizar solo botones de programa (función auxiliar rápida)
 void ProgramControllerClass::_updateProgramButtons() {
-  // Actualizar estado de botones con pequeños delays para mejor comunicación Nextion
+  // Actualizar estado de botones con delays aumentados para mejor comunicación Nextion
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM1, (_currentProgram == 0) ? 1 : 0);
-  delay(10); // Pequeño delay entre comandos
+  delay(25); // Delay aumentado para mejor comunicación
   
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (_currentProgram == 1) ? 1 : 0);
-  delay(10);
+  delay(25); // Delay aumentado para mejor comunicación
   
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (_currentProgram == 2) ? 1 : 0);
-  delay(10);
+  delay(25); // Delay aumentado para mejor comunicación
   
   // Actualizar también el componente que muestra el programa seleccionado
   Hardware.nextionSetText(NEXTION_COMP_PROGRAMA_SEL, "P" + String(_currentProgram + 22));
-  delay(10);
+  delay(25); // Delay aumentado
   
   // Actualizar NEXTION_COMP_SET_PROG usando la función generarTextoPrograma
   char buffer[20];
   generarTextoPrograma(_currentProgram, buffer, sizeof(buffer));
   Hardware.nextionSetText(NEXTION_COMP_SET_PROG, buffer);
+  delay(25); // Delay final para asegurar todas las actualizaciones
 }
 
 void ProgramControllerClass::init() {
@@ -1253,7 +1254,7 @@ void ProgramControllerClass::executeStart() {
       _currentProgram, _currentPhase,
       Storage.loadWaterLevel(_currentProgram, 0, _currentPhase),
       Storage.loadTemperature(_currentProgram, 0, _currentPhase),
-      Storage.loadRotation(_currentProgram, 0, _currentPhase),
+      Storage.loadRotation(_currentProgram, _currentPhase),
       tandaEjecucion);
   
   // Reset tiempo en pantalla
@@ -1558,19 +1559,28 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
   switch (componentId) {
   case NEXTION_ID_BTN_PROGRAM1:
     // Seleccionar programa 1 (P22) - índice interno 0
-    selectProgram(0); // Usar método consistente que ya actualiza interfaz
+    Utils.debug("👆 Selección P22 - Botón presionado");
+    selectProgram(0);
+    // Delay antes de actualizar panel para evitar conflictos
+    delay(50);
     UIController.updateProgramPanel(_currentProgram);
     break;
 
   case NEXTION_ID_BTN_PROGRAM2:
     // Seleccionar programa 2 (P23) - índice interno 1
-    selectProgram(1); // Usar método consistente que ya actualiza interfaz
+    Utils.debug("👆 Selección P23 - Botón presionado");
+    selectProgram(1);
+    // Delay antes de actualizar panel para evitar conflictos
+    delay(50);
     UIController.updateProgramPanel(_currentProgram);
     break;
 
   case NEXTION_ID_BTN_PROGRAM3:
     // Seleccionar programa 3 (P24) - índice interno 2
-    selectProgram(2); // Usar método consistente que ya actualiza interfaz
+    Utils.debug("👆 Selección P24 - Botón presionado");
+    selectProgram(2);
+    // Delay antes de actualizar panel para evitar conflictos
+    delay(50);
     UIController.updateProgramPanel(_currentProgram);
     break;
 

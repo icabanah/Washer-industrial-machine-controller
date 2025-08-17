@@ -164,7 +164,7 @@ void UIControllerClass::showSelectionScreen(uint8_t programa) {
   // Actualizar texto del botón START según estado de puerta
   updateStartButtonText();
 
-  // Resaltar el botón del programa seleccionado (solo componentes individuales)
+  // Resaltar el botón del programa seleccionado sin delays para respuesta rápida
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM1, (programa == 0) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM2, (programa == 1) ? 1 : 0);
   Hardware.nextionSetValue(NEXTION_COMP_BTN_PROGRAM3, (programa == 2) ? 1 : 0);
@@ -433,8 +433,8 @@ void UIControllerClass::processEvents() {
     _checkEditTimeout();
   }
 
-  // === MODO ULTRA-RÁPIDO PARA PÁGINA DE EDICIÓN ===
-  if (_currentPage == NEXTION_PAGE_EDIT) {
+  // === MODO ULTRA-RÁPIDO PARA PÁGINAS DE EDICIÓN Y SELECCIÓN ===
+  if (_currentPage == NEXTION_PAGE_EDIT || _currentPage == NEXTION_PAGE_SELECTION) {
     // POLLING AGRESIVO - leer múltiples eventos por ciclo para máxima respuesta
     for (int i = 0; i < 3;
          i++) { // Hasta 3 eventos por llamada a processEvents()
@@ -442,14 +442,16 @@ void UIControllerClass::processEvents() {
         _handleTouchEvent();
       }
     }
-    return; // Salir inmediatamente para máxima velocidad en edición
+    return; // Salir inmediatamente para máxima velocidad
   }
 
   // === MONITOREO PERIÓDICO DEL ESTADO DE PUERTA (SOLO OTRAS PÁGINAS) ===
   static unsigned long lastButtonUpdate = 0;
-  if (_currentPage == NEXTION_PAGE_SELECTION &&
+  if (_currentPage != NEXTION_PAGE_EDIT && 
       millis() - lastButtonUpdate > 50) {
-    updateStartButtonText();
+    if (_currentPage == NEXTION_PAGE_SELECTION) {
+      updateStartButtonText();
+    }
     lastButtonUpdate = millis();
   }
 
@@ -697,12 +699,15 @@ void UIControllerClass::clearPendingEvents() {
   _userActionPending = false;
   _lastUserAction = "";
 
-  // Procesar y descartar eventos pendientes en el hardware
-  while (Hardware.nextionCheckForEvents()) {
+  // Limpieza más conservadora - solo procesar algunos eventos antiguos
+  int eventCount = 0;
+  while (Hardware.nextionCheckForEvents() && eventCount < 3) {
     Hardware.nextionGetLastEvent(); // Descartar evento
+    eventCount++;
+    delay(5); // Pequeño delay entre procesamiento de eventos
   }
 
-  Serial.println("Eventos de UI limpiados");
+  Serial.println("Eventos de UI limpiados (conservador)");
 }
 
 void UIControllerClass::_clearPendingEvents() {
