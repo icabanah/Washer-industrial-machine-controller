@@ -39,6 +39,40 @@ void StorageClass::init() {
   }
 }
 
+// === IMPLEMENTACIÓN API UNIFICADA ===
+
+uint8_t StorageClass::get(ParameterType paramType, const StorageLocation& location) {
+  // Construir clave unificada
+  char key[32];
+  _buildUnifiedKey(paramType, location, key);
+  
+  // Obtener valor por defecto apropiado
+  uint8_t defaultValue = _getDefaultValue(paramType, location.program);
+  
+  return readByte(key, defaultValue);
+}
+
+void StorageClass::set(ParameterType paramType, const StorageLocation& location, uint8_t value) {
+  // Construir clave unificada
+  char key[32];
+  _buildUnifiedKey(paramType, location, key);
+  
+  writeByte(key, value);
+}
+
+// Métodos de conveniencia
+uint8_t StorageClass::get(ParameterType paramType, ProgramId program, uint8_t phase) {
+  return get(paramType, StorageLocation(program, phase));
+}
+
+void StorageClass::set(ParameterType paramType, ProgramId program, uint8_t phase, uint8_t value) {
+  set(paramType, StorageLocation(program, phase), value);
+}
+
+void StorageClass::set(ParameterType paramType, ProgramId program, uint8_t value) {
+  set(paramType, StorageLocation(program, 0), value);
+}
+
 uint8_t StorageClass::readByte(const char* key, uint8_t defaultValue) {
   if (!_initialized) return defaultValue;
   return _preferences.getUChar(key, defaultValue);
@@ -610,4 +644,62 @@ uint8_t StorageClass::loadTipoAgua(uint8_t program, uint8_t tanda, uint8_t phase
     default:
       return 0;
   }
+}
+
+// === IMPLEMENTACIÓN MÉTODOS PARA API UNIFICADA ===
+
+void StorageClass::_buildUnifiedKey(ParameterType paramType, const StorageLocation& location, char* key) {
+  // Crear clave unificada: "P{program}_{paramName}_{phase}"
+  const char* paramName = "";
+  
+  switch (paramType) {
+    case ParameterType::WATER_LEVEL:  paramName = "WL"; break;
+    case ParameterType::TEMPERATURE:  paramName = "TP"; break;
+    case ParameterType::TIME:         paramName = "TM"; break;
+    case ParameterType::ROTATION:     paramName = "RT"; break;
+    case ParameterType::CENTRIFUGE:   paramName = "CF"; break;
+    case ParameterType::WATER_TYPE:   paramName = "WT"; break;
+    case ParameterType::PHASE_TYPE:   paramName = "PT"; break;
+  }
+  
+  uint8_t programNum = (uint8_t)location.program + 22; // P22, P23, P24
+  
+  if (location.program == ProgramId::P24 && location.phase > 0) {
+    // P24 con fases específicas
+    sprintf(key, "P%d_%s_%d", programNum, paramName, location.phase);
+  } else {
+    // P22, P23 o P24 valores generales
+    sprintf(key, "P%d_%s", programNum, paramName);
+  }
+}
+
+uint8_t StorageClass::_getDefaultValue(ParameterType paramType, ProgramId program) {
+  switch (paramType) {
+    case ParameterType::WATER_LEVEL:
+      return (program == ProgramId::P24) ? 2 : 3;
+      
+    case ParameterType::TEMPERATURE:
+      switch (program) {
+        case ProgramId::P22: return 65;  // Agua caliente
+        case ProgramId::P23: return 25;  // Agua fría
+        case ProgramId::P24: return 50;  // Templada
+      }
+      
+    case ParameterType::TIME:
+      return (program == ProgramId::P24) ? 12 : 15;
+      
+    case ParameterType::ROTATION:
+      return 2; // Rotación media para todos
+      
+    case ParameterType::CENTRIFUGE:
+      return 1; // Activo por defecto
+      
+    case ParameterType::WATER_TYPE:
+      return (program == ProgramId::P22) ? 1 : 0; // Caliente/Fría
+      
+    case ParameterType::PHASE_TYPE:
+      return 1; // Fase estándar
+  }
+  
+  return 0; // Valor por defecto seguro
 }

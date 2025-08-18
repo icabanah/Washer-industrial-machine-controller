@@ -4,6 +4,7 @@
 
 #include "Arduino.h"
 #include "config.h"
+#include "storage_types.h"
 #include <Preferences.h>
 
 class StorageClass {
@@ -14,6 +15,18 @@ public:
   // Inicialización
   void init();
   void initializeDefaultValues(); // Inicializar valores predeterminados de programas
+  
+  // === API UNIFICADA (NUEVA IMPLEMENTACIÓN) ===
+  // Método unificado para obtener cualquier parámetro
+  uint8_t get(ParameterType paramType, const StorageLocation& location);
+  
+  // Método unificado para guardar cualquier parámetro  
+  void set(ParameterType paramType, const StorageLocation& location, uint8_t value);
+  
+  // Métodos de conveniencia con sintaxis simplificada
+  uint8_t get(ParameterType paramType, ProgramId program, uint8_t phase = 0);
+  void set(ParameterType paramType, ProgramId program, uint8_t phase, uint8_t value);
+  void set(ParameterType paramType, ProgramId program, uint8_t value); // Para parámetros únicos
   
   // Operaciones básicas de almacenamiento
   uint8_t readByte(const char* key, uint8_t defaultValue = 0);
@@ -114,6 +127,10 @@ private:
   
   // Métodos internos optimizados
   const char* _getP24Key(const char* param, uint8_t phase);
+  
+  // Métodos para API unificada
+  void _buildUnifiedKey(ParameterType paramType, const StorageLocation& location, char* key);
+  uint8_t _getDefaultValue(ParameterType paramType, ProgramId program);
   
   // Métodos de compatibilidad (deprecated)
   const char* _getWaterLevelKey(uint8_t program, uint8_t phase);
