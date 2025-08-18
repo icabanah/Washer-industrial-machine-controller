@@ -36,7 +36,7 @@ struct SensorConfig {
   // Temperatura
   static constexpr uint8_t TEMP_RESOLUTION = 9;
   static constexpr uint8_t TEMP_RANGE = 2;
-  static constexpr uint8_t TEMP_SENSOR_ADDR[8] = {0x28, 0xFF, 0x64, 0x1E, 0x0C, 0x31, 0x18, 0x66};
+  static inline const uint8_t TEMP_SENSOR_ADDR[8] = {0x28, 0xFF, 0x64, 0x1E, 0x0C, 0x31, 0x18, 0x66};
   
   // Presión (niveles de agua)
   static constexpr uint16_t PRESSURE_LEVEL_1 = 601;

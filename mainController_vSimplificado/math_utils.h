@@ -1,6 +1,8 @@
 #ifndef MATH_UTILS_H
 #define MATH_UTILS_H
 
+#include "Arduino.h"
+
 class MathUtils {
 public:
   // Verificar si un valor está dentro de un rango

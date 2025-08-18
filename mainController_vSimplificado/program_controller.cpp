@@ -679,12 +679,12 @@ void ProgramControllerClass::_handleTemperatureControl() {
   float targetTemp = Storage.loadTemperature(_currentProgram, 0, _currentPhase);
 
   if (currentTemp < targetTemp - 2) {
-    // Utils.debug("🌡️ Temperatura baja: " + String(currentTemp) + "°C,
+    // Debug.print("🌡️ Temperatura baja: " + String(currentTemp) + "°C,
     // objetivo: " + String(targetTemp) + "°C");
 
     // Paso 1: Drenar parcialmente para hacer espacio al agua caliente
     if (Sensors.getCurrentWaterLevel() > 1) {
-      // Utils.debug("💧 Drenando parcialmente para renovar agua...");
+      // Debug.print("💧 Drenando parcialmente para renovar agua...");
       Actuators.openDrainValve();
 
       // Esperar a que baje el nivel (implementación simplificada)
@@ -693,13 +693,13 @@ void ProgramControllerClass::_handleTemperatureControl() {
         Actuators.closeDrainValve();
 
         // Paso 2: Abrir válvula de agua caliente
-        // Utils.debug("🔥 Abriendo válvula de agua caliente...");
+        // Debug.print("🔥 Abriendo válvula de agua caliente...");
         Actuators.openWaterValve();
 
         // Paso 3: Activar vapor si es necesario
         if (!Actuators.isSteamValveOpen()) {
           Actuators.openSteamValve();
-          // Utils.debug("🔥 Activando vapor para acelerar calentamiento");
+          // Debug.print("🔥 Activando vapor para acelerar calentamiento");
         }
 
         drainStartTime = millis(); // Reset timer
@@ -708,14 +708,14 @@ void ProgramControllerClass::_handleTemperatureControl() {
       // Si el nivel ya es bajo, solo activar calentamiento
       if (!Actuators.isSteamValveOpen()) {
         Actuators.openSteamValve();
-        // Utils.debug("🔥 Activando calentamiento directo");
+        // Debug.print("🔥 Activando calentamiento directo");
       }
     }
   } else if (currentTemp > targetTemp + 2) {
     // Temperatura alta - detener calentamiento
     if (Actuators.isSteamValveOpen()) {
       Actuators.closeSteamValve();
-      // Utils.debug("❄️ Deteniendo calentamiento - Temp OK");
+      // Debug.print("❄️ Deteniendo calentamiento - Temp OK");
     }
   }
 
@@ -851,7 +851,7 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
     }
   }
 
-  Utils.debug("✅ Actuadores configurados para P" +
+  Debug.print("✅ Actuadores configurados para P" +
               String(_currentProgram + 22) + " F" + String(_currentPhase));
 }
 
@@ -1003,7 +1003,7 @@ void ProgramControllerClass::editParameter(uint8_t paramType, uint8_t value) {
   // Actualizar la pantalla con el nuevo valor
   _loadEditingParametersForCurrentTanda();
   
-  Utils.debug("Parámetro editado para P" + String(_editingProgram + 22) + 
+  Debug.print("Parámetro editado para P" + String(_editingProgram + 22) + 
              " Tanda " + String(storageIndex + 1) + ": " + String(value));
 }
 
@@ -1015,21 +1015,21 @@ void ProgramControllerClass::saveEditing() {
   switch (_editingParameter) {
   case PARAM_NIVEL:
     _waterLevels[_editingProgram][_editingPhase] = _editingParameterValue;
-    Utils.debug("💾 Nivel guardado: " + String(_editingParameterValue));
+    Debug.print("💾 Nivel guardado: " + String(_editingParameterValue));
     break;
   case PARAM_TEMPERATURA:
     _temperatures[_editingProgram][_editingPhase] = _editingParameterValue;
-    Utils.debug("💾 Temperatura guardada: " + String(_editingParameterValue) +
+    Debug.print("💾 Temperatura guardada: " + String(_editingParameterValue) +
                 "°C");
     break;
   case PARAM_TIEMPO:
     _times[_editingProgram][_editingPhase] = _editingParameterValue;
-    Utils.debug("💾 Tiempo guardado: " + String(_editingParameterValue) +
+    Debug.print("💾 Tiempo guardado: " + String(_editingParameterValue) +
                 " min");
     break;
   case PARAM_ROTACION:
     _rotations[_editingProgram][_editingPhase] = _editingParameterValue;
-    Utils.debug("💾 Rotación guardada: " + String(_editingParameterValue));
+    Debug.print("💾 Rotación guardada: " + String(_editingParameterValue));
     break;
   }
 
@@ -1054,7 +1054,7 @@ void ProgramControllerClass::saveEditing() {
   UIController.showSelectionScreen(
       _editingProgram); // Pasar índice directamente
 
-  Utils.debug("✅ Edición guardada exitosamente");
+  Debug.print("✅ Edición guardada exitosamente");
 }
 
 void ProgramControllerClass::cancelEditing() {
@@ -1062,7 +1062,7 @@ void ProgramControllerClass::cancelEditing() {
   // Recargar valores originales
   _loadProgramData();
   setState(ESTADO_SELECCION);
-  Utils.debug("Edición cancelada");
+  Debug.print("Edición cancelada");
 }
 
 void ProgramControllerClass::endEditing() {
@@ -1071,16 +1071,16 @@ void ProgramControllerClass::endEditing() {
   // Asegurar que _currentProgram sea el programa que se estaba editando
   _currentProgram = _editingProgram;
 
-  Utils.debug("✅ Edición terminada para P" + String(_editingProgram + 22) +
+  Debug.print("✅ Edición terminada para P" + String(_editingProgram + 22) +
               ", volviendo a selección");
-  Utils.debug("   Actualizando _currentProgram a: " + String(_currentProgram));
+  Debug.print("   Actualizando _currentProgram a: " + String(_currentProgram));
 
   setState(ESTADO_SELECCION);
 }
 
 void ProgramControllerClass::processUserEvent(const String &event) {
   // Debug básico del evento recibido
-  Utils.debug("📥 Evento recibido - Procesando: " + event);
+  Debug.print("📥 Evento recibido - Procesando: " + event);
   
   // Obtener datos del evento
   uint8_t touchPage = Hardware.getTouchEventPage();
@@ -1088,7 +1088,7 @@ void ProgramControllerClass::processUserEvent(const String &event) {
 
   // FLUJO SIMPLIFICADO: Botón START → validateConditions() → executeStart()
   if (touchComponent == NEXTION_ID_BTN_START && touchPage == NEXTION_PAGE_SELECTION) {
-    Utils.debug("🎯 BOTÓN START PRESIONADO");
+    Debug.print("🎯 BOTÓN START PRESIONADO");
     if (validateConditions()) {
       executeStart();
     }
@@ -1113,7 +1113,7 @@ void ProgramControllerClass::processUserEvent(const String &event) {
 
   case NEXTION_PAGE_EXECUTION:
     if (touchComponent == NEXTION_ID_BTN_PARAR || touchComponent == NEXTION_ID_BTN_PAUSAR) {
-      Utils.debug("🎯 Botón control - Comp:" + String(touchComponent) + 
+      Debug.print("🎯 Botón control - Comp:" + String(touchComponent) + 
                   " Estado:" + String(_currentState) + 
                   " Prep:" + String(_preparingPhase ? "Sí" : "No"));
     }
@@ -1125,7 +1125,7 @@ void ProgramControllerClass::processUserEvent(const String &event) {
     break;
 
   default:
-    Utils.debug("⚠️ Página no manejada: " + String(touchPage));
+    Debug.print("⚠️ Página no manejada: " + String(touchPage));
     break;
   }
 }
@@ -1133,18 +1133,18 @@ void ProgramControllerClass::processUserEvent(const String &event) {
 // ===== FUNCIONES DE VALIDACIÓN OPTIMIZADAS =====
 
 bool ProgramControllerClass::_validateStartConditions(const String& context) {
-  Utils.debug("🔍 VALIDANDO CONDICIONES DE INICIO" + (context.length() > 0 ? " (" + context + ")" : ""));
+  Debug.print("🔍 VALIDANDO CONDICIONES DE INICIO" + (context.length() > 0 ? " (" + context + ")" : ""));
   
   // VALIDACIÓN 1: Evento táctil válido
   if (!Hardware.hasValidTouchEvent()) {
-    Utils.debug("❌ VALIDACIÓN 1 FALLÓ: Evento Nextion inválido");
+    Debug.print("❌ VALIDACIÓN 1 FALLÓ: Evento Nextion inválido");
     return false;
   }
   
   // VALIDACIÓN 2: Página correcta
   uint8_t touchPage = Hardware.getTouchEventPage();
   if (touchPage != NEXTION_PAGE_SELECTION) {
-    Utils.debug("❌ VALIDACIÓN 2 FALLÓ: Página incorrecta - Actual:" + String(touchPage) + 
+    Debug.print("❌ VALIDACIÓN 2 FALLÓ: Página incorrecta - Actual:" + String(touchPage) + 
                 " Esperada:" + String(NEXTION_PAGE_SELECTION));
     return false;
   }
@@ -1152,7 +1152,7 @@ bool ProgramControllerClass::_validateStartConditions(const String& context) {
   // VALIDACIÓN 3: Componente correcto
   uint8_t touchComponent = Hardware.getTouchEventComponent();
   if (touchComponent != NEXTION_ID_BTN_START) {
-    Utils.debug("❌ VALIDACIÓN 3 FALLÓ: Componente incorrecto - Actual:" + String(touchComponent) + 
+    Debug.print("❌ VALIDACIÓN 3 FALLÓ: Componente incorrecto - Actual:" + String(touchComponent) + 
                 " Esperado:" + String(NEXTION_ID_BTN_START));
     return false;
   }
@@ -1160,18 +1160,18 @@ bool ProgramControllerClass::_validateStartConditions(const String& context) {
   // VALIDACIÓN 4: Tipo de evento correcto (presionado)
   uint8_t touchType = Hardware.getTouchEventType();
   if (touchType != 1) {
-    Utils.debug("❌ VALIDACIÓN 4 FALLÓ: Tipo evento incorrecto - Actual:" + String(touchType) + " (debe ser 1)");
+    Debug.print("❌ VALIDACIÓN 4 FALLÓ: Tipo evento incorrecto - Actual:" + String(touchType) + " (debe ser 1)");
     return false;
   }
   
   // VALIDACIÓN 5: Estado del sistema correcto
   if (_currentState != ESTADO_SELECCION) {
-    Utils.debug("❌ VALIDACIÓN 5 FALLÓ: Estado incorrecto - Actual:" + String(_currentState) + 
+    Debug.print("❌ VALIDACIÓN 5 FALLÓ: Estado incorrecto - Actual:" + String(_currentState) + 
                 " Esperado:" + String(ESTADO_SELECCION));
     return false;
   }
   
-  Utils.debug("✅ TODAS LAS VALIDACIONES PASARON - Sistema listo para inicio");
+  Debug.print("✅ TODAS LAS VALIDACIONES PASARON - Sistema listo para inicio");
   return true;
 }
 
@@ -1180,28 +1180,28 @@ bool ProgramControllerClass::_validateStartConditions(const String& context) {
 bool ProgramControllerClass::validateConditions() {
   // Validación 1: Estado del sistema
   if (_currentState != ESTADO_SELECCION) {
-    Utils.debug("❌ Estado incorrecto: " + String(_currentState) + " (debe ser SELECCION)");
+    Debug.print("❌ Estado incorrecto: " + String(_currentState) + " (debe ser SELECCION)");
     return false;
   }
   
   // Validación 2: Puerta cerrada
   if (!Sensors.isDoorClosed()) {
-    Utils.debug("❌ Puerta abierta - No se puede iniciar");
+    Debug.print("❌ Puerta abierta - No se puede iniciar");
     return false;
   }
   
   // Validación 3: No hay errores críticos
   if (Sensors.getCurrentTemperature() >= TEMPERATURA_EMERGENCIA) {
-    Utils.debug("❌ Temperatura crítica detectada");
+    Debug.print("❌ Temperatura crítica detectada");
     return false;
   }
   
-  Utils.debug("✅ Todas las condiciones válidas - Listo para iniciar");
+  Debug.print("✅ Todas las condiciones válidas - Listo para iniciar");
   return true;
 }
 
 void ProgramControllerClass::executeStart() {
-  Utils.debug("🚀 EJECUTANDO INICIO DIRECTO - P" + String(_currentProgram + 22));
+  Debug.print("🚀 EJECUTANDO INICIO DIRECTO - P" + String(_currentProgram + 22));
   
   // 1. Inicializar variables de programa
   _currentPhase = 0; // Comenzar desde llenado
@@ -1239,7 +1239,7 @@ void ProgramControllerClass::executeStart() {
   // Reset tiempo en pantalla
   Hardware.nextionSetText(NEXTION_COMP_TIEMPO_EJECUCION, "00:00");
   
-  Utils.debug("✅ PROGRAMA INICIADO EXITOSAMENTE");
+  Debug.print("✅ PROGRAMA INICIADO EXITOSAMENTE");
 }
 
 void ProgramControllerClass::_handleStateMachine() {
@@ -1278,7 +1278,7 @@ void ProgramControllerClass::_handleStateMachine() {
 
   default:
     // Estado desconocido - regresar a IDLE por seguridad
-    Utils.debug("⚠️ Estado desconocido: " + String(_currentState) +
+    Debug.print("⚠️ Estado desconocido: " + String(_currentState) +
                 ", regresando a IDLE");
     setState(ESTADO_IDLE);
     break;
@@ -1318,7 +1318,7 @@ void ProgramControllerClass::_handleExecutionState() {
 
   // 1. Verificar condiciones de seguridad
   if (!Actuators.isDoorLocked()) {
-    Utils.debug("⚠️ Puerta no asegurada durante ejecución");
+    Debug.print("⚠️ Puerta no asegurada durante ejecución");
     _triggerError(ERROR_PUERTA, "Puerta abierta durante ejecución");
     return;
   }
@@ -1338,7 +1338,7 @@ void ProgramControllerClass::_handlePauseState() {
     Actuators.closeSteamValve();
     // Mantener puerta bloqueada por seguridad
     _pauseActuatorsStopped = true;
-    Utils.debug("⏸️ Sistema en pausa - actuadores detenidos");
+    Debug.print("⏸️ Sistema en pausa - actuadores detenidos");
     
     // Iniciar parpadeo no bloqueante
     if (_pauseBlinkTaskId == -1) {
@@ -1364,7 +1364,7 @@ void ProgramControllerClass::_handleErrorState() {
     // Desbloquear puerta después de un tiempo prudencial
     Utils.createTimeout(5000, []() {
       Actuators.unlockDoor();
-      Utils.debug("🔓 Puerta desbloqueada después de error");
+      Debug.print("🔓 Puerta desbloqueada después de error");
     });
 
     // Iniciar parpadeo no bloqueante
@@ -1375,7 +1375,7 @@ void ProgramControllerClass::_handleErrorState() {
     }
 
     safetyMeasuresApplied = true;
-    Utils.debug("🛑 Medidas de seguridad aplicadas en estado de error");
+    Debug.print("🛑 Medidas de seguridad aplicadas en estado de error");
   }
 
   // El sistema permanece en error hasta intervención manual
@@ -1405,10 +1405,10 @@ void ProgramControllerClass::_handleEmergencyState() {
     if (_emergencyDoorUnlockTaskId == -1) {
       _emergencyDoorUnlockTaskId = Utils.createTimeout(TIEMPO_DRENAJE * 1000, []() {
         Actuators.unlockDoor();
-        Utils.debug("🔓 Puerta desbloqueada después de drenaje de emergencia");
+        Debug.print("🔓 Puerta desbloqueada después de drenaje de emergencia");
         ProgramController._emergencyDoorUnlockTaskId = -1;
       });
-      Utils.debug("⏱️ Puerta se desbloqueará en " + String(TIEMPO_DRENAJE) + " segundos");
+      Debug.print("⏱️ Puerta se desbloqueará en " + String(TIEMPO_DRENAJE) + " segundos");
     }
 
     // Detener todos los temporizadores
@@ -1422,7 +1422,7 @@ void ProgramControllerClass::_handleEmergencyState() {
     }
 
     emergencyMeasuresApplied = true;
-    Utils.debug("🚨 EMERGENCIA - Sistema detenido completamente");
+    Debug.print("🚨 EMERGENCIA - Sistema detenido completamente");
   }
 
   // El sistema permanece en emergencia hasta reset manual
@@ -1434,9 +1434,9 @@ void ProgramControllerClass::handleEmergency(bool triggeredByButton) {
   if (_currentState != ESTADO_EMERGENCIA) {
     _emergencyTriggeredByButton = triggeredByButton;
     if (triggeredByButton) {
-      Utils.debug("🚨 EMERGENCIA DETECTADA - Botón físico presionado");
+      Debug.print("🚨 EMERGENCIA DETECTADA - Botón físico presionado");
     } else {
-      Utils.debug("🚨 EMERGENCIA DETECTADA - Condición crítica de software");
+      Debug.print("🚨 EMERGENCIA DETECTADA - Condición crítica de software");
     }
     setState(ESTADO_EMERGENCIA);
     Actuators.emergencyStop();
@@ -1449,11 +1449,11 @@ void ProgramControllerClass::resetEmergency() {
     if (!Hardware.isEmergencyButtonPressed()) {
       // Solo permitir reset automático si fue causada por botón físico
       if (!_emergencyTriggeredByButton) {
-        Utils.debug("❌ RESET EMERGENCIA BLOQUEADO - Emergencia por software requiere reset manual");
+        Debug.print("❌ RESET EMERGENCIA BLOQUEADO - Emergencia por software requiere reset manual");
         return;
       }
       
-      Utils.debug("✅ RESET EMERGENCIA - Saliendo del estado de emergencia (botón físico)");
+      Debug.print("✅ RESET EMERGENCIA - Saliendo del estado de emergencia (botón físico)");
       
       // Detener parpadeo de emergencia
       if (_emergencyBlinkTaskId != -1) {
@@ -1479,9 +1479,9 @@ void ProgramControllerClass::resetEmergency() {
       // Mostrar pantalla de selección
       UIController.showSelectionScreen(_currentProgram + 1);
       
-      Utils.debug("Sistema restablecido desde emergencia");
+      Debug.print("Sistema restablecido desde emergencia");
     } else {
-      Utils.debug("RESET EMERGENCIA FALLIDO - Botón de emergencia aún presionado");
+      Debug.print("RESET EMERGENCIA FALLIDO - Botón de emergencia aún presionado");
       // Mantener pantalla de emergencia (el mensaje se manejará en la UI)
       UIController.showEmergencyScreen();
     }
@@ -1491,10 +1491,10 @@ void ProgramControllerClass::resetEmergency() {
 void ProgramControllerClass::forceResetEmergency() {
   if (_currentState == ESTADO_EMERGENCIA) {
     if (_emergencyTriggeredByButton) {
-      Utils.debug("🔄 Reset forzado - Emergencia era por botón físico (usar reset automático)");
+      Debug.print("🔄 Reset forzado - Emergencia era por botón físico (usar reset automático)");
       resetEmergency(); // Usar el reset normal
     } else {
-      Utils.debug("🔧 RESET FORZADO - Emergencia por software, reset manual autorizado");
+      Debug.print("🔧 RESET FORZADO - Emergencia por software, reset manual autorizado");
       
       // Para emergencias por software, permitir reset manual sin verificar botón físico
       // Detener parpadeo de emergencia
@@ -1518,7 +1518,7 @@ void ProgramControllerClass::forceResetEmergency() {
       // Mostrar pantalla de selección
       UIController.showSelectionScreen(_currentProgram + 1);
       
-      Utils.debug("✅ Sistema restablecido desde emergencia por software");
+      Debug.print("✅ Sistema restablecido desde emergencia por software");
     }
   }
 }
@@ -1526,7 +1526,7 @@ void ProgramControllerClass::forceResetEmergency() {
 void ProgramControllerClass::_triggerError(uint8_t errorCode,
                                            const String &errorMessage) {
   // Activar estado de error con código y mensaje específicos
-  Utils.debug("ERROR: " + errorMessage);
+  Debug.print("ERROR: " + errorMessage);
   setState(ESTADO_ERROR);
   UIController.showErrorScreen(errorCode, errorMessage);
 }
@@ -1538,7 +1538,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
   switch (componentId) {
   case NEXTION_ID_BTN_PROGRAM1:
     // Seleccionar programa 1 (P22) - índice interno 0
-    Utils.debug("👆 Selección P22 - Botón presionado");
+    Debug.print("👆 Selección P22 - Botón presionado");
     selectProgram(0);
     // Delay antes de actualizar panel para evitar conflictos
     delay(50);
@@ -1547,7 +1547,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
 
   case NEXTION_ID_BTN_PROGRAM2:
     // Seleccionar programa 2 (P23) - índice interno 1
-    Utils.debug("👆 Selección P23 - Botón presionado");
+    Debug.print("👆 Selección P23 - Botón presionado");
     selectProgram(1);
     // Delay antes de actualizar panel para evitar conflictos
     delay(50);
@@ -1556,7 +1556,7 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
 
   case NEXTION_ID_BTN_PROGRAM3:
     // Seleccionar programa 3 (P24) - índice interno 2
-    Utils.debug("👆 Selección P24 - Botón presionado");
+    Debug.print("👆 Selección P24 - Botón presionado");
     selectProgram(2);
     // Delay antes de actualizar panel para evitar conflictos
     delay(50);
@@ -1566,23 +1566,23 @@ void ProgramControllerClass::_handleSelectionPageEvents(uint8_t componentId) {
   case NEXTION_ID_BTN_START:
     // NOTA: El botón START ahora usa flujo simplificado en processUserEvent()
     // Esta sección ya no se ejecuta porque el evento se maneja directamente arriba
-    Utils.debug("⚠️ Botón START manejado por flujo simplificado - esta línea no debería ejecutarse");
+    Debug.print("⚠️ Botón START manejado por flujo simplificado - esta línea no debería ejecutarse");
     break;
 
   case NEXTION_ID_BTN_EDIT:
-    Utils.debug("✏️ Editando programa " + String(_currentProgram + 22));
+    Debug.print("✏️ Editando programa " + String(_currentProgram + 22));
     startEditing(_currentProgram, 0); // Comenzar editando la primera fase
     break;
 
   default:
-    Utils.debug("⚠️ Componente no reconocido en página de selección: " +
+    Debug.print("⚠️ Componente no reconocido en página de selección: " +
                 String(componentId));
     break;
   }
 }
 
 void ProgramControllerClass::_handleEditPageEvents(uint8_t componentId) {
-  // Utils.debug("🔧 Manejando evento de edición - Componente: " + String(componentId));
+  // Debug.print("🔧 Manejando evento de edición - Componente: " + String(componentId));
 
   // Para P24: Solo manejar botones +/- cuando estemos editando tandas Y no se haya seleccionado otro parámetro
   if (_editingProgram == 2 && _editingParameter == PARAM_FASE && UIController.getCurrentParameter() == PARAM_FASE) {
@@ -1612,7 +1612,7 @@ void ProgramControllerClass::_handleTandaSelection() {
   // Ciclar entre las 4 tandas del P24
   _editingTanda = (_editingTanda + 1) % 4; // 0, 1, 2, 3
   
-  Utils.debug("📝 P24 - Cambiando a tanda " + String(_editingTanda + 1));
+  Debug.print("📝 P24 - Cambiando a tanda " + String(_editingTanda + 1));
   
   // Actualizar la pantalla para mostrar la nueva tanda
   Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(_editingTanda + 1));
@@ -1627,7 +1627,7 @@ void ProgramControllerClass::_handleTandaSelection() {
 void ProgramControllerClass::_incrementTanda() {
   if (_editingProgram == 2) { // Solo para P24
     _editingTanda = (_editingTanda + 1) % 4; // 0→1→2→3→0
-    Utils.debug("📝 P24 - Incrementando a tanda " + String(_editingTanda + 1));
+    Debug.print("📝 P24 - Incrementando a tanda " + String(_editingTanda + 1));
     _updateTandaDisplay();
   }
 }
@@ -1635,7 +1635,7 @@ void ProgramControllerClass::_incrementTanda() {
 void ProgramControllerClass::_decrementTanda() {
   if (_editingProgram == 2) { // Solo para P24
     _editingTanda = (_editingTanda + 3) % 4; // 0→3→2→1→0 (equivale a -1 pero sin negativos)
-    Utils.debug("📝 P24 - Decrementando a tanda " + String(_editingTanda + 1));
+    Debug.print("📝 P24 - Decrementando a tanda " + String(_editingTanda + 1));
     _updateTandaDisplay();
   }
 }
@@ -1651,8 +1651,8 @@ void ProgramControllerClass::_updateTandaDisplay() {
   UIController._loadParametersFromStorage(_editingProgram, _editingTanda);
   
   // Notificar al UIController que actualice la visualización
-  UIController.updateParameterDisplay();
-  UIController.updateEditPanel(UPDATE_FULL); // Optimizado como página de selección
+  // updateParameterDisplay() eliminado - usar updateDisplay()
+  UIController.updateDisplay(true); // Reemplaza updateEditPanel(UPDATE_FULL)
   
   // CRÍTICO: Actualizar estado visual de botones de tanda
   UIController.updateTandaButtons(_editingTanda);
@@ -1662,7 +1662,7 @@ void ProgramControllerClass::_updateTandaDisplay() {
 }
 
 void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
-  Utils.debug("⚙️ Evento en página de ejecución - Componente: " +
+  Debug.print("⚙️ Evento en página de ejecución - Componente: " +
               String(componentId));
 
   switch (componentId) {
@@ -1670,11 +1670,11 @@ void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
     // Pausar/reanudar programa
     if (_currentState == ESTADO_EJECUCION) {
       // Permitir pausa en cualquier momento, incluyendo fase de llenado
-      Utils.debug(String("⏸️ Pausando programa") + 
+      Debug.print(String("⏸️ Pausando programa") + 
                   (_preparingPhase ? " (durante llenado)" : ""));
       pauseProgram();
     } else if (_currentState == ESTADO_PAUSA) {
-      Utils.debug("▶️ Reanudando programa");
+      Debug.print("▶️ Reanudando programa");
       resumeProgram();
     }
     break;
@@ -1683,32 +1683,32 @@ void ProgramControllerClass::_handleExecutionPageEvents(uint8_t componentId) {
     // Detener programa completamente
     if (_currentState == ESTADO_EJECUCION || _currentState == ESTADO_PAUSA) {
       // Permitir detener en ejecución y pausa
-      Utils.debug("⏹️ Deteniendo programa");
+      Debug.print("⏹️ Deteniendo programa");
       stopProgram();
     } else {
-      Utils.debug("⚠️ Detener no disponible en estado actual: " +
+      Debug.print("⚠️ Detener no disponible en estado actual: " +
                   String(_currentState));
     }
     break;
 
   default:
-    Utils.debug("⚠️ Componente no reconocido en página de ejecución: " +
+    Debug.print("⚠️ Componente no reconocido en página de ejecución: " +
                 String(componentId));
     break;
   }
 }
 
 void ProgramControllerClass::_handleEmergencyPageEvents(uint8_t componentId) {
-  Utils.debug("🚨 Evento en página de emergencia - Componente: " + String(componentId));
+  Debug.print("🚨 Evento en página de emergencia - Componente: " + String(componentId));
 
   switch (componentId) {
   case NEXTION_ID_BTN_REINICIAR:
-    Utils.debug("🔄 Botón REINICIAR presionado - Derivando a ventana de selección");
+    Debug.print("🔄 Botón REINICIAR presionado - Derivando a ventana de selección");
     forceResetEmergency(); // Usar reset forzado que maneja ambos tipos
     break;
 
   default:
-    Utils.debug("⚠️ Componente no reconocido en página de emergencia: " + String(componentId));
+    Debug.print("⚠️ Componente no reconocido en página de emergencia: " + String(componentId));
     break;
   }
 }
@@ -1759,11 +1759,11 @@ void ProgramControllerClass::_loadProgramData() {
   // Cargar el estado actual del programa
   _loadCurrentProgramState();
 
-  Utils.debug("Datos de programa cargados desde almacenamiento");
+  Debug.print("Datos de programa cargados desde almacenamiento");
 }
 
 void ProgramControllerClass::_finalizeProgramSequence() {
-  Utils.debug("Finalizando P" + String(_currentProgram + 22));
+  Debug.print("Finalizando P" + String(_currentProgram + 22));
 
   Actuators.unlockDoor();
   Actuators.closeSteamValve();
@@ -1779,7 +1779,7 @@ void ProgramControllerClass::_finalizeProgramSequence() {
 }
 
 void ProgramControllerClass::_finalizeProgramWithDrainOpen() {
-  Utils.debug("Finalizando P" + String(_currentProgram + 22) + " - Manteniendo drenaje abierto");
+  Debug.print("Finalizando P" + String(_currentProgram + 22) + " - Manteniendo drenaje abierto");
 
   Actuators.unlockDoor();
   Actuators.closeSteamValve();
@@ -1833,7 +1833,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
     // Verificar si el lavado terminó
     if (_remainingMinutes == 0 && _remainingSeconds == 0) {
       // Lavado completo → Siempre ir a drenaje primero
-      Utils.debug("Lavado completo → Drenaje");
+      Debug.print("Lavado completo → Drenaje");
       _currentPhaseState = FASE_DRENAJE;
       _initializePhaseState();
     }
@@ -1847,13 +1847,13 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
       if (_currentProgram == 2 && _tandaCounter < _maxTandas - 1) {
         // P24: Nueva tanda
         _tandaCounter++;
-        Utils.debug("P24 - Centrifugado completo, iniciando tanda " + String(_tandaCounter + 1));
+        Debug.print("P24 - Centrifugado completo, iniciando tanda " + String(_tandaCounter + 1));
         // Actualizar display de tanda en página de ejecución
         UIController.updateTanda(_currentProgram, _tandaCounter);
         _currentPhaseState = FASE_LLENANDO;
         _initializePhaseState();
       } else {
-        Utils.debug("Centrifugado completo → Enfriamiento");
+        Debug.print("Centrifugado completo → Enfriamiento");
         _currentPhaseState = FASE_ENFRIAMIENTO;
         _initializePhaseState();
       }
@@ -1880,7 +1880,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
       }
 
       if (centrifugadoEnabled) {
-        Utils.debug("Drenaje completo → Centrifugado");
+        Debug.print("Drenaje completo → Centrifugado");
         _currentPhaseState = FASE_CENTRIFUGA;
         _initializePhaseState();
       } else {
@@ -1888,13 +1888,13 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
         if (_currentProgram == 2 && _tandaCounter < _maxTandas - 1) {
           // P24: Nueva tanda
           _tandaCounter++;
-          Utils.debug("P24 - Iniciando tanda " + String(_tandaCounter + 1));
+          Debug.print("P24 - Iniciando tanda " + String(_tandaCounter + 1));
           // Actualizar display de tanda en página de ejecución
           UIController.updateTanda(_currentProgram, _tandaCounter);
           _currentPhaseState = FASE_LLENANDO;
           _initializePhaseState();
         } else {
-          Utils.debug("Drenaje completo → Enfriamiento (sin centrifugado)");
+          Debug.print("Drenaje completo → Enfriamiento (sin centrifugado)");
           _currentPhaseState = FASE_ENFRIAMIENTO;
           _initializePhaseState();
         }
@@ -1906,13 +1906,13 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
     // El temporizador se actualiza desde updateTimers() llamado por el timer principal
     // Verificar si el enfriamiento terminó
     if (_remainingMinutes == 0 && _remainingSeconds == 0) {
-      Utils.debug("Enfriamiento completo → Programa finalizado");
+      Debug.print("Enfriamiento completo → Programa finalizado");
       _finalizeProgramWithDrainOpen();
     }
     break;
 
   default:
-    Utils.debug("ERROR: Estado de fase desconocido " +
+    Debug.print("ERROR: Estado de fase desconocido " +
                 String(_currentPhaseState));
     setState(ESTADO_ERROR);
     break;
@@ -1936,7 +1936,7 @@ void ProgramControllerClass::_initializePhaseState() {
     Actuators.closeDrainValve();  // Cerrar desfogue de fase anterior
     Actuators.stopMotor();        // Asegurar motor parado
     
-    Utils.debug("🔧 FASE_LLENANDO - Actuadores de fase anterior detenidos");
+    Debug.print("🔧 FASE_LLENANDO - Actuadores de fase anterior detenidos");
     break;
 
   case FASE_LAVADO: {
@@ -1962,7 +1962,7 @@ void ProgramControllerClass::_initializePhaseState() {
       Actuators.startAutoRotation(rotLevel);
     }
     
-    Utils.debug("🔧 FASE_LAVADO - Actuadores configurados correctamente");
+    Debug.print("🔧 FASE_LAVADO - Actuadores configurados correctamente");
   } break;
 
   case FASE_CENTRIFUGA: {
@@ -2026,7 +2026,7 @@ void ProgramControllerClass::_initializePhaseState() {
   UIController.updateTime(_remainingMinutes, _remainingSeconds);
   // Nota: Barra de progreso eliminada del HMI
 
-  Utils.debug("Fase iniciada: " + String(_currentPhaseState) + " (Fase " +
+  Debug.print("Fase iniciada: " + String(_currentPhaseState) + " (Fase " +
               String(_currentPhase) + ")");
 }
 

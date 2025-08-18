@@ -1,6 +1,7 @@
 // storage.cpp
 #include "storage.h"
 #include "utils.h"             // Utilidades comunes
+#include "debug.h"
 #include <string>
 #include <stdio.h>  // Para sprintf
 
@@ -238,7 +239,7 @@ void StorageClass::initializeDefaultValues() {
     saveP22Time(50);             // 50 minutos
     saveP22Rotation(2);          // Rotación 2
     saveP22Centrifugado(1);      // Centrifugado activo
-    // Utils.debug("✅ P22 configurado: Nivel=2, Temp=30°C, Tiempo=50min, Rot=2, Centrif=Activo");
+    // Debug.print("✅ P22 configurado: Nivel=2, Temp=30°C, Tiempo=50min, Rot=2, Centrif=Activo");
     
     // === PROGRAMA P23 - AGUA FRÍA (Valores únicos) ===
     saveP23WaterLevel(2);        // Nivel 2
@@ -246,7 +247,7 @@ void StorageClass::initializeDefaultValues() {
     saveP23Time(40);             // 40 minutos
     saveP23Rotation(2);          // Rotación 2
     saveP23Centrifugado(1);      // Centrifugado activo
-    // Utils.debug("✅ P23 configurado: Nivel=2, Temp=20°C, Tiempo=40min, Rot=2, Centrif=Activo");
+    // Debug.print("✅ P23 configurado: Nivel=2, Temp=20°C, Tiempo=40min, Rot=2, Centrif=Activo");
     
     // === PROGRAMA P24 - MULTI-CICLO (Matriz por fases) ===
     // Fase 0: Prelavado intenso

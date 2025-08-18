@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "actuators.h"
 #include "program_controller.h"
+#include "debug.h"
 
 // Instancia global
 UtilsClass Utils;
@@ -23,7 +24,7 @@ void UtilsClass::init()
   // === SISTEMA SIMPLIFICADO ===
   // Timer callbacks eliminados - solo AsyncTask
 
-  debug("UtilsClass::init()| Sistema de utils inicializado sin dependencias externas");
+  Debug.print("UtilsClass::init()| Sistema de utils inicializado sin dependencias externas");
 }
 
 /// @brief
@@ -106,7 +107,7 @@ int UtilsClass::createTimeout(unsigned long duration, TaskCallback callback)
 {
   if (callback == nullptr)
   {
-    debug("Error: Intento de crear temporizador con callback nulo");
+    Debug.print("Error: Intento de crear temporizador con callback nulo");
     return -1;
   }
 
@@ -114,7 +115,7 @@ int UtilsClass::createTimeout(unsigned long duration, TaskCallback callback)
   int slotIndex = _findFreeTaskSlot();
   if (slotIndex < 0)
   {
-    debug("Error: No se puede crear más temporizadores, límite alcanzado");
+    Debug.print("Error: No se puede crear más temporizadores, límite alcanzado");
     return -1;
   }
 
@@ -133,7 +134,7 @@ int UtilsClass::createTimeout(unsigned long duration, TaskCallback callback)
     _taskCount++;
   }
 
-  debug("Nuevo temporizador creado con ID " + String(task.id) + " y duración de " + String(duration) + " ms");
+  Debug.print("Nuevo temporizador creado con ID " + String(task.id) + " y duración de " + String(duration) + " ms");
   return task.id;
 }
 
@@ -159,7 +160,7 @@ int UtilsClass::createInterval(unsigned long interval, TaskCallback callback, bo
 {
   if (callback == nullptr)
   {
-    debug("UtilsClass::createInterval| Error: Intento de crear tarea periódica con callback nulo");
+    Debug.print("UtilsClass::createInterval| Error: Intento de crear tarea periódica con callback nulo");
     return -1;
   }
 
@@ -167,7 +168,7 @@ int UtilsClass::createInterval(unsigned long interval, TaskCallback callback, bo
   int slotIndex = _findFreeTaskSlot();
   if (slotIndex < 0)
   {
-    debug("UtilsClass::createInterval| Error: No se puede crear más tareas, límite alcanzado");
+    Debug.print("UtilsClass::createInterval| Error: No se puede crear más tareas, límite alcanzado");
     return -1;
   }
 
@@ -186,7 +187,7 @@ int UtilsClass::createInterval(unsigned long interval, TaskCallback callback, bo
     _taskCount++;
   }
 
-  debug("UtilsClass::createInterval| Nueva tarea periódica creada con ID " + String(task.id) + " e intervalo de " + String(interval) + " ms");
+  Debug.print("UtilsClass::createInterval| Nueva tarea periódica creada con ID " + String(task.id) + " e intervalo de " + String(interval) + " ms");
   return task.id;
 }
 
@@ -204,12 +205,12 @@ bool UtilsClass::stopTask(int taskId)
   int index = _findTaskById(taskId);
   if (index < 0)
   {
-    debug("UtilsClass::stopTask| Error: Intento de detener tarea inexistente con ID " + String(taskId));
+    Debug.print("UtilsClass::stopTask| Error: Intento de detener tarea inexistente con ID " + String(taskId));
     return false;
   }
 
   _tasks[index].active = false;
-  debug("UtilsClass::stopTask| Tarea con ID " + String(taskId) + " detenida");
+  Debug.print("UtilsClass::stopTask| Tarea con ID " + String(taskId) + " detenida");
   return true;
 }
 
@@ -228,13 +229,13 @@ bool UtilsClass::restartTask(int taskId)
   int index = _findTaskById(taskId);
   if (index < 0)
   {
-    debug("UtilsClass::restartTask| Error: Intento de reiniciar tarea inexistente con ID " + String(taskId));
+    Debug.print("UtilsClass::restartTask| Error: Intento de reiniciar tarea inexistente con ID " + String(taskId));
     return false;
   }
 
   _tasks[index].lastExecuted = millis();
   _tasks[index].active = true;
-  debug("UtilsClass::restartTask| Tarea con ID " + String(taskId) + " reiniciada");
+  Debug.print("UtilsClass::restartTask| Tarea con ID " + String(taskId) + " reiniciada");
   return true;
 }
 
@@ -277,7 +278,7 @@ void UtilsClass::updateTasks()
         if (!task.recurring)
         {
           task.active = false;
-          debug("Tarea no recurrente con ID " + String(task.id) + " completada");
+          Debug.print("Tarea no recurrente con ID " + String(task.id) + " completada");
         }
       }
     }
@@ -320,7 +321,7 @@ void UtilsClass::updateTasks()
 
       // Actualizar el contador
       _taskCount = newIndex;
-      debug("Array de tareas compactado. Tareas activas: " + String(_taskCount));
+      Debug.print("Array de tareas compactado. Tareas activas: " + String(_taskCount));
     }
 
     // === COMPACTACIÓN DE TIMER CALLBACKS ELIMINADA ===

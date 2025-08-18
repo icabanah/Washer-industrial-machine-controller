@@ -77,6 +77,11 @@ public:
   
   // Acceso a estado de edición para ProgramController
   int getCurrentParameter() const { return _parametroActual; }
+  
+  // Métodos de actualización de botones (públicos para ProgramController)
+  void updateTandaButtons(uint8_t tandaActiva = 0);
+  void updatePhaseButtons();
+  void updateParameterButtons();
 
 private:
   // === MÉTODOS DE ACTUALIZACIÓN CONSOLIDADOS EN updateDisplay() ===
@@ -153,11 +158,6 @@ private:
   void selectCentrifuge(uint8_t centrifuge);
   void selectWater(uint8_t water);
   void selectTandaDirecta(uint8_t tanda);
-  
-  // Métodos de actualización de botones
-  void updateTandaButtons(uint8_t tandaActiva = 0);
-  void updatePhaseButtons();
-  void updateParameterButtons();
   
   // Gestión de timeout de edición
   void _checkEditTimeout();

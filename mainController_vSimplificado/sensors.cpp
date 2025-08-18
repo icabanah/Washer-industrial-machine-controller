@@ -4,6 +4,7 @@
 #include "hardware.h"
 #include "actuators.h"
 #include "math_utils.h"
+#include "debug.h"
 
 // Instancia global
 SensorsClass Sensors;
@@ -42,7 +43,7 @@ void SensorsClass::init() {
   _setupPressureSensor();
   _setupMonitoring();
   
-  Utils.debug("SensorsClass::init| Sensores inicializados");
+  Debug.print("Sensores inicializados");
 }
 
 void SensorsClass::_setupTemperatureSensor() {
@@ -58,10 +59,10 @@ void SensorsClass::_setupTemperatureSensor() {
   
   // Verificar si el sensor está conectado
   uint8_t deviceCount = _tempSensors.getDeviceCount();
-  Utils.debug("Sensor temperatura - Pin: " + String(PIN_TEMP_SENSOR) + ", Detectados: " + String(deviceCount));
+  Debug.print("Sensor temperatura - Pin: " + String(PIN_TEMP_SENSOR) + ", Detectados: " + String(deviceCount));
   
   if (deviceCount == 0) {
-    Utils.debug("ERROR: No se detectaron sensores DS18B20");
+    Debug.print("ERROR: No se detectaron sensores DS18B20");
   } else {
     
     
@@ -161,7 +162,7 @@ void SensorsClass::updateTemperature() {
       // Leer el resultado
       // float temp = _tempSensors.getTempC(_tempSensorAddress);
       float temp = _tempSensors.getTempC(_tempSensorAddress);
-      // Utils.debug("Lectura de temperatura: " + String(temp) + "°C");
+      // Debug.print("Lectura de temperatura: " + String(temp) + "°C");
       _tempConversionInProgress = false;
       
       // Verificar si la lectura es válida
@@ -301,59 +302,59 @@ bool SensorsClass::isDoorClosed() {
   return true; // Asumir puerta cerrada por defecto
 }
 
-void SensorsClass::diagnosticTemperatureSensor() {
-  // === DIAGNÓSTICO MANUAL DEL SENSOR DE TEMPERATURA ===
-  Utils.debug("=== DIAGNÓSTICO SENSOR TEMPERATURA ===");
+// void SensorsClass::diagnosticTemperatureSensor() {
+//   // === DIAGNÓSTICO MANUAL DEL SENSOR DE TEMPERATURA ===
+//   Debug.print("=== DIAGNÓSTICO SENSOR TEMPERATURA ===");
   
-  // 1. Verificar conexión
-  uint8_t deviceCount = _tempSensors.getDeviceCount();
-  Utils.debug("Dispositivos detectados: " + String(deviceCount));
+//   // 1. Verificar conexión
+//   uint8_t deviceCount = _tempSensors.getDeviceCount();
+//   Debug.print("Dispositivos detectados: " + String(deviceCount));
   
-  if (deviceCount == 0) {
-    Utils.debug("❌ ERROR: No se detectan sensores");
-    Utils.debug("Verificar conexiones y alimentación");
-    return;
-  }
+//   if (deviceCount == 0) {
+//     Debug.print("❌ ERROR: No se detectan sensores");
+//     Debug.print("Verificar conexiones y alimentación");
+//     return;
+//   }
   
-  // 2. Verificar comunicación con el sensor configurado
-  if (_tempSensors.isConnected(_tempSensorAddress)) {
-    Utils.debug("✅ Sensor configurado responde correctamente");
-  } else {
-    Utils.debug("⚠️ El sensor configurado no responde");
-  }
+//   // 2. Verificar comunicación con el sensor configurado
+//   if (_tempSensors.isConnected(_tempSensorAddress)) {
+//     Debug.print("✅ Sensor configurado responde correctamente");
+//   } else {
+//     Debug.print("⚠️ El sensor configurado no responde");
+//   }
   
-  // 3. Realizar lectura de prueba no bloqueante
-  _tempSensors.requestTemperatures();
-  _tempConversionInProgress = true;
-  _tempConversionStartTime = millis();
+//   // 3. Realizar lectura de prueba no bloqueante
+//   _tempSensors.requestTemperatures();
+//   _tempConversionInProgress = true;
+//   _tempConversionStartTime = millis();
   
-  // Crear timeout para verificar conversión después de 1 segundo
-  Utils.createTimeout(1000, _callbackCompleteDiagnostic);
+//   // Crear timeout para verificar conversión después de 1 segundo
+//   Utils.createTimeout(1000, _callbackCompleteDiagnostic);
   
-}
+// }
 
-void SensorsClass::_completeTemperatureDiagnostic() {
-  if (!_tempConversionInProgress) return;
+// void SensorsClass::_completeTemperatureDiagnostic() {
+//   if (!_tempConversionInProgress) return;
   
-  float temp = _tempSensors.getTempC(_tempSensorAddress);
+//   float temp = _tempSensors.getTempC(_tempSensorAddress);
   
-  if (temp != DEVICE_DISCONNECTED_C && temp >= -127.0 && temp <= 85.0) {
-    Utils.debug("✅ Lectura válida: " + String(temp) + "°C");
-    _currentTemperature = temp;
-    _tempSensorErrorCount = 0;
-  } else {
-    Utils.debug("❌ Lectura inválida: " + String(temp));
-    _tempSensorErrorCount++;
-  }
+//   if (temp != DEVICE_DISCONNECTED_C && temp >= -127.0 && temp <= 85.0) {
+//     Debug.print("✅ Lectura válida: " + String(temp) + "°C");
+//     _currentTemperature = temp;
+//     _tempSensorErrorCount = 0;
+//   } else {
+//     Debug.print("❌ Lectura inválida: " + String(temp));
+//     _tempSensorErrorCount++;
+//   }
   
-  _tempConversionInProgress = false;
+//   _tempConversionInProgress = false;
   
-  // 4. Mostrar estadísticas de errores
-  Utils.debug("Errores acumulados: " + String(_tempSensorErrorCount));
-  Utils.debug("Temperatura actual almacenada: " + String(_currentTemperature) + "°C");
+//   // 4. Mostrar estadísticas de errores
+//   Debug.print("Errores acumulados: " + String(_tempSensorErrorCount));
+//   Debug.print("Temperatura actual almacenada: " + String(_currentTemperature) + "°C");
   
-  Utils.debug("=== FIN DIAGNÓSTICO ===");
-}
+//   Debug.print("=== FIN DIAGNÓSTICO ===");
+// }
 
 // Función wrapper estática para callback
 void SensorsClass::_callbackCompleteDiagnostic() {

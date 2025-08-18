@@ -46,7 +46,8 @@
 // Configuración de sensores usando SensorConfig struct
 #define TEMP_RESOLUTION SensorConfig::TEMP_RESOLUTION
 #define TEMP_RANGE SensorConfig::TEMP_RANGE
-#define TEMP_SENSOR_ADDR SensorConfig::TEMP_SENSOR_ADDR
+// TEMP_SENSOR_ADDR como array directo para inicialización
+#define TEMP_SENSOR_ADDR {0x28, 0xFF, 0x64, 0x1E, 0x0C, 0x31, 0x18, 0x66}
 
 // Configuración de presión
 #define NIVEL_PRESION_1 SensorConfig::PRESSURE_LEVEL_1
@@ -244,12 +245,9 @@
 // Valores de parámetros en panel derecho (para mostrar cambios en tiempo real)
 #define NEXTION_ID_PARAM_NIVEL_EDIT                                            \
   18 // Valor actual del nivel en panel derecho
-#define NEXTION_ID_PARAM_TEMP_EDIT                                             \
-  19 // Valor actual de temperatura en panel derecho
-#define NEXTION_ID_PARAM_TIEMPO_EDIT                                           \
-  20 // Valor actual del tiempo en panel derecho
-#define NEXTION_ID_PARAM_ROTAC_EDIT                                            \
-  21 // Valor actual de rotación en panel derecho
+#define NEXTION_ID_PARAM_TEMP_EDIT 19 // Valor actual de temperatura en panel derecho
+#define NEXTION_ID_PARAM_TIEMPO_EDIT 20 // Valor actual del tiempo en panel derecho
+#define NEXTION_ID_PARAM_ROTAC_EDIT 21 // Valor actual de rotación en panel derecho
 #define NEXTION_ID_PARAM_FASE_EDIT 22 // Valor actual de fase en panel derecho
 #define NEXTION_ID_PARAM_CENTRIF_EDIT                                          \
   23 // Valor actual de centrifugado en panel derecho
