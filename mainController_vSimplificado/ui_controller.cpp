@@ -458,7 +458,8 @@ void UIControllerClass::_handleTouchEvent() {
       setParameter(PARAM_TIEMPO);
       break;
     case NEXTION_ID_PARAM_ROTAC_EDIT:
-      setParameter(PARAM_ROTACION);
+      // ROTACIÓN ES FIJO según especificación - No permitir edición
+      Debug.print("⚠️ Rotación es fijo - edición no permitida");
       break;
     case NEXTION_ID_BTN_TANDA1:
       setParameter(PARAM_FASE, 0);
@@ -570,7 +571,7 @@ void UIControllerClass::_updateProgramInfo(uint8_t programa) {
   Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, String(nivel));
   Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, String(temp) + "°C");
   Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, String(tiempo) + " min");
-  Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(rotacion) + " RPM");
+  Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(rotacion) + " RPM (FIJO)"); // Indicar que es fijo
   Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(tanda));
   Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF,
                           centrifugado ? "SI" : "NO");
@@ -619,12 +620,12 @@ void UIControllerClass::updateProgramPanel(uint8_t programa) {
   Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, String(nivel));
   Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, String(temp) + "°C");
   Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, String(tiempo) + " min");
-  Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(rotacion) + " RPM");
+  Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(rotacion) + " RPM (FIJO)"); // Indicar que es fijo
   // Hardware.nextionSetText(NEXTION_COMP_SET_FASE, String(tanda));
   Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF,
                           centrifugado ? "SI" : "NO");
   Hardware.nextionSetText(NEXTION_COMP_SET_AGUA,
-                          tipoAgua ? "Caliente" : "Fría");
+                          tipoAgua ? "Caliente" : "Fria");
 }
 
 bool UIControllerClass::hasUserAction() { return _userActionPending; }
@@ -769,7 +770,8 @@ void UIControllerClass::handleEditPageEvent(int componentId) {
     break;
 
   case NEXTION_ID_PARAM_ROTAC_EDIT:
-    setParameter(PARAM_ROTACION);
+    // ROTACIÓN ES FIJO según especificación - No permitir edición
+    Debug.print("⚠️ Rotación es fijo - edición no permitida");
     break;
 
   case NEXTION_ID_PARAM_FASE_EDIT:
@@ -831,8 +833,8 @@ void UIControllerClass::handleParameterIncrement() {
       valor++;
     break;
   case PARAM_ROTACION:
-    if (valor < 4)
-      valor++;
+    // ROTACIÓN ES FIJO según especificación - No permitir incremento
+    Debug.print("⚠️ Rotación es fijo - incremento no permitido");
     break;
   case PARAM_FASE:
     if (valor < 4)
@@ -873,8 +875,8 @@ void UIControllerClass::handleParameterDecrement() {
       valor--;
     break;
   case PARAM_ROTACION:
-    if (valor > 0)
-      valor--;
+    // ROTACIÓN ES FIJO según especificación - No permitir decremento
+    Debug.print("⚠️ Rotación es fijo - decremento no permitido");
     break;
   case PARAM_FASE:
     if (valor > 0)
@@ -1224,7 +1226,7 @@ uint8_t UIControllerClass::_getNextParameter(uint8_t currentParam) {
     case PARAM_TEMPERATURA:
       return PARAM_TIEMPO;
     case PARAM_TIEMPO:
-      return PARAM_ROTACION;
+      return PARAM_FASE; // SALTAR ROTACIÓN (fijo según especificación)
     case PARAM_ROTACION:
       return PARAM_FASE;
     case PARAM_FASE:
@@ -1252,7 +1254,7 @@ uint8_t UIControllerClass::_getPreviousParameter(uint8_t currentParam) {
     case PARAM_ROTACION:
       return PARAM_TIEMPO;
     case PARAM_FASE:
-      return PARAM_ROTACION;
+      return PARAM_TIEMPO; // SALTAR ROTACIÓN (fijo según especificación)
     case PARAM_CENTRIF:
       return PARAM_FASE;
     case PARAM_AGUA:
@@ -1641,7 +1643,7 @@ void UIControllerClass::updateDisplay(bool fullUpdate) {
     Hardware.nextionSetText(NEXTION_COMP_SET_NIVEL, String(_valoresTemporales[PARAM_NIVEL]));
     Hardware.nextionSetText(NEXTION_COMP_SET_TEMP, String(_valoresTemporales[PARAM_TEMPERATURA]) + "°C");
     Hardware.nextionSetText(NEXTION_COMP_SET_TIEMPO, String(_valoresTemporales[PARAM_TIEMPO]) + " min");
-    Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(_valoresTemporales[PARAM_ROTACION]) + " RPM");
+    Hardware.nextionSetText(NEXTION_COMP_SET_ROTACION, String(_valoresTemporales[PARAM_ROTACION]) + " RPM (FIJO)"); // Indicar que es fijo
     Hardware.nextionSetText(NEXTION_COMP_SET_CENTRIF, _valoresTemporales[PARAM_CENTRIF] ? "SI" : "NO");
     Hardware.nextionSetText(NEXTION_COMP_SET_AGUA, _valoresTemporales[PARAM_AGUA] ? "Caliente" : "Fria");
   }

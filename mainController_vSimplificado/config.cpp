@@ -208,9 +208,9 @@ int obtenerSiguienteParametro(int tipoActual) {
         case PARAM_TEMPERATURA:
             return PARAM_TIEMPO;
         case PARAM_TIEMPO:
-            return PARAM_ROTACION;
+            return PARAM_FASE; // SALTAR ROTACIÓN (fijo según especificación)
         case PARAM_ROTACION:
-            return PARAM_FASE;
+            return PARAM_FASE; // No debería ser alcanzable
         case PARAM_FASE:
             return PARAM_CENTRIF;
         case PARAM_CENTRIF:
@@ -237,7 +237,7 @@ int obtenerAnteriorParametro(int tipoActual) {
         case PARAM_ROTACION:
             return PARAM_TIEMPO;
         case PARAM_FASE:
-            return PARAM_ROTACION;
+            return PARAM_TIEMPO; // SALTAR ROTACIÓN (fijo según especificación)
         case PARAM_CENTRIF:
             return PARAM_FASE;
         case PARAM_AGUA:
