@@ -26,8 +26,8 @@
 - **Fases**:
   - Fase 0: FASE_LLENANDO (Llena agua) 
   - Fase 1: FASE_LAVADO (La lavadora activa los motores permutando entre giro y giro)
-  - Fase 2: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, si esta activa drenaje permanece cerrado y puerta permanece cerrado)
-  - Fase 3: FASE_DRENAJE (Activa drenaje de agua de lavadora)
+  - Fase 2: FASE_DRENAJE (Activa drenaje de agua de lavadora)
+  - Fase 3: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, drenaje permanece abierto y puerta permanece cerrado)
   - Fase 4: FASE_ENFRIAMIENTO (Para estabilizar el agua y discurrimiento de agua).
 
 ### Programa 23 (Agua Fría)
@@ -43,8 +43,8 @@
 - **Fases**:
   - Fase 0: FASE_LLENANDO (Llena agua) 
   - Fase 1: FASE_LAVADO (La lavadora activa los motores permutando entre giro y giro)
-  - Fase 2: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, si esta activa drenaje permanece cerrado y puerta permanece cerrado)
-  - Fase 3: FASE_DRENAJE (Activa drenaje de agua de lavadora)
+  - Fase 2: FASE_DRENAJE (Activa drenaje de agua de lavadora)
+  - Fase 3: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, drenaje permanece abierto y puerta permanece cerrado)
   - Fase 4: FASE_ENFRIAMIENTO (Para estabilizar el agua y discurrimiento de agua).
 
 ### Programa 24 (Multiproceso)
@@ -64,18 +64,18 @@
   **Fases**:
   - Fase 0: FASE_LLENANDO (Llena agua) 
   - Fase 1: FASE_LAVADO (La lavadora activa los motores permutando entre giro y giro)
-  - Fase 2: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, si esta activa drenaje permanece cerrado y puerta permanece cerrado)
   - Fase 3: FASE_DRENAJE (Activa drenaje de agua de lavadora)
+  - Fase 2: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, drenaje permanece abierto y puerta permanece cerrado))
   - Fase 4: FASE_LLENANDO (Llena agua) 
   - Fase 5: FASE_LAVADO (La lavadora activa los motores permutando entre giro y giro)
-  - Fase 6: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, si esta activa drenaje permanece cerrado y puerta permanece cerrado)
   - Fase 7: FASE_DRENAJE (Activa drenaje de agua de lavadora)
+  - Fase 6: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, drenaje permanece abierto y puerta permanece cerrado))
   - Fase 8: FASE_LLENANDO (Llena agua) 
   - Fase 9: FASE_LAVADO (La lavadora activa los motores permutando entre giro y giro)
-  - Fase 10: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, si esta activa drenaje permanece cerrado y puerta permanece cerrado)
   - Fase 11: FASE_DRENAJE (Activa drenaje de agua de lavadora)
+  - Fase 10: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, drenaje permanece abierto y puerta permanece cerrado))
   - Fase 12: FASE_LLENANDO (Llena agua) 
   - Fase 13: FASE_LAVADO (La lavadora activa los motores permutando entre giro y giro)
-  - Fase 14: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, si esta activa drenaje permanece cerrado y puerta permanece cerrado)
   - Fase 15: FASE_DRENAJE (Activa drenaje de agua de lavadora)
+  - Fase 14: FASE_CENTRIFUGA (Depende de si activaron esta opción en el programa, drenaje permanece abierto y puerta permanece cerrado))
   - Fase 16: FASE_ENFRIAMIENTO (Para estabilizar el agua y discurrimiento de agua).
