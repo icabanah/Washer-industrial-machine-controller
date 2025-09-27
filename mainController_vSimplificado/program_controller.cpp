@@ -1832,8 +1832,8 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
     // El temporizador se actualiza desde updateTimers() llamado por el timer principal
     // Verificar si el lavado terminó
     if (_remainingMinutes == 0 && _remainingSeconds == 0) {
-      // Lavado completo → Siempre ir a drenaje primero
-      Debug.print("Lavado completo → Drenaje");
+      // SEGÚN ESPECIFICACIÓN: LAVADO → DRENAJE → CENTRIFUGA → ENFRIAMIENTO
+      Debug.print("Lavado completo → Drenaje (según especificación)");
       _currentPhaseState = FASE_DRENAJE;
       _initializePhaseState();
     }
@@ -1867,20 +1867,18 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
     // El temporizador se actualiza desde updateTimers() llamado por el timer principal
     // Verificar si el drenaje terminó
     if (_remainingMinutes == 0 && _remainingSeconds == 0) {
-      // Verificar si hay centrifugado habilitado
+      // SEGÚN ESPECIFICACIÓN: Después de DRENAJE verificar si CENTRIFUGADO está habilitado
       bool centrifugadoEnabled = false;
       if (_currentProgram <= 1) {
-        // P22/P23: verificar centrifugado
-        centrifugadoEnabled =
-            (_centrifugadoPorTanda[_currentProgram][3] == 1);
+        // P22/P23: verificar centrifugado (configurable)
+        centrifugadoEnabled = (_centrifugadoPorTanda[_currentProgram][3] == 1);
       } else {
         // P24: usar tanda actual
-        centrifugadoEnabled =
-            (_centrifugadoPorTanda[_currentProgram][_tandaCounter] == 1);
+        centrifugadoEnabled = (_centrifugadoPorTanda[_currentProgram][_tandaCounter] == 1);
       }
 
       if (centrifugadoEnabled) {
-        Debug.print("Drenaje completo → Centrifugado");
+        Debug.print("Drenaje completo → Centrifugado (configurable)");
         _currentPhaseState = FASE_CENTRIFUGA;
         _initializePhaseState();
       } else {
@@ -1976,7 +1974,7 @@ void ProgramControllerClass::_initializePhaseState() {
 
     // Configurar actuadores para centrifugado
     Actuators.closeSteamValve();
-    Actuators.openDrainValve(); // Mantener drenaje abierto durante centrifugado
+    Actuators.openDrainValve(); // SEGÚN ESPECIFICACIÓN: drenaje permanece abierto durante centrifugado
     Actuators.closeWaterValve();
     Actuators.startCentrifuge();
     Actuators.stopAutoRotation();
