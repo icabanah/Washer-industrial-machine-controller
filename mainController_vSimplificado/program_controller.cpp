@@ -560,77 +560,7 @@ void ProgramControllerClass::_checkCriticalSafety() {
   }
 }
 
-void ProgramControllerClass::_controlActuatorsForPhase() {
-  // Control de actuadores para las fases del programa
-
-  // Obtener valores objetivo para la fase actual
-  uint8_t targetLevel =
-      Storage.loadWaterLevel(_currentProgram, 0, _currentPhase);
-  uint8_t targetTemp =
-      Storage.loadTemperature(_currentProgram, 0, _currentPhase);
-
-  // Determinar si se requiere control de temperatura
-  bool requiresTempControl = false;
-  uint8_t tipoAgua = 0; // 0=fría, 1=caliente
-
-  // Determinar si se requiere control según programa y fase
-  switch (_currentProgram) {
-  case 0: // P22 - Agua caliente
-    requiresTempControl = true;
-    tipoAgua = 1;
-    break;
-
-  case 1: // P23 - Agua fría
-    requiresTempControl = false;
-    tipoAgua = 0;
-    break;
-
-  case 2: // P24 - Configurable por fase
-    // Verificar el tipo de agua configurado para esta fase
-    tipoAgua =
-        Storage.loadTipoAgua(_currentProgram, _tandaCounter, _currentPhase);
-    requiresTempControl = (tipoAgua == 1); // Solo si usa agua caliente
-    break;
-  }
-
-  // === CONTROL DE ACTUADORES SEGÚN FASE ===
-  if (_currentPhase == 0) {
-    // FASE 0: LLENADO - Control de nivel según tipo de agua
-
-    if (tipoAgua == 1 && requiresTempControl) {
-      // AGUA CALIENTE (P22): Usar válvula de vapor (agua caliente)
-      if (Sensors.getCurrentWaterLevel() < targetLevel) {
-        Actuators.openSteamValve();  // Válvula de agua caliente
-        Actuators.closeWaterValve(); // Cerrar válvula de agua fría
-      } else {
-        Actuators.closeSteamValve(); // Cerrar válvula de agua caliente
-      }
-    } else {
-      // AGUA FRÍA (P23): Usar válvula de agua fría
-      if (Sensors.getCurrentWaterLevel() < targetLevel) {
-        Actuators.openWaterValve();  // Válvula de agua fría
-        Actuators.closeSteamValve(); // Cerrar válvula de agua caliente
-      } else {
-        Actuators.closeWaterValve(); // Cerrar válvula de agua fría
-      }
-    }
-  } else if (_currentPhase == 1) {
-    // FASE 1: LAVADO - Mantener condiciones
-    // Durante lavado, ambas válvulas deben estar cerradas
-    // El agua ya se llenó en la fase anterior
-    Actuators.closeWaterValve();
-    Actuators.closeSteamValve();
-  } else if (_currentPhase == 3) {
-    // FASE 3: DRENAJE - Mantener válvula abierta durante todo el tiempo
-    // configurado Durante la fase de drenaje, la válvula debe permanecer
-    // abierta independientemente del nivel de agua para asegurar drenaje
-    // completo
-    Actuators.openDrainValve();
-    Actuators.closeWaterValve();
-    Actuators.closeSteamValve();
-  }
-  // Fase 2 (centrifugado) se maneja en la máquina de estados de fases
-}
+// FUNCIÓN ELIMINADA: _controlActuatorsForPhase() - Consolidada en _configureActuatorsForPhase()
 
 void ProgramControllerClass::_completeProgram() {
   // El enfriamiento ya se maneja en FASE_ENFRIAMIENTO de la máquina de estados
@@ -787,39 +717,54 @@ bool ProgramControllerClass::_isCentrifugadoEnabled(uint8_t programa,
 }
 
 void ProgramControllerClass::_configureActuatorsForPhase() {
-  // Configurar actuadores según el flujo específico del Programa 22
+  // Configurar actuadores según el flujo del programa y fase actual
   uint8_t targetLevel =
       Storage.loadWaterLevel(_currentProgram, 0, _currentPhase);
   uint8_t targetTemp =
       Storage.loadTemperature(_currentProgram, 0, _currentPhase);
 
-  // ESTADO INICIAL: Al presionar "iniciar" (antes de que llegue agua y
-  // temperatura)
+  // Determinar tipo de agua para control inteligente
+  uint8_t tipoAgua = 0; // 0=fría, 1=caliente
+  switch (_currentProgram) {
+  case 0: // P22 - Agua caliente
+    tipoAgua = 1;
+    break;
+  case 1: // P23 - Agua fría
+    tipoAgua = 0;
+    break;
+  case 2: // P24 - Configurable por fase
+    tipoAgua = Storage.loadTipoAgua(_currentProgram, _tandaCounter, _currentPhase);
+    break;
+  }
+
+  // ESTADO INICIAL: Al presionar "iniciar" (antes de que llegue agua y temperatura)
   if (_preparingPhase) {
-    // 1) PIN_VALVULA_DESFOGUE OFF - debe llenar agua
+    // 1) Cerrar drenaje - debe llenar agua
     Actuators.closeDrainValve();
 
-    // 2) Temporizador OFF (ya manejado en _timerRunning = false)
-
-    // 3) PIN_ELECTROV_VAPOR ON - ingresa agua caliente (solo Programa 22)
-    if (_currentProgram == 0) { // P22 = agua caliente
-      if (Sensors.getCurrentWaterLevel() < targetLevel)
-        Actuators.openSteamValve();
-    } else if (_currentProgram == 1) { // P23 = agua fría
-      if (Sensors.getCurrentWaterLevel() < targetLevel)
-        Actuators.openWaterValve(); // P23 no usa vapor, solo agua fría
+    // 2) Control de llenado según tipo de agua (MEJORADO: lógica reactiva incluida)
+    if (_currentPhase == 0) { // Solo en fase de llenado
+      if (tipoAgua == 1) {
+        // AGUA CALIENTE: Usar válvula de vapor
+        if (Sensors.getCurrentWaterLevel() < targetLevel) {
+          Actuators.openSteamValve();
+          Actuators.closeWaterValve();
+        } else {
+          Actuators.closeSteamValve();
+        }
+      } else {
+        // AGUA FRÍA: Usar válvula de agua fría
+        if (Sensors.getCurrentWaterLevel() < targetLevel) {
+          Actuators.openWaterValve();
+          Actuators.closeSteamValve();
+        } else {
+          Actuators.closeWaterValve();
+        }
+      }
     }
 
-    // 4) El sensor de temperatura indica si llegó a temperatura seteada
-    // (manejado en _checkSensorConditions)
-
-    // 5) PIN_VALVULA_AGUA OFF cuando llegue al nivel (manejado en
-    // _checkSensorConditions)
-
-    // 6) PIN_CENTRIFUGADO OFF
+    // 3) Asegurar actuadores parados durante preparación
     Actuators.stopCentrifuge();
-
-    // 7) Motores OFF - comenzarán cuando llegue nivel de agua
     Actuators.stopMotor();
 
     return; // No continuar con lógica normal mientras se prepara
@@ -831,6 +776,7 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
     switch (_currentPhase) {
     case 1: // FASE LAVADO
     {
+      // MEJORADO: Control reactivo de válvulas durante lavado
       Actuators.closeSteamValve();
       Actuators.closeWaterValve();
       Actuators.closeDrainValve(); // Mantener agua
@@ -855,6 +801,7 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
 
     case 3: // FASE DRENAJE
     {
+      // MEJORADO: Control reactivo durante drenaje
       Actuators.closeSteamValve();
       Actuators.closeWaterValve();
       Actuators.openDrainValve(); // Activar drenaje
@@ -880,6 +827,31 @@ void ProgramControllerClass::_configureActuatorsForPhase() {
         Actuators.stopMotor();
       }
       break;
+    }
+  }
+
+  // CONTROL REACTIVO ADICIONAL: Para todas las fases cuando no está en preparación
+  if (!_preparingPhase) {
+    // Control continuo de válvulas según fase actual (consolidado desde función eliminada)
+    if (_currentPhase == 0) {
+      // FASE LLENADO: Control reactivo de nivel
+      if (tipoAgua == 1) {
+        // Agua caliente
+        if (Sensors.getCurrentWaterLevel() < targetLevel) {
+          Actuators.openSteamValve();
+          Actuators.closeWaterValve();
+        } else {
+          Actuators.closeSteamValve();
+        }
+      } else {
+        // Agua fría
+        if (Sensors.getCurrentWaterLevel() < targetLevel) {
+          Actuators.openWaterValve();
+          Actuators.closeSteamValve();
+        } else {
+          Actuators.closeWaterValve();
+        }
+      }
     }
   }
 
@@ -968,8 +940,7 @@ void ProgramControllerClass::_updateEditScreenForProgram() {
 }
 
 void ProgramControllerClass::_loadEditingParametersForCurrentTanda() {
-  // Cargar parámetros directamente desde Storage para evitar valores
-  // desactualizados
+  // Determinar índice correcto según el programa
   uint8_t tandaIndex = _editingTanda;
 
   if (_editingProgram <= 1) {
@@ -977,25 +948,11 @@ void ProgramControllerClass::_loadEditingParametersForCurrentTanda() {
     tandaIndex = _editingPhase;
   }
 
-  // ELIMINADO: No actualizar aquí para evitar doble actualización
-  // Los valores se actualizarán una sola vez cuando
-  // UIController.showEditScreen() llame a updateEditDisplay() ->
-  // updateEditPanel(UPDATE_FULL)
+  // CONSOLIDADO: Usar función helper para evitar código duplicado
+  _loadSinglePhaseParameters(_editingProgram, tandaIndex);
 
-  // Solo cargar valores internos para uso de ProgramController
-  uint8_t nivelStorage = Storage.loadWaterLevel(_editingProgram, 0, tandaIndex);
-  uint8_t tempStorage = Storage.loadTemperature(_editingProgram, 0, tandaIndex);
-  uint8_t tiempoStorage = Storage.loadTime(_editingProgram, tandaIndex);
-  uint8_t rotacionStorage = Storage.loadRotation(_editingProgram, tandaIndex);
-  uint8_t aguaStorage = Storage.loadTipoAgua(_editingProgram, 0, tandaIndex);
-  uint8_t centrifugaStorage =
-      Storage.loadCentrifugado(_editingProgram, tandaIndex);
-
-  // Sincronizar variables internas sin actualizar pantalla
-  _waterLevels[_editingProgram][tandaIndex] = nivelStorage;
-  _temperatures[_editingProgram][tandaIndex] = tempStorage;
-  _times[_editingProgram][tandaIndex] = tiempoStorage;
-  _rotations[_editingProgram][tandaIndex] = rotacionStorage;
+  Debug.print("Parámetros cargados para P" + String(_editingProgram + 22) +
+              " Tanda/Fase " + String(tandaIndex + 1));
 }
 
 void ProgramControllerClass::editParameter(uint8_t paramType, uint8_t value) {
@@ -1173,57 +1130,7 @@ void ProgramControllerClass::processUserEvent(const String &event) {
   }
 }
 
-// ===== FUNCIONES DE VALIDACIÓN OPTIMIZADAS =====
-
-bool ProgramControllerClass::_validateStartConditions(const String &context) {
-  Debug.print("🔍 VALIDANDO CONDICIONES DE INICIO" +
-              (context.length() > 0 ? " (" + context + ")" : ""));
-
-  // VALIDACIÓN 1: Evento táctil válido
-  if (!Hardware.hasValidTouchEvent()) {
-    Debug.print("❌ VALIDACIÓN 1 FALLÓ: Evento Nextion inválido");
-    return false;
-  }
-
-  // VALIDACIÓN 2: Página correcta
-  uint8_t touchPage = Hardware.getTouchEventPage();
-  if (touchPage != NEXTION_PAGE_SELECTION) {
-    Debug.print("❌ VALIDACIÓN 2 FALLÓ: Página incorrecta - Actual:" +
-                String(touchPage) +
-                " Esperada:" + String(NEXTION_PAGE_SELECTION));
-    return false;
-  }
-
-  // VALIDACIÓN 3: Componente correcto
-  uint8_t touchComponent = Hardware.getTouchEventComponent();
-  if (touchComponent != NEXTION_ID_BTN_START) {
-    Debug.print("❌ VALIDACIÓN 3 FALLÓ: Componente incorrecto - Actual:" +
-                String(touchComponent) +
-                " Esperado:" + String(NEXTION_ID_BTN_START));
-    return false;
-  }
-
-  // VALIDACIÓN 4: Tipo de evento correcto (presionado)
-  uint8_t touchType = Hardware.getTouchEventType();
-  if (touchType != 1) {
-    Debug.print("❌ VALIDACIÓN 4 FALLÓ: Tipo evento incorrecto - Actual:" +
-                String(touchType) + " (debe ser 1)");
-    return false;
-  }
-
-  // VALIDACIÓN 5: Estado del sistema correcto
-  if (_currentState != ESTADO_SELECCION) {
-    Debug.print("❌ VALIDACIÓN 5 FALLÓ: Estado incorrecto - Actual:" +
-                String(_currentState) +
-                " Esperado:" + String(ESTADO_SELECCION));
-    return false;
-  }
-
-  Debug.print("✅ TODAS LAS VALIDACIONES PASARON - Sistema listo para inicio");
-  return true;
-}
-
-// ===== FLUJO SIMPLIFICADO (NUEVA IMPLEMENTACIÓN) =====
+// ===== VALIDACIÓN DE CONDICIONES =====
 
 bool ProgramControllerClass::validateConditions() {
   // Validación 1: Estado del sistema
@@ -1492,89 +1399,82 @@ void ProgramControllerClass::handleEmergency(bool triggeredByButton) {
   }
 }
 
-void ProgramControllerClass::resetEmergency() {
-  if (_currentState == ESTADO_EMERGENCIA) {
-    // Verificar que el botón de emergencia ya no esté presionado
-    if (!Hardware.isEmergencyButtonPressed()) {
-      // Solo permitir reset automático si fue causada por botón físico
-      if (!_emergencyTriggeredByButton) {
-        Debug.print("❌ RESET EMERGENCIA BLOQUEADO - Emergencia por software "
-                    "requiere reset manual");
+/// @brief Helper para ejecutar el reset común de emergencia
+void ProgramControllerClass::_performEmergencyReset() {
+  // Detener parpadeo de emergencia
+  if (_emergencyBlinkTaskId != -1) {
+    Utils.stopTask(_emergencyBlinkTaskId);
+    _emergencyBlinkTaskId = -1;
+  }
+
+  // Detener temporizador de desbloqueo de puerta si está activo
+  if (_emergencyDoorUnlockTaskId != -1) {
+    Utils.stopTask(_emergencyDoorUnlockTaskId);
+    _emergencyDoorUnlockTaskId = -1;
+  }
+
+  // Resetear actuadores a estado seguro
+  Actuators.emergencyReset();
+
+  // Volver al estado de selección
+  setState(ESTADO_SELECCION);
+
+  // Mostrar pantalla de selección
+  UIController.showSelectionScreen(_currentProgram + 1);
+}
+
+void ProgramControllerClass::resetEmergency(bool forceReset) {
+  if (_currentState != ESTADO_EMERGENCIA) return;
+
+  if (forceReset) {
+    // RESET FORZADO: Para emergencias por software o desde interfaz
+    if (_emergencyTriggeredByButton) {
+      Debug.print("🔄 Reset forzado - Emergencia era por botón físico");
+      // Para botón físico, verificar que ya no esté presionado
+      if (Hardware.isEmergencyButtonPressed()) {
+        Debug.print("❌ RESET FALLIDO - Botón de emergencia aún presionado");
+        UIController.showEmergencyScreen();
         return;
       }
-
-      Debug.print("✅ RESET EMERGENCIA - Saliendo del estado de emergencia "
-                  "(botón físico)");
-
-      // Detener parpadeo de emergencia
-      if (_emergencyBlinkTaskId != -1) {
-        Utils.stopTask(_emergencyBlinkTaskId);
-        _emergencyBlinkTaskId = -1;
-      }
-
-      // Detener temporizador de desbloqueo de puerta si está activo
-      if (_emergencyDoorUnlockTaskId != -1) {
-        Utils.stopTask(_emergencyDoorUnlockTaskId);
-        _emergencyDoorUnlockTaskId = -1;
-      }
-
-      // Resetear actuadores a estado seguro
-      Actuators.emergencyReset();
-
-      // Volver al estado de selección
-      setState(ESTADO_SELECCION);
-
-      // Resetear la variable static de emergencia llamando al handler
-      _handleEmergencyState();
-
-      // Mostrar pantalla de selección
-      UIController.showSelectionScreen(_currentProgram + 1);
-
-      Debug.print("Sistema restablecido desde emergencia");
-    } else {
-      Debug.print(
-          "RESET EMERGENCIA FALLIDO - Botón de emergencia aún presionado");
-      // Mantener pantalla de emergencia (el mensaje se manejará en la UI)
-      UIController.showEmergencyScreen();
     }
+
+    Debug.print("🔧 RESET FORZADO - " +
+                String(_emergencyTriggeredByButton ? "Botón físico" : "Software"));
+
+    _performEmergencyReset();
+
+    // Solo para emergencias por botón físico, resetear variable static
+    if (_emergencyTriggeredByButton) {
+      _handleEmergencyState();
+    }
+
+    Debug.print("✅ Sistema restablecido desde emergencia (forzado)");
+
+  } else {
+    // RESET AUTOMÁTICO: Solo para emergencias por botón físico
+    if (!_emergencyTriggeredByButton) {
+      Debug.print("❌ RESET BLOQUEADO - Emergencia por software requiere reset manual");
+      return;
+    }
+
+    if (Hardware.isEmergencyButtonPressed()) {
+      Debug.print("❌ RESET FALLIDO - Botón de emergencia aún presionado");
+      UIController.showEmergencyScreen();
+      return;
+    }
+
+    Debug.print("✅ RESET AUTOMÁTICO - Saliendo del estado de emergencia (botón físico)");
+
+    _performEmergencyReset();
+    _handleEmergencyState(); // Resetear variable static
+
+    Debug.print("Sistema restablecido desde emergencia");
   }
 }
 
+// Mantener compatibilidad con la interfaz existente
 void ProgramControllerClass::forceResetEmergency() {
-  if (_currentState == ESTADO_EMERGENCIA) {
-    if (_emergencyTriggeredByButton) {
-      Debug.print("🔄 Reset forzado - Emergencia era por botón físico (usar "
-                  "reset automático)");
-      resetEmergency(); // Usar el reset normal
-    } else {
-      Debug.print("🔧 RESET FORZADO - Emergencia por software, reset manual "
-                  "autorizado");
-
-      // Para emergencias por software, permitir reset manual sin verificar
-      // botón físico Detener parpadeo de emergencia
-      if (_emergencyBlinkTaskId != -1) {
-        Utils.stopTask(_emergencyBlinkTaskId);
-        _emergencyBlinkTaskId = -1;
-      }
-
-      // Detener temporizador de desbloqueo de puerta si está activo
-      if (_emergencyDoorUnlockTaskId != -1) {
-        Utils.stopTask(_emergencyDoorUnlockTaskId);
-        _emergencyDoorUnlockTaskId = -1;
-      }
-
-      // Resetear actuadores a estado seguro
-      Actuators.emergencyReset();
-
-      // Volver al estado de selección
-      setState(ESTADO_SELECCION);
-
-      // Mostrar pantalla de selección
-      UIController.showSelectionScreen(_currentProgram + 1);
-
-      Debug.print("✅ Sistema restablecido desde emergencia por software");
-    }
-  }
+  resetEmergency(true); // Delegar al método unificado
 }
 
 void ProgramControllerClass::_triggerError(uint8_t errorCode,
@@ -1811,18 +1711,27 @@ void ProgramControllerClass::update() {
   _handleStateMachine();
 }
 
+/// @brief Carga parámetros de una fase/tanda específica desde Storage
+/// @param prog Programa (0-2)
+/// @param fase Fase/tanda (0-3)
+void ProgramControllerClass::_loadSinglePhaseParameters(uint8_t prog, uint8_t fase) {
+  if (prog >= NUM_PROGRAMAS || fase >= NUM_FASES) return;
+
+  _waterLevels[prog][fase] = Storage.loadWaterLevel(prog, 0, fase);
+  _temperatures[prog][fase] = Storage.loadTemperature(prog, 0, fase);
+  _times[prog][fase] = Storage.loadTime(prog, fase);
+  _rotations[prog][fase] = Storage.loadRotation(prog, fase);
+  _tipoAguaPrograma[prog][fase] = Storage.loadTipoAgua(prog, 0, fase);
+  // Para centrifugado: [prog][fase] representa [prog][tanda]
+  // P22/P23: solo tanda 0, P24: tandas 0,1,2
+  _centrifugadoPorTanda[prog][fase] = Storage.loadCentrifugado(prog, fase);
+}
+
 void ProgramControllerClass::_loadProgramData() {
-  // Cargar todos los datos de programa desde almacenamiento
+  // Cargar todos los datos de programa desde almacenamiento usando función helper
   for (uint8_t prog = 0; prog < NUM_PROGRAMAS; prog++) {
     for (uint8_t fase = 0; fase < NUM_FASES; fase++) {
-      _waterLevels[prog][fase] = Storage.loadWaterLevel(prog, 0, fase);
-      _temperatures[prog][fase] = Storage.loadTemperature(prog, 0, fase);
-      _times[prog][fase] = Storage.loadTime(prog, fase);
-      _rotations[prog][fase] = Storage.loadRotation(prog, fase);
-      _tipoAguaPrograma[prog][fase] = Storage.loadTipoAgua(prog, 0, fase);
-      // Para centrifugado: [prog][fase] representa [prog][tanda]
-      // P22/P23: solo tanda 0, P24: tandas 0,1,2
-      _centrifugadoPorTanda[prog][fase] = Storage.loadCentrifugado(prog, fase);
+      _loadSinglePhaseParameters(prog, fase);
     }
   }
 
@@ -1832,43 +1741,36 @@ void ProgramControllerClass::_loadProgramData() {
   Debug.print("Datos de programa cargados desde almacenamiento");
 }
 
-void ProgramControllerClass::_finalizeProgramSequence() {
-  Debug.print("Finalizando P" + String(_currentProgram + 22));
-
-  Actuators.unlockDoor();
-  Actuators.closeSteamValve();
-  Actuators.closeDrainValve();
-  Actuators.closeWaterValve();
-  Actuators.stopCentrifuge();
-  Actuators.stopAutoRotation();
-  Actuators.stopMotor();
-
-  Storage.incrementUsageCounter();
-  _timerRunning = false;
-  setState(ESTADO_SELECCION);
-}
-
-void ProgramControllerClass::_finalizeProgramWithDrainOpen() {
+void ProgramControllerClass::_finalizeProgramSequence(bool keepDrainOpen) {
   Debug.print("Finalizando P" + String(_currentProgram + 22) +
-              " - Manteniendo drenaje abierto");
+              (keepDrainOpen ? " - Manteniendo drenaje abierto" : ""));
 
+  // Detener todos los actuadores
   Actuators.unlockDoor();
   Actuators.closeSteamValve();
-  // NO cerrar drenaje - mantenerlo abierto
   Actuators.closeWaterValve();
   Actuators.stopCentrifuge();
   Actuators.stopAutoRotation();
   Actuators.stopMotor();
 
+  // Manejar drenaje según parámetro
+  if (!keepDrainOpen) {
+    Actuators.closeDrainValve();
+  }
+
   Storage.incrementUsageCounter();
   _timerRunning = false;
 
-  // Cambiar estado sin usar setState para evitar cerrar drenaje
-  _previousState = _currentState;
-  _currentState = ESTADO_SELECCION;
-
-  // Mostrar pantalla de selección manualmente
-  UIController.showSelectionScreen(_currentProgram);
+  if (keepDrainOpen) {
+    // Cambiar estado sin usar setState para evitar cerrar drenaje
+    _previousState = _currentState;
+    _currentState = ESTADO_SELECCION;
+    // Mostrar pantalla de selección manualmente
+    UIController.showSelectionScreen(_currentProgram);
+  } else {
+    // Usar setState normal
+    setState(ESTADO_SELECCION);
+  }
 }
 
 void ProgramControllerClass::_handlePhaseStateMachine() {
@@ -1889,7 +1791,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
   switch (_currentPhaseState) {
   case FASE_LLENANDO:
     // Controlar actuadores para llenado
-    _controlActuatorsForPhase();
+    _configureActuatorsForPhase();
 
     // Verificar condiciones para pasar a lavado
     _checkSensorConditions();
@@ -1899,7 +1801,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
 
   case FASE_LAVADO:
     // Controlar actuadores para lavado
-    _controlActuatorsForPhase();
+    _configureActuatorsForPhase();
 
     // El temporizador se actualiza desde updateTimers() llamado por el timer
     // principal Verificar si el lavado terminó
@@ -1913,7 +1815,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
 
   case FASE_DRENAJE:
     // Controlar actuadores para drenaje
-    _controlActuatorsForPhase();
+    _configureActuatorsForPhase();
 
     // El temporizador se actualiza desde updateTimers() llamado por el timer
     // principal Verificar si el drenaje terminó
@@ -1980,7 +1882,7 @@ void ProgramControllerClass::_handlePhaseStateMachine() {
     // principal Verificar si el enfriamiento terminó
     if (_remainingMinutes == 0 && _remainingSeconds == 0) {
       // Debug.print("Enfriamiento completo → Programa finalizado");
-      _finalizeProgramWithDrainOpen();
+      _finalizeProgramSequence(true); // keepDrainOpen = true
     }
     break;
 

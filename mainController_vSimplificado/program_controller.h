@@ -46,8 +46,8 @@ public:
   
   // Manejo de emergencias
   void handleEmergency(bool triggeredByButton = true);
-  void resetEmergency();
-  void forceResetEmergency(); // Reset forzado desde interfaz (para emergencias por software)
+  void resetEmergency(bool forceReset = false); // Método unificado con parámetro opcional
+  void forceResetEmergency(); // Mantiene compatibilidad - delega al método unificado
   
   // Actualización periódica (debe llamarse en cada ciclo)
   void update();
@@ -115,7 +115,8 @@ private:
   uint8_t _tipoAguaPrograma[NUM_PROGRAMAS][NUM_FASES];
   uint8_t _centrifugadoPorTanda[NUM_PROGRAMAS][NUM_FASES]; // [programa][tanda] - P22/P23: 1 tanda, P24: 4 tandas
   
-  void _loadProgramData(); // 
+  void _loadProgramData(); // Carga todos los parámetros desde Storage
+  void _loadSinglePhaseParameters(uint8_t prog, uint8_t fase); // Helper para evitar código duplicado
   void _loadCurrentProgramState();
   void _updatePhaseParameters();
   
@@ -128,7 +129,7 @@ private:
   uint8_t getTotalProgramProgressPercentage();
   void _checkSensorConditions();
   void _checkCriticalSafety(); // Verificaciones de seguridad crítica (emergencia automática)
-  void _controlActuatorsForPhase(); // Control separado de actuadores
+  // _controlActuatorsForPhase() eliminada - consolidada en _configureActuatorsForPhase()
   void _decrementTimer();
   void _handleStateMachine();
   void _handleSelectionState();
@@ -137,6 +138,7 @@ private:
   void _handlePauseState();
   void _handleErrorState();
   void _handleEmergencyState();
+  void _performEmergencyReset(); // Helper para código común de reset de emergencia
   void _handlePhaseStateMachine(); // Máquina de estados de fases
   void _initializePhaseState();
   
@@ -155,9 +157,6 @@ private:
   // Flujo simplificado (nueva implementación)
   bool validateConditions(); // Todas las validaciones en un solo método
   void executeStart(); // Ejecución directa sin capas intermedias
-  
-  // Funciones de validación optimizadas (obsoletas - mantener temporalmente)
-  bool _validateStartConditions(const String& context = "");
   
   // Métodos de gestión de edición (uso interno)
   void startEditing(uint8_t program, uint8_t phase);
@@ -184,8 +183,7 @@ private:
   bool _isCentrifugadoEnabled(uint8_t programa, uint8_t tanda);
   
   // Secuencias especiales del programa
-  void _finalizeProgramSequence();
-  void _finalizeProgramWithDrainOpen();
+  void _finalizeProgramSequence(bool keepDrainOpen = false);
   
   // Funciones auxiliares rápidas para UI
   void _updateProgramButtons();
