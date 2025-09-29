@@ -1348,55 +1348,13 @@ void UIControllerClass::clearPreparationStatus() {
 
 // === NUEVAS FUNCIONES PARA SELECCIÓN DIRECTA DE PARÁMETROS ===
 
-/**
- * @brief Selecciona directamente un parámetro específico para edición
- * @param param Tipo de parámetro (PARAM_NIVEL, PARAM_TEMPERATURA, etc.)
- */
-void UIControllerClass::selectParameter(uint8_t param) {
-  if (!_modoEdicionActivo)
-    return;
+// === MÉTODO selectParameter() ELIMINADO ===
+// Reemplazado por setParameter() unificado
 
-  _parametroActual = param;
-
-  // Sin mensajes - feedback visual instantáneo es el parámetro destacado
-  // Los mensajes causan delay innecesario en la respuesta
-
-  // Actualizar display para mostrar parámetro activo
-  updateDisplay(true); // Actualización completa de pantalla
-}
-
-/**
- * @brief Selecciona la fase para edición
- */
-void UIControllerClass::selectPhase(uint8_t fase) {
-  if (!_modoEdicionActivo)
-    return;
-
-  // P22 y P23 tienen secuencias fijas, solo P24 permite editar fases
-  if (_programaEnEdicion == 0 || _programaEnEdicion == 1) {
-    // Programas 22 y 23 - no permitir edición de fase
-    showMessage("P" + String(_programaEnEdicion + 22) + " tiene secuencia fija",
-                2000);
-    return;
-  }
-
-  _parametroActual = PARAM_FASE;
-
-  // Actualizar display para mostrar parámetro activo
-  updateDisplay(true); // Actualización completa de pantalla
-}
+// === MÉTODO selectPhase() ELIMINADO ===
+// Reemplazado por setParameter() unificado
 
 void UIControllerClass::selectTanda(uint8_t tanda) {
-  if (!_modoEdicionActivo)
-    return;
-
-  // Esta funcionalidad está implementada en ProgramController
-  // para manejar la selección de tanda y actualizar el panel derecho
-  // Sin mensajes para respuesta más rápida - el cambio visual es suficiente
-  // feedback
-}
-
-void UIControllerClass::selectTandaDirecta(uint8_t tanda) {
   if (!_modoEdicionActivo)
     return;
 
@@ -1434,31 +1392,11 @@ void UIControllerClass::selectTandaDirecta(uint8_t tanda) {
   Serial.println("🔍 Actualizando botones: Tanda activa = " + String(tanda));
 }
 
-/**
- * @brief Selecciona parámetros de centrifugado
- */
-void UIControllerClass::selectCentrifuge(uint8_t centrifuge) {
-  if (!_modoEdicionActivo)
-    return;
+// === MÉTODO selectCentrifuge() ELIMINADO ===
+// Reemplazado por setParameter() unificado
 
-  _parametroActual = PARAM_CENTRIF;
-
-  // Actualizar display para mostrar parámetro activo
-  updateDisplay(true); // Actualización completa de pantalla
-}
-
-/**
- * @brief Selecciona parámetros de agua
- */
-void UIControllerClass::selectWater(uint8_t water) {
-  if (!_modoEdicionActivo)
-    return;
-
-  _parametroActual = PARAM_AGUA;
-
-  // Actualizar display para mostrar parámetro activo
-  updateDisplay(true); // Actualización completa de pantalla
-}
+// === MÉTODO selectWater() ELIMINADO ===
+// Reemplazado por setParameter() unificado
 
 // === FUNCIONES AUXILIARES PARA DOBLE GUARDADO ===
 

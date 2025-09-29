@@ -152,12 +152,9 @@ private:
   bool _isParameterValid(uint8_t paramType, int value);
   
   // Métodos de selección de parámetros
-  void selectParameter(uint8_t param);
-  void selectPhase(uint8_t fase);
-  void selectTanda(uint8_t tanda);
-  void selectCentrifuge(uint8_t centrifuge);
-  void selectWater(uint8_t water);
-  void selectTandaDirecta(uint8_t tanda);
+  // === selectParameter(), selectPhase(), selectCentrifuge(), selectWater() ELIMINADOS ===
+  // Reemplazados por setParameter() unificado
+  void selectTanda(uint8_t tanda); // Único método que se conserva (lógica de auto-guardado)
   
   // Gestión de timeout de edición
   void _checkEditTimeout();
