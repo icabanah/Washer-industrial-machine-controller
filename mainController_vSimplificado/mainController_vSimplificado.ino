@@ -122,8 +122,10 @@ void checkEmergencyButton() {
   }
   
   // Verificar sincronización: si el estado es EMERGENCIA pero la pantalla no está en Emergency
+  // Solo después de que el sistema esté completamente inicializado (15 segundos)
   static unsigned long lastSyncCheck = 0;
-  if (millis() - lastSyncCheck > 2000) { // Verificar cada 2 segundos
+  static unsigned long systemStartTime = millis();
+  if (millis() - lastSyncCheck > 2000 && millis() - systemStartTime > 15000) { // Verificar cada 2 segundos, después de 15s
     if (ProgramController.getState() == ESTADO_EMERGENCIA && UIController.getCurrentPage() != NEXTION_PAGE_EMERGENCY) {
       Debug.print("⚠️ DESINCRONIZACIÓN DETECTADA - Forzando pantalla Emergency");
       UIController.showEmergencyScreen();
